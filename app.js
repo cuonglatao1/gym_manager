@@ -19,8 +19,8 @@ app.use(express.static('public'));
 // Add routes
 console.log('🔐 Loading routes...');
 try {
-    const authRoutes = require('./routes/auth.routes');
-    const memberRoutes = require('./routes/member.routes');
+    const authRoutes = require('./routes/authRoutes');
+    const memberRoutes = require('./routes/memberRoutes');
     
     app.use('/api/auth', authRoutes);
     app.use('/api/members', memberRoutes);
