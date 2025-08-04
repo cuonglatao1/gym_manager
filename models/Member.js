@@ -84,26 +84,54 @@ const Member = sequelize.define('Member', {
     underscored: true
 });
 
-Member.prototype.generateMemberCode = function() {
+// Function to generate member code
+function generateMemberCode() {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const random = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
     return `GM${year}${month}${random}`;
-};
+}
 
+// Hook to auto-generate member code before create
 Member.beforeCreate(async (member) => {
     if (!member.memberCode) {
         let isUnique = false;
-        while (!isUnique) {
-            const code = member.generateMemberCode();
-            const existing = await Member.findOne({ where: { memberCode: code } });
-            if (!existing) {
+        let attempts = 0;
+        
+        while (!isUnique && attempts < 10) {
+            const code = generateMemberCode();
+            
+            try {
+                const existing = await Member.findOne({ 
+                    where: { memberCode: code } 
+                });
+                
+                if (!existing) {
+                    member.memberCode = code;
+                    isUnique = true;
+                } else {
+                    attempts++;
+                }
+            } catch (error) {
+                // If there's an error checking, just use the code
                 member.memberCode = code;
                 isUnique = true;
             }
         }
+        
+        // Fallback if couldn't generate unique code
+        if (!member.memberCode) {
+            member.memberCode = generateMemberCode() + Date.now().toString().slice(-3);
+        }
     }
 });
+
+// Instance method to regenerate member code if needed
+Member.prototype.regenerateMemberCode = async function() {
+    const newCode = generateMemberCode();
+    await this.update({ memberCode: newCode });
+    return newCode;
+};
 
 module.exports = Member;

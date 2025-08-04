@@ -4,120 +4,131 @@ const { Op } = require('sequelize');
 
 const memberController = {
     // POST /api/members/register - Đăng ký hội viên mới
-    register: async (req, res) => {
-        try {
-            const {
-                fullName,
-                phone,
-                email,
-                dateOfBirth,
-                gender,
-                address,
-                emergencyContact,
-                emergencyPhone,
-                membershipId,
-                notes
-            } = req.body;
+   // Thay thế toàn bộ hàm register trong controllers/memberController.js
+register: async (req, res) => {
+    try {
+        const {
+            fullName,
+            phone,
+            email,
+            dateOfBirth,
+            gender,
+            address,
+            emergencyContact,
+            emergencyPhone,
+            membershipId,
+            notes
+        } = req.body;
 
-            // Validate required fields
-            if (!fullName || !phone) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Họ tên và số điện thoại là bắt buộc'
-                });
-            }
-
-            // Check if phone already exists
-            const existingMember = await Member.findOne({ 
-                where: { phone } 
-            });
-            
-            if (existingMember) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Số điện thoại đã được đăng ký'
-                });
-            }
-
-            // Check if email exists (if provided)
-            if (email) {
-                const existingEmail = await Member.findOne({ 
-                    where: { email } 
-                });
-                
-                if (existingEmail) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Email đã được đăng ký'
-                    });
-                }
-            }
-
-            // Create new member
-            const member = await Member.create({
-                fullName,
-                phone,
-                email,
-                dateOfBirth,
-                gender,
-                address,
-                emergencyContact,
-                emergencyPhone,
-                notes
-            });
-
-            // If membershipId provided, create membership history
-            if (membershipId) {
-                const membership = await Membership.findByPk(membershipId);
-                if (!membership) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Gói membership không tồn tại'
-                    });
-                }
-
-                const startDate = new Date();
-                const endDate = new Date();
-                endDate.setDate(startDate.getDate() + membership.duration);
-
-                await MembershipHistory.create({
-                    memberId: member.id,
-                    membershipId: membership.id,
-                    startDate,
-                    endDate,
-                    price: membership.price
-                });
-            }
-
-            // Get member with membership info
-            const memberWithMembership = await Member.findByPk(member.id, {
-                include: [{
-                    model: MembershipHistory,
-                    as: 'membershipHistory',
-                    include: [{
-                        model: Membership,
-                        as: 'membership'
-                    }],
-                    where: { status: 'active' },
-                    required: false
-                }]
-            });
-
-            res.status(201).json({
-                success: true,
-                message: 'Đăng ký hội viên thành công',
-                data: memberWithMembership
-            });
-
-        } catch (error) {
-            console.error('Register member error:', error);
-            res.status(500).json({
+        // Validate required fields
+        if (!fullName || !phone) {
+            return res.status(400).json({
                 success: false,
-                message: 'Lỗi server khi đăng ký hội viên',
-                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+                message: 'Họ tên và số điện thoại là bắt buộc'
             });
         }
-    },
+
+        // Check if phone already exists
+        const existingMember = await Member.findOne({ 
+            where: { phone } 
+        });
+        
+        if (existingMember) {
+            return res.status(400).json({
+                success: false,
+                message: 'Số điện thoại đã được đăng ký'
+            });
+        }
+
+        // Check if email exists (if provided)
+        if (email) {
+            const existingEmail = await Member.findOne({ 
+                where: { email } 
+            });
+            
+            if (existingEmail) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email đã được đăng ký'
+                });
+            }
+        }
+
+        // Generate member code
+        const generateMemberCode = () => {
+            const date = new Date();
+            const year = date.getFullYear().toString().slice(-2);
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const random = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+            return `GM${year}${month}${random}`;
+        };
+
+        // Create new member
+        const member = await Member.create({
+            memberCode: generateMemberCode(),
+            fullName,
+            phone,
+            email,
+            dateOfBirth,
+            gender,
+            address,
+            emergencyContact,
+            emergencyPhone,
+            notes
+        });
+
+        // If membershipId provided, create membership history
+        if (membershipId) {
+            const membership = await Membership.findByPk(membershipId);
+            if (!membership) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Gói membership không tồn tại'
+                });
+            }
+
+            const startDate = new Date();
+            const endDate = new Date();
+            endDate.setDate(startDate.getDate() + membership.duration);
+
+            await MembershipHistory.create({
+                memberId: member.id,
+                membershipId: membership.id,
+                startDate,
+                endDate,
+                price: membership.price
+            });
+        }
+
+        // Get member with membership info
+        const memberWithMembership = await Member.findByPk(member.id, {
+            include: [{
+                model: MembershipHistory,
+                as: 'membershipHistory',
+                include: [{
+                    model: Membership,
+                    as: 'membership'
+                }],
+                where: { status: 'active' },
+                required: false
+            }]
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Đăng ký hội viên thành công',
+            data: memberWithMembership
+        });
+
+    } catch (error) {
+        console.error('Register member error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi đăng ký hội viên',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+},
 
     // GET /api/members - Xem danh sách hội viên với phân trang
     getAll: async (req, res) => {
