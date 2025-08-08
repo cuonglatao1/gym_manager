@@ -1,12 +1,11 @@
-// controllers/memberController.js
-const { Member, Membership, MembershipHistory, User } = require('../models');
-const { Op } = require('sequelize');
+// controllers/memberController.js - Refactored with Services
+const memberService = require('../services/memberService');
+const asyncHandler = require('../middleware/asyncHandler');
+const { ValidationError, NotFoundError, ConflictError } = require('../middleware/errorHandler');
 
 const memberController = {
-    // POST /api/members/register - Đăng ký hội viên mới
-   // Thay thế toàn bộ hàm register trong controllers/memberController.js
-register: async (req, res) => {
-    try {
+    // POST /api/members/register
+    register: asyncHandler(async (req, res) => {
         const {
             fullName,
             phone,
@@ -20,52 +19,22 @@ register: async (req, res) => {
             notes
         } = req.body;
 
-        // Validate required fields
-        if (!fullName || !phone) {
-            return res.status(400).json({
-                success: false,
-                message: 'Họ tên và số điện thoại là bắt buộc'
-            });
-        }
-
         // Check if phone already exists
-        const existingMember = await Member.findOne({ 
-            where: { phone } 
-        });
-        
-        if (existingMember) {
-            return res.status(400).json({
-                success: false,
-                message: 'Số điện thoại đã được đăng ký'
-            });
+        const phoneExists = await memberService.checkPhoneExists(phone);
+        if (phoneExists) {
+            throw new ConflictError('Số điện thoại đã được đăng ký');
         }
 
         // Check if email exists (if provided)
         if (email) {
-            const existingEmail = await Member.findOne({ 
-                where: { email } 
-            });
-            
-            if (existingEmail) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Email đã được đăng ký'
-                });
+            const emailExists = await memberService.checkEmailExists(email);
+            if (emailExists) {
+                throw new ConflictError('Email đã được đăng ký');
             }
         }
 
-        // Generate member code
-        const generateMemberCode = () => {
-            const date = new Date();
-            const year = date.getFullYear().toString().slice(-2);
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const random = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
-            return `GM${year}${month}${random}`;
-        };
-
-        // Create new member
-        const member = await Member.create({
-            memberCode: generateMemberCode(),
+        // Create member
+        const member = await memberService.createMember({
             fullName,
             phone,
             email,
@@ -74,361 +43,125 @@ register: async (req, res) => {
             address,
             emergencyContact,
             emergencyPhone,
+            membershipId,
             notes
-        });
-
-        // If membershipId provided, create membership history
-        if (membershipId) {
-            const membership = await Membership.findByPk(membershipId);
-            if (!membership) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Gói membership không tồn tại'
-                });
-            }
-
-            const startDate = new Date();
-            const endDate = new Date();
-            endDate.setDate(startDate.getDate() + membership.duration);
-
-            await MembershipHistory.create({
-                memberId: member.id,
-                membershipId: membership.id,
-                startDate,
-                endDate,
-                price: membership.price
-            });
-        }
-
-        // Get member with membership info
-        const memberWithMembership = await Member.findByPk(member.id, {
-            include: [{
-                model: MembershipHistory,
-                as: 'membershipHistory',
-                include: [{
-                    model: Membership,
-                    as: 'membership'
-                }],
-                where: { status: 'active' },
-                required: false
-            }]
         });
 
         res.status(201).json({
             success: true,
             message: 'Đăng ký hội viên thành công',
-            data: memberWithMembership
+            data: member
+        });
+    }),
+
+    // GET /api/members - Get all members with pagination
+    getAll: asyncHandler(async (req, res) => {
+        const {
+            page,
+            limit,
+            search,
+            status,
+            membershipStatus
+        } = req.query;
+
+        const result = await memberService.getAllMembers({
+            page,
+            limit,
+            search,
+            status,
+            membershipStatus
         });
 
-    } catch (error) {
-        console.error('Register member error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Lỗi server khi đăng ký hội viên',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        res.json({
+            success: true,
+            data: result
         });
-    }
-},
+    }),
 
-    // GET /api/members - Xem danh sách hội viên với phân trang
-    getAll: async (req, res) => {
-        try {
-            const {
-                page = 1,
-                limit = 10,
-                search = '',
-                status = 'all', // all, active, inactive
-                membershipStatus = 'all' // all, active, expired
-            } = req.query;
+    // GET /api/members/:id - Get member by ID
+    getById: asyncHandler(async (req, res) => {
+        const { id } = req.params;
 
-            const offset = (parseInt(page) - 1) * parseInt(limit);
-            
-            // Build where condition
-            const whereCondition = {};
-            
-            if (search) {
-                whereCondition[Op.or] = [
-                    { fullName: { [Op.iLike]: `%${search}%` } },
-                    { phone: { [Op.iLike]: `%${search}%` } },
-                    { email: { [Op.iLike]: `%${search}%` } },
-                    { memberCode: { [Op.iLike]: `%${search}%` } }
-                ];
-            }
-
-            if (status !== 'all') {
-                whereCondition.isActive = status === 'active';
-            }
-
-            // Include condition for membership history
-            const membershipInclude = {
-                model: MembershipHistory,
-                as: 'membershipHistory',
-                include: [{
-                    model: Membership,
-                    as: 'membership'
-                }],
-                required: false,
-                order: [['endDate', 'DESC']],
-                limit: 1
-            };
-
-            if (membershipStatus === 'active') {
-                membershipInclude.where = {
-                    status: 'active',
-                    endDate: { [Op.gte]: new Date() }
-                };
-            } else if (membershipStatus === 'expired') {
-                membershipInclude.where = {
-                    [Op.or]: [
-                        { status: 'expired' },
-                        { 
-                            status: 'active',
-                            endDate: { [Op.lt]: new Date() }
-                        }
-                    ]
-                };
-            }
-
-            const { count, rows } = await Member.findAndCountAll({
-                where: whereCondition,
-                include: [membershipInclude],
-                limit: parseInt(limit),
-                offset: offset,
-                order: [['createdAt', 'DESC']],
-                distinct: true
-            });
-
-            res.json({
-                success: true,
-                data: {
-                    members: rows,
-                    pagination: {
-                        currentPage: parseInt(page),
-                        totalPages: Math.ceil(count / parseInt(limit)),
-                        totalItems: count,
-                        itemsPerPage: parseInt(limit)
-                    }
-                }
-            });
-
-        } catch (error) {
-            console.error('Get members error:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Lỗi server khi lấy danh sách hội viên',
-                error: process.env.NODE_ENV === 'development' ? error.message : undefined
-            });
+        const member = await memberService.getMemberById(id);
+        if (!member) {
+            throw new NotFoundError('Không tìm thấy hội viên');
         }
-    },
 
-    // GET /api/members/:id - Xem chi tiết hội viên
-    getById: async (req, res) => {
-        try {
-            const { id } = req.params;
+        res.json({
+            success: true,
+            data: member
+        });
+    }),
 
-            const member = await Member.findByPk(id, {
-                include: [
-                    {
-                        model: User,
-                        as: 'user',
-                        attributes: ['id', 'username', 'email', 'role']
-                    },
-                    {
-                        model: MembershipHistory,
-                        as: 'membershipHistory',
-                        include: [{
-                            model: Membership,
-                            as: 'membership'
-                        }],
-                        order: [['createdAt', 'DESC']]
-                    }
-                ]
-            });
+    // PUT /api/members/:id - Update member
+    update: asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const updateData = req.body;
 
-            if (!member) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Không tìm thấy hội viên'
-                });
+        // Check if phone exists (exclude current member)
+        if (updateData.phone) {
+            const phoneExists = await memberService.checkPhoneExists(updateData.phone, id);
+            if (phoneExists) {
+                throw new ConflictError('Số điện thoại đã được sử dụng');
             }
-
-            res.json({
-                success: true,
-                data: member
-            });
-
-        } catch (error) {
-            console.error('Get member by id error:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Lỗi server khi lấy thông tin hội viên',
-                error: process.env.NODE_ENV === 'development' ? error.message : undefined
-            });
         }
-    },
 
-    // PUT /api/members/:id - Cập nhật thông tin hội viên
-    update: async (req, res) => {
-        try {
-            const { id } = req.params;
-            const {
-                fullName,
-                phone,
-                email,
-                dateOfBirth,
-                gender,
-                address,
-                emergencyContact,
-                emergencyPhone,
-                isActive,
-                notes
-            } = req.body;
-
-            const member = await Member.findByPk(id);
-            if (!member) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Không tìm thấy hội viên'
-                });
+        // Check if email exists (exclude current member)
+        if (updateData.email) {
+            const emailExists = await memberService.checkEmailExists(updateData.email, id);
+            if (emailExists) {
+                throw new ConflictError('Email đã được sử dụng');
             }
-
-            // Check if phone exists (exclude current member)
-            if (phone && phone !== member.phone) {
-                const existingPhone = await Member.findOne({
-                    where: { 
-                        phone,
-                        id: { [Op.ne]: id }
-                    }
-                });
-                
-                if (existingPhone) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Số điện thoại đã được sử dụng'
-                    });
-                }
-            }
-
-            // Check if email exists (exclude current member)
-            if (email && email !== member.email) {
-                const existingEmail = await Member.findOne({
-                    where: { 
-                        email,
-                        id: { [Op.ne]: id }
-                    }
-                });
-                
-                if (existingEmail) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Email đã được sử dụng'
-                    });
-                }
-            }
-
-            // Update member
-            await member.update({
-                fullName: fullName || member.fullName,
-                phone: phone || member.phone,
-                email: email || member.email,
-                dateOfBirth: dateOfBirth || member.dateOfBirth,
-                gender: gender || member.gender,
-                address: address || member.address,
-                emergencyContact: emergencyContact || member.emergencyContact,
-                emergencyPhone: emergencyPhone || member.emergencyPhone,
-                isActive: isActive !== undefined ? isActive : member.isActive,
-                notes: notes || member.notes
-            });
-
-            // Get updated member with associations
-            const updatedMember = await Member.findByPk(id, {
-                include: [{
-                    model: MembershipHistory,
-                    as: 'membershipHistory',
-                    include: [{
-                        model: Membership,
-                        as: 'membership'
-                    }],
-                    order: [['createdAt', 'DESC']],
-                    limit: 1
-                }]
-            });
-
-            res.json({
-                success: true,
-                message: 'Cập nhật thông tin hội viên thành công',
-                data: updatedMember
-            });
-
-        } catch (error) {
-            console.error('Update member error:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Lỗi server khi cập nhật hội viên',
-                error: process.env.NODE_ENV === 'development' ? error.message : undefined
-            });
         }
-    },
 
-    // POST /api/members/:id/membership - Gia hạn/mua gói membership
-    purchaseMembership: async (req, res) => {
-        try {
-            const { id } = req.params;
-            const { membershipId, startDate } = req.body;
+        const updatedMember = await memberService.updateMember(id, updateData);
 
-            const member = await Member.findByPk(id);
-            if (!member) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Không tìm thấy hội viên'
-                });
-            }
+        res.json({
+            success: true,
+            message: 'Cập nhật thông tin hội viên thành công',
+            data: updatedMember
+        });
+    }),
 
-            const membership = await Membership.findByPk(membershipId);
-            if (!membership) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Không tìm thấy gói membership'
-                });
-            }
+    // POST /api/members/:id/membership - Purchase membership
+    purchaseMembership: asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const { membershipId, startDate } = req.body;
 
-            // Calculate dates
-            const start = startDate ? new Date(startDate) : new Date();
-            const endDate = new Date(start);
-            endDate.setDate(start.getDate() + membership.duration);
+        const membershipHistory = await memberService.purchaseMembership(
+            id, 
+            membershipId, 
+            startDate
+        );
 
-            // Create membership history
-            const membershipHistory = await MembershipHistory.create({
-                memberId: member.id,
-                membershipId: membership.id,
-                startDate: start,
-                endDate: endDate,
-                price: membership.price
-            });
+        res.status(201).json({
+            success: true,
+            message: 'Mua gói membership thành công',
+            data: membershipHistory
+        });
+    }),
 
-            // Get membership history with membership details
-            const membershipWithDetails = await MembershipHistory.findByPk(membershipHistory.id, {
-                include: [{
-                    model: Membership,
-                    as: 'membership'
-                }]
-            });
+    // GET /api/members/:id/active-membership - Get active membership
+    getActiveMembership: asyncHandler(async (req, res) => {
+        const { id } = req.params;
 
-            res.status(201).json({
-                success: true,
-                message: 'Mua gói membership thành công',
-                data: membershipWithDetails
-            });
+        const activeMembership = await memberService.getActiveMembership(id);
+        
+        res.json({
+            success: true,
+            data: activeMembership
+        });
+    }),
 
-        } catch (error) {
-            console.error('Purchase membership error:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Lỗi server khi mua gói membership',
-                error: process.env.NODE_ENV === 'development' ? error.message : undefined
-            });
-        }
-    }
+    // GET /api/members/statistics - Get member statistics (Admin only)
+    getStatistics: asyncHandler(async (req, res) => {
+        const statistics = await memberService.getMemberStatistics();
+
+        res.json({
+            success: true,
+            data: statistics
+        });
+    })
 };
 
 module.exports = memberController;

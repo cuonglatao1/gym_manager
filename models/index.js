@@ -3,13 +3,18 @@ const { sequelize } = require('../config/database');
 // Import existing models
 const User = require('./User');
 const RefreshToken = require('./RefreshToken');
-
-// Import new models
 const Member = require('./Member');
 const Membership = require('./Membership');
 const MembershipHistory = require('./MembershipHistory');
 
-// Setup existing associations
+// Import new class models
+const ClassType = require('./ClassType');
+const Class = require('./Class');
+const ClassSchedule = require('./ClassSchedule');
+const ClassEnrollment = require('./ClassEnrollment');
+
+// ===== EXISTING ASSOCIATIONS =====
+// User & RefreshToken
 User.hasMany(RefreshToken, {
     foreignKey: 'userId',
     as: 'refreshTokens',
@@ -21,8 +26,7 @@ RefreshToken.belongsTo(User, {
     as: 'user'
 });
 
-// Setup new associations
-// User & Member (1:1 - optional)
+// User & Member
 User.hasOne(Member, {
     foreignKey: 'userId',
     as: 'member',
@@ -34,7 +38,7 @@ Member.belongsTo(User, {
     as: 'user'
 });
 
-// Member & MembershipHistory (1:Many)
+// Member & MembershipHistory
 Member.hasMany(MembershipHistory, {
     foreignKey: 'memberId',
     as: 'membershipHistory',
@@ -46,7 +50,7 @@ MembershipHistory.belongsTo(Member, {
     as: 'member'
 });
 
-// Membership & MembershipHistory (1:Many)
+// Membership & MembershipHistory
 Membership.hasMany(MembershipHistory, {
     foreignKey: 'membershipId',
     as: 'membershipHistory',
@@ -57,6 +61,82 @@ MembershipHistory.belongsTo(Membership, {
     foreignKey: 'membershipId',
     as: 'membership'
 });
+
+// ===== NEW CLASS ASSOCIATIONS =====
+
+// User (Trainer) & Class
+User.hasMany(Class, {
+    foreignKey: 'trainerId',
+    as: 'classes',
+    onDelete: 'CASCADE'
+});
+
+Class.belongsTo(User, {
+    foreignKey: 'trainerId',
+    as: 'trainer'
+});
+
+// ClassType & Class
+ClassType.hasMany(Class, {
+    foreignKey: 'classTypeId',
+    as: 'classes',
+    onDelete: 'CASCADE'
+});
+
+Class.belongsTo(ClassType, {
+    foreignKey: 'classTypeId',
+    as: 'classType'
+});
+
+// Class & ClassSchedule
+Class.hasMany(ClassSchedule, {
+    foreignKey: 'classId',
+    as: 'schedules',
+    onDelete: 'CASCADE'
+});
+
+ClassSchedule.belongsTo(Class, {
+    foreignKey: 'classId',
+    as: 'class'
+});
+
+// User (Trainer) & ClassSchedule
+User.hasMany(ClassSchedule, {
+    foreignKey: 'trainerId',
+    as: 'schedules',
+    onDelete: 'CASCADE'
+});
+
+ClassSchedule.belongsTo(User, {
+    foreignKey: 'trainerId',
+    as: 'trainer'
+});
+
+// Member & ClassEnrollment
+Member.hasMany(ClassEnrollment, {
+    foreignKey: 'memberId',
+    as: 'enrollments',
+    onDelete: 'CASCADE'
+});
+
+ClassEnrollment.belongsTo(Member, {
+    foreignKey: 'memberId',
+    as: 'member'
+});
+
+// ClassSchedule & ClassEnrollment
+ClassSchedule.hasMany(ClassEnrollment, {
+    foreignKey: 'classScheduleId',
+    as: 'enrollments',
+    onDelete: 'CASCADE'
+});
+
+ClassEnrollment.belongsTo(ClassSchedule, {
+    foreignKey: 'classScheduleId',
+    as: 'classSchedule'
+});
+
+// ===== HELPER METHODS =====
 
 // Helper method to get active membership for a member
 Member.prototype.getActiveMembership = async function() {
@@ -79,11 +159,66 @@ Member.prototype.hasActiveMembership = async function() {
     return activeMembership && activeMembership.isActive();
 };
 
+// Helper method to get trainer's upcoming schedules
+User.prototype.getUpcomingSchedules = async function(limit = 10) {
+    if (this.role !== 'trainer') return [];
+    
+    return await ClassSchedule.findAll({
+        where: {
+            trainerId: this.id,
+            startTime: { [require('sequelize').Op.gte]: new Date() },
+            status: 'scheduled'
+        },
+        include: [
+            {
+                model: Class,
+                as: 'class',
+                include: [{ model: ClassType, as: 'classType' }]
+            }
+        ],
+        order: [['startTime', 'ASC']],
+        limit
+    });
+};
+
+// Helper method to get member's upcoming enrollments
+Member.prototype.getUpcomingEnrollments = async function(limit = 10) {
+    return await ClassEnrollment.findAll({
+        where: {
+            memberId: this.id,
+            status: 'enrolled'
+        },
+        include: [
+            {
+                model: ClassSchedule,
+                as: 'classSchedule',
+                where: {
+                    startTime: { [require('sequelize').Op.gte]: new Date() }
+                },
+                include: [
+                    {
+                        model: Class,
+                        as: 'class',
+                        include: [{ model: ClassType, as: 'classType' }]
+                    },
+                    { model: User, as: 'trainer', attributes: ['id', 'fullName'] }
+                ]
+            }
+        ],
+        order: [[{ model: ClassSchedule, as: 'classSchedule' }, 'startTime', 'ASC']],
+        limit
+    });
+};
+
 module.exports = {
     sequelize,
     User,
     RefreshToken,
     Member,
     Membership,
-    MembershipHistory
+    MembershipHistory,
+    ClassType,
+    Class,
+    ClassSchedule,
+    ClassEnrollment
 };
