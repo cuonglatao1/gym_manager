@@ -11,8 +11,8 @@ const sequelize = new Sequelize(
         port: process.env.DB_PORT || 5432,
         dialect: 'postgres',
         
-        // Logging
-        logging: process.env.NODE_ENV === 'development' ? console.log : false,
+        // TẮT TẤT CẢ LOGGING
+        logging: false,  // Tắt hoàn toàn SQL logs
         
         // Connection pool
         pool: {
@@ -30,11 +30,22 @@ const sequelize = new Sequelize(
             timestamps: true,
             underscored: true,
             freezeTableName: true
-        }
+        },
+        
+        // Tắt query logging và warnings
+        dialectOptions: {
+            // Tắt PostgreSQL notices/warnings
+        },
+        
+        // Tắt Sequelize deprecation warnings
+        benchmark: false,
+        
+        // Tắt query types logging
+        logQueryParameters: false
     }
 );
 
-// Test kết nối database
+// Test kết nối database (SILENT)
 const testConnection = async () => {
     try {
         await sequelize.authenticate();

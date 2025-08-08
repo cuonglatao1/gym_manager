@@ -1,21 +1,38 @@
-// models/ClassType.js
+// models/Class.js
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-const ClassType = sequelize.define('ClassType', {
+const Class = sequelize.define('Class', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
     },
+    classTypeId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        field: 'class_type_id',
+        references: {
+            model: 'class_types',
+            key: 'id'
+        }
+    },
     name: {
         type: DataTypes.STRING(100),
-        allowNull: false,
-        unique: true
+        allowNull: false
     },
     description: {
         type: DataTypes.TEXT,
         allowNull: true
+    },
+    trainerId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        field: 'trainer_id',
+        references: {
+            model: 'users',
+            key: 'id'
+        }
     },
     duration: {
         type: DataTypes.INTEGER,
@@ -28,30 +45,48 @@ const ClassType = sequelize.define('ClassType', {
         defaultValue: 10,
         field: 'max_participants'
     },
-    equipment: {
+    price: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0
+    },
+    room: {
+        type: DataTypes.STRING(50),
+        allowNull: true
+    },
+    recurring: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: 'Is this a recurring class?'
+    },
+    recurringPattern: {
         type: DataTypes.JSON,
         allowNull: true,
-        comment: 'Required equipment array'
-    },
-    difficulty: {
-        type: DataTypes.ENUM('beginner', 'intermediate', 'advanced'),
-        defaultValue: 'beginner'
-    },
-    color: {
-        type: DataTypes.STRING(7),
-        allowNull: true,
-        defaultValue: '#3498db',
-        comment: 'Color for calendar display'
+        field: 'recurring_pattern',
+        comment: 'Recurring schedule pattern'
     },
     isActive: {
         type: DataTypes.BOOLEAN,
         defaultValue: true,
         field: 'is_active'
+    },
+    notes: {
+        type: DataTypes.TEXT,
+        allowNull: true
     }
 }, {
-    tableName: 'class_types',
+    tableName: 'classes',
     timestamps: true,
     underscored: true
 });
 
-module.exports = ClassType;
+// Instance methods
+Class.prototype.getFullName = function() {
+    return `${this.name} - ${this.duration} minutes`;
+};
+
+Class.prototype.hasAvailableSlots = function(currentEnrollments = 0) {
+    return currentEnrollments < this.maxParticipants;
+};
+
+module.exports = Class;

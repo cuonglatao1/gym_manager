@@ -132,3 +132,110 @@ module.exports = {
     membershipSchemas,
     authSchemas
 };
+// Class Type validation schemas
+const classTypeSchemas = {
+    create: Joi.object({
+        name: Joi.string().min(2).max(100).required()
+            .messages({'any.required': 'Tên loại lớp là bắt buộc'}),
+        description: Joi.string().max(1000).optional(),
+        duration: Joi.number().integer().min(15).max(180).required()
+            .messages({'any.required': 'Thời lượng là bắt buộc'}),
+        maxParticipants: Joi.number().integer().min(1).max(100).default(10),
+        equipment: Joi.array().items(Joi.string()).optional(),
+        difficulty: Joi.string().valid('beginner', 'intermediate', 'advanced').default('beginner'),
+        color: Joi.string().pattern(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional()
+    }),
+
+    update: Joi.object({
+        name: Joi.string().min(2).max(100).optional(),
+        description: Joi.string().max(1000).optional(),
+        duration: Joi.number().integer().min(15).max(180).optional(),
+        maxParticipants: Joi.number().integer().min(1).max(100).optional(),
+        equipment: Joi.array().items(Joi.string()).optional(),
+        difficulty: Joi.string().valid('beginner', 'intermediate', 'advanced').optional(),
+        color: Joi.string().pattern(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional(),
+        isActive: Joi.boolean().optional()
+    })
+};
+
+// Class validation schemas
+const classSchemas = {
+    create: Joi.object({
+        classTypeId: Joi.number().integer().positive().required()
+            .messages({'any.required': 'Class Type ID là bắt buộc'}),
+        name: Joi.string().min(2).max(100).required()
+            .messages({'any.required': 'Tên lớp là bắt buộc'}),
+        description: Joi.string().max(1000).optional(),
+        trainerId: Joi.number().integer().positive().optional(),
+        duration: Joi.number().integer().min(15).max(180).optional(),
+        maxParticipants: Joi.number().integer().min(1).max(100).optional(),
+        price: Joi.number().min(0).default(0),
+        room: Joi.string().max(50).optional(),
+        recurring: Joi.boolean().default(false),
+        recurringPattern: Joi.object().optional()
+    }),
+
+    update: Joi.object({
+        classTypeId: Joi.number().integer().positive().optional(),
+        name: Joi.string().min(2).max(100).optional(),
+        description: Joi.string().max(1000).optional(),
+        trainerId: Joi.number().integer().positive().optional(),
+        duration: Joi.number().integer().min(15).max(180).optional(),
+        maxParticipants: Joi.number().integer().min(1).max(100).optional(),
+        price: Joi.number().min(0).optional(),
+        room: Joi.string().max(50).optional(),
+        recurring: Joi.boolean().optional(),
+        recurringPattern: Joi.object().optional(),
+        isActive: Joi.boolean().optional()
+    })
+};
+
+// Class Schedule validation schemas
+const classScheduleSchemas = {
+    create: Joi.object({
+        date: Joi.date().min('now').required()
+            .messages({'any.required': 'Ngày là bắt buộc'}),
+        startTime: Joi.date().required()
+            .messages({'any.required': 'Giờ bắt đầu là bắt buộc'}),
+        endTime: Joi.date().greater(Joi.ref('startTime')).required()
+            .messages({
+                'any.required': 'Giờ kết thúc là bắt buộc',
+                'date.greater': 'Giờ kết thúc phải sau giờ bắt đầu'
+            }),
+        trainerId: Joi.number().integer().positive().optional(),
+        maxParticipants: Joi.number().integer().min(1).max(100).optional(),
+        room: Joi.string().max(50).optional(),
+        notes: Joi.string().max(500).optional()
+    }),
+
+    update: Joi.object({
+        date: Joi.date().min('now').optional(),
+        startTime: Joi.date().optional(),
+        endTime: Joi.date().optional(),
+        trainerId: Joi.number().integer().positive().optional(),
+        maxParticipants: Joi.number().integer().min(1).max(100).optional(),
+        room: Joi.string().max(50).optional(),
+        notes: Joi.string().max(500).optional(),
+        status: Joi.string().valid('scheduled', 'ongoing', 'completed', 'cancelled').optional()
+    }).custom((value, helpers) => {
+        // Custom validation: endTime must be greater than startTime
+        if (value.startTime && value.endTime && value.endTime <= value.startTime) {
+            return helpers.error('date.endTimeAfterStart');
+        }
+        return value;
+    }).messages({
+        'date.endTimeAfterStart': 'Giờ kết thúc phải sau giờ bắt đầu'
+    })
+};
+
+// Export schemas (ADD TO EXISTING EXPORTS)
+module.exports = {
+    validate,
+    validateId,
+    memberSchemas,
+    membershipSchemas,
+    authSchemas,
+    classTypeSchemas,    // NEW!
+    classSchemas,        // NEW!
+    classScheduleSchemas // NEW!
+};

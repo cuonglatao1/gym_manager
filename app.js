@@ -23,11 +23,13 @@ app.use(express.static('public'));
 // Add routes
 console.log('🔐 Loading routes...');
 try {
-    const authRoutes = require('./routes/auth.routes');
-    const memberRoutes = require('./routes/member.routes');
+    const authRoutes = require('./routes/authRoutes');
+    const memberRoutes = require('./routes/memberRoutes');
+    const classRoutes = require('./routes/classRoutes'); // NEW!
     
     app.use('/api/auth', authRoutes);
     app.use('/api/members', memberRoutes);
+    app.use('/api/classes', classRoutes); // NEW!
     
     console.log('✅ Routes loaded successfully!');
 } catch (error) {
@@ -38,14 +40,14 @@ try {
 app.get('/', (req, res) => {
     res.json({ 
         message: 'Gym Manager API is running!',
-        version: '1.4.0',
+        version: '1.5.0', // Updated version
         features: [
             'JWT Authentication',
             'Member Management',
             'Membership System',
-            'Class Management', // New!
-            'Class Types & Scheduling', // New!
-            'Class Enrollment', // New!
+            'Class Management', // NEW!
+            'Class Types & Scheduling',
+            'Class Enrollment',
             'Input Validation',
             'Error Handling',
             'Service Layer Architecture'
@@ -55,7 +57,9 @@ app.get('/', (req, res) => {
             auth: '/api/auth',
             members: '/api/members',
             memberships: '/api/members/memberships',
-            classes: '/api/classes', // New!
+            classes: '/api/classes', // NEW!
+            classTypes: '/api/classes/types', // NEW!
+            classSchedules: '/api/classes/schedules', // NEW!
             frontend: '/index.html'
         },
         timestamp: new Date().toISOString()
@@ -68,10 +72,10 @@ app.get('/api/health', (req, res) => {
         message: 'Server is healthy',
         database: 'Connected',
         services: {
+            authService: 'Active',
             memberService: 'Active',
             membershipService: 'Active',
-            classService: 'Active', // New!
-            authService: 'Active'
+            classService: 'Active' // NEW!
         },
         timestamp: new Date().toISOString()
     });
@@ -81,7 +85,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api', (req, res) => {
     res.json({
         success: true,
-        message: 'Gym Manager API v1.4.0',
+        message: 'Gym Manager API v1.5.0',
         architecture: 'Service Layer + Validation + Error Handling + Class Management',
         endpoints: {
             // Auth endpoints
@@ -108,14 +112,44 @@ app.get('/api', (req, res) => {
             'PUT /api/members/memberships/:id': 'Update membership package (Admin)',
             'DELETE /api/members/memberships/:id': 'Delete membership package (Admin)',
             'GET /api/members/memberships/:id/statistics': 'Get membership statistics (Admin)',
-            'GET /api/members/memberships/analytics/revenue': 'Get revenue analytics (Admin)',
             
-            // Class endpoints (New!)
+            // Class Type endpoints (NEW!)
             'GET /api/classes/types': 'Get all class types',
-            'GET /api/classes': 'Get all classes (filter by type, trainer, day)',
+            'GET /api/classes/types/:id': 'Get class type details',
+            'POST /api/classes/types': 'Create class type (Admin)',
+            'PUT /api/classes/types/:id': 'Update class type (Admin)',
+            'DELETE /api/classes/types/:id': 'Delete class type (Admin)',
+            
+            // Class endpoints (NEW!)
+            'GET /api/classes': 'Get all classes (filter by type, trainer)',
+            'GET /api/classes/:id': 'Get class details',
+            'POST /api/classes': 'Create new class (Admin & Trainer)',
+            'PUT /api/classes/:id': 'Update class (Admin & Class Trainer)',
+            'DELETE /api/classes/:id': 'Delete class (Admin)',
+            
+            // Class Schedule endpoints (NEW!)
             'GET /api/classes/schedules': 'Get class schedules (filter by date)',
+            'GET /api/classes/schedules/:id': 'Get schedule details',
+            'POST /api/classes/:id/schedules': 'Create class schedule (Admin & Trainer)',
+            'PUT /api/classes/schedules/:id': 'Update schedule (Admin & Trainer)',
+            'DELETE /api/classes/schedules/:id': 'Cancel schedule (Admin & Trainer)',
+            
+            // Enrollment endpoints (NEW!)
             'POST /api/classes/schedules/:id/enroll': 'Enroll in class',
-            'POST /api/classes/schedules/:id/checkin': 'Check-in to class'
+            'DELETE /api/classes/schedules/:id/enroll': 'Cancel enrollment',
+            'POST /api/classes/schedules/:id/checkin': 'Check in to class',
+            'POST /api/classes/schedules/:id/checkout': 'Check out from class',
+            'GET /api/classes/schedules/:id/enrollments': 'Get class enrollments (Admin & Trainer)',
+            
+            // User-specific endpoints (NEW!)
+            'GET /api/classes/my/schedules': 'Get my upcoming classes (Member)',
+            'GET /api/classes/my/history': 'Get my class history (Member)',
+            'GET /api/classes/trainer/schedules': 'Get trainer schedules (Trainer)',
+            
+            // Analytics endpoints (NEW!)
+            'GET /api/classes/analytics/popular': 'Get popular classes (Admin)',
+            'GET /api/classes/analytics/revenue': 'Get class revenue (Admin)',
+            'GET /api/classes/analytics/attendance': 'Get attendance stats (Admin)'
         },
         improvements: [
             '✅ Service Layer Architecture',
@@ -124,7 +158,7 @@ app.get('/api', (req, res) => {
             '✅ Custom Error Classes',
             '✅ Consistent Error Responses',
             '✅ Performance Optimized',
-            '✅ Class Management System' // New!
+            '✅ Complete Class Management System'
         ]
     });
 });
@@ -164,62 +198,47 @@ const startServer = async () => {
             ClassEnrollment
         } = require('./models');
         
-        console.log('✅ Models loaded:', { 
-            User: !!User, 
-            RefreshToken: !!RefreshToken,
-            Member: !!Member,
-            Membership: !!Membership,
-            MembershipHistory: !!MembershipHistory,
-            ClassType: !!ClassType,
-            Class: !!Class,
-            ClassSchedule: !!ClassSchedule,
-            ClassEnrollment: !!ClassEnrollment
+        console.log('✅ Models loaded successfully');
+        
+        // Sync models với CLEAN OUTPUT
+        console.log('🔄 Syncing database models...');
+        
+        await sequelize.sync({ 
+            force: true, 
+            logging: false
         });
         
-       // Sync database models - SIMPLE FORCE SYNC
-console.log('🔄 Syncing database (force=true for clean database)...');
-
-// Force sync - will recreate all tables in correct order
-await sequelize.sync({ force: true, logging: false });
-console.log('✅ Database synchronized!');
+        console.log('✅ All models synchronized successfully!');
         
         // Create default admin
         await createDefaultAdmin(User);
         
-        // Seed membership packages
+        // Seed data
         await seedMembershipPackages();
-        
-        // Seed class types
         await seedClassTypes();
         
         const PORT = process.env.PORT || 3000;
         const server = app.listen(PORT, () => {
             console.log('');
             console.log('🎉 ========================================');
-            console.log('✅ Gym Manager API v1.4.0 Started!');
+            console.log('✅ Gym Manager API v1.5.0 Started!');
             console.log('🎉 ========================================');
             console.log('');
-            console.log(`🌐 Main API: http://localhost:${PORT}`);
+            console.log(`🌐 Server: http://localhost:${PORT}`);
             console.log(`💚 Health: http://localhost:${PORT}/api/health`);
             console.log(`🔐 Auth: http://localhost:${PORT}/api/auth`);
             console.log(`👥 Members: http://localhost:${PORT}/api/members`);
             console.log(`📦 Memberships: http://localhost:${PORT}/api/members/memberships/all`);
-            console.log(`🏃 Classes: http://localhost:${PORT}/api/classes (Coming Soon!)`);
+            console.log(`🏃 Classes: http://localhost:${PORT}/api/classes`);
+            console.log(`📅 Class Types: http://localhost:${PORT}/api/classes/types`);
+            console.log(`⏰ Schedules: http://localhost:${PORT}/api/classes/schedules`);
             console.log(`📱 Frontend: http://localhost:${PORT}/index.html`);
             console.log('');
-            console.log('🏗️ Architecture:');
-            console.log('   ✅ Service Layer Pattern');
-            console.log('   ✅ Async Error Handling');
-            console.log('   ✅ Input Validation (Joi)');
-            console.log('   ✅ Custom Error Classes');
-            console.log('   ✅ Consistent API Responses');
-            console.log('   ✅ Class Management System');
-            console.log('');
-            console.log('📋 Default Admin Account:');
+            console.log('📋 Default Admin:');
             console.log('   📧 Email: admin@gym.com');
             console.log('   🔑 Password: admin123');
             console.log('');
-            console.log('🚀 Ready for Class Management development!');
+            console.log('🚀 Class Management System Ready!');
             console.log('');
         });
 
@@ -239,13 +258,14 @@ console.log('✅ Database synchronized!');
     }
 };
 
-// Create default admin user
+// Create default admin user (CLEAN OUTPUT)
 async function createDefaultAdmin(User) {
     try {
         const bcrypt = require('bcryptjs');
         
         const adminExists = await User.findOne({ 
-            where: { role: 'admin' } 
+            where: { role: 'admin' },
+            logging: false
         });
         
         if (!adminExists) {
@@ -257,7 +277,7 @@ async function createDefaultAdmin(User) {
                 passwordHash,
                 fullName: 'Quản trị viên hệ thống',
                 role: 'admin'
-            });
+            }, { logging: false });
             
             console.log('👤 Default admin created successfully!');
         } else {
@@ -268,15 +288,14 @@ async function createDefaultAdmin(User) {
     }
 }
 
-// Seed membership packages
+// Seed membership packages (CLEAN OUTPUT)
 async function seedMembershipPackages() {
     try {
         console.log('🌱 Seeding membership packages...');
         
         const { Membership } = require('./models');
         
-        // Check if memberships already exist
-        const existingCount = await Membership.count();
+        const existingCount = await Membership.count({ logging: false });
         if (existingCount > 0) {
             console.log('✅ Membership packages already exist');
             return;
@@ -330,7 +349,7 @@ async function seedMembershipPackages() {
             }
         ];
 
-        await Membership.bulkCreate(memberships);
+        await Membership.bulkCreate(memberships, { logging: false });
         console.log(`✅ Created ${memberships.length} membership packages`);
 
     } catch (error) {
@@ -338,15 +357,14 @@ async function seedMembershipPackages() {
     }
 }
 
-// Seed class types
+// Seed class types (CLEAN OUTPUT)
 async function seedClassTypes() {
     try {
         console.log('🌱 Seeding class types...');
         
         const { ClassType } = require('./models');
         
-        // Check if class types already exist
-        const existingCount = await ClassType.count();
+        const existingCount = await ClassType.count({ logging: false });
         if (existingCount > 0) {
             console.log('✅ Class types already exist');
             return;
@@ -409,18 +427,9 @@ async function seedClassTypes() {
             }
         ];
 
-        await ClassType.bulkCreate(classTypes);
+        await ClassType.bulkCreate(classTypes, { logging: false });
         console.log(`✅ Created ${classTypes.length} class types`);
-
-        // Log the created class types
-        const createdClassTypes = await ClassType.findAll({
-            order: [['name', 'ASC']]
-        });
-
-        console.log('🏃 Available class types:');
-        createdClassTypes.forEach(classType => {
-            console.log(`   - ${classType.name}: ${classType.duration}min, max ${classType.maxParticipants} people (${classType.difficulty})`);
-        });
+        console.log('🏃 Available: Yoga, HIIT Cardio, Weight Training, Zumba Dance, Boxing, Pilates');
 
     } catch (error) {
         console.error('⚠️  Failed to seed class types:', error.message);
