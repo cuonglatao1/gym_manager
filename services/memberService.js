@@ -269,6 +269,128 @@ class MemberService {
             membersWithoutMembership: activeMembers - membersWithActiveMembership
         };
     }
+
+    // Search members by name, email, or phone
+    async searchMembers({ query, fields = ['name', 'email', 'phone'], page = 1, limit = 10 }) {
+        // Validate inputs
+        if (!query || typeof query !== 'string' || query.trim().length === 0) {
+            throw new Error('Query parameter is required and must be a non-empty string');
+        }
+
+        if (query.trim().length < 2) {
+            throw new Error('Search query must be at least 2 characters long');
+        }
+
+        const cleanQuery = query.trim();
+        const cleanPage = Math.max(1, parseInt(page) || 1);
+        const cleanLimit = Math.min(50, Math.max(1, parseInt(limit) || 10)); // Limit max to 50
+        const offset = (cleanPage - 1) * cleanLimit;
+        
+        // Validate and normalize fields
+        const validFields = ['name', 'fullName', 'email', 'phone'];
+        let searchFields = Array.isArray(fields) ? fields : [fields];
+        searchFields = searchFields.filter(field => validFields.includes(field));
+        
+        // Build search conditions
+        const searchConditions = [];
+        
+        if (searchFields.includes('name') || searchFields.includes('fullName')) {
+            searchConditions.push({
+                fullName: {
+                    [Op.iLike]: `%${cleanQuery}%`
+                }
+            });
+        }
+        
+        if (searchFields.includes('email')) {
+            searchConditions.push({
+                email: {
+                    [Op.iLike]: `%${cleanQuery}%`
+                }
+            });
+        }
+        
+        if (searchFields.includes('phone')) {
+            searchConditions.push({
+                phone: {
+                    [Op.like]: `%${cleanQuery}%`
+                }
+            });
+        }
+
+        // If no valid fields, search all fields
+        if (searchConditions.length === 0) {
+            searchConditions.push(
+                {
+                    fullName: {
+                        [Op.iLike]: `%${cleanQuery}%`
+                    }
+                },
+                {
+                    email: {
+                        [Op.iLike]: `%${cleanQuery}%`
+                    }
+                },
+                {
+                    phone: {
+                        [Op.like]: `%${cleanQuery}%`
+                    }
+                }
+            );
+        }
+
+        try {
+            const { count, rows: members } = await Member.findAndCountAll({
+                where: {
+                    [Op.or]: searchConditions
+                },
+                attributes: [
+                    'id', 'memberCode', 'fullName', 'email', 'phone', 
+                    'dateOfBirth', 'gender', 'address', 'isActive', 'createdAt'
+                ],
+                order: [['createdAt', 'DESC']],
+                limit: cleanLimit,
+                offset: offset,
+                distinct: true
+            });
+
+            // Manually fetch membership history for each member to avoid complex include issues
+            for (const member of members) {
+                try {
+                    const membershipHistory = await MembershipHistory.findOne({
+                        where: { memberId: member.id },
+                        include: [{
+                            model: Membership,
+                            as: 'membership'
+                        }],
+                        order: [['endDate', 'DESC']],
+                        limit: 1
+                    });
+                    
+                    member.dataValues.membershipHistory = membershipHistory ? [membershipHistory] : [];
+                } catch (err) {
+                    member.dataValues.membershipHistory = [];
+                }
+            }
+
+            const totalPages = Math.ceil(count / cleanLimit);
+
+            return {
+                members,
+                pagination: {
+                    total: count,
+                    page: cleanPage,
+                    limit: cleanLimit,
+                    totalPages,
+                    hasNext: cleanPage < totalPages,
+                    hasPrev: cleanPage > 1
+                }
+            };
+        } catch (error) {
+            console.error('Search members error:', error);
+            throw new Error(`Database search failed: ${error.message}`);
+        }
+    }
 }
 
 module.exports = new MemberService();

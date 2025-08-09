@@ -21,6 +21,23 @@ router.get('/',
     memberController.getAll
 );
 
+// Simple test endpoint first
+router.get('/search-test', (req, res) => {
+    console.log('=== SEARCH TEST ENDPOINT ===');
+    console.log('Query params:', req.query);
+    res.json({
+        success: true,
+        message: 'Search test endpoint working',
+        query: req.query
+    });
+});
+
+router.get('/search',
+    authenticate,
+    authorize('admin', 'trainer'),
+    memberController.searchMembers
+);
+
 router.get('/statistics',
     authenticate,
     authorize('admin'),

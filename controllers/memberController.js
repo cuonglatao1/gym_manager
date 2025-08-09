@@ -153,6 +153,86 @@ const memberController = {
         });
     }),
 
+    // GET /api/members/search?q=keyword&field=name,email,phone
+    searchMembers: asyncHandler(async (req, res) => {
+        console.log('=== SEARCH REQUEST START ===');
+        console.log('Full URL:', req.originalUrl);
+        console.log('Query params:', req.query);
+        console.log('Headers:', req.headers);
+        
+        try {
+            const { q, field = 'name,email,phone', page = 1, limit = 10 } = req.query;
+            
+            console.log('Parsed params:', { q, field, page, limit });
+            
+            if (!q || typeof q !== 'string' || q.trim().length === 0) {
+                console.log('Validation failed: empty query');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Từ khóa tìm kiếm không được để trống',
+                    error: 'EMPTY_QUERY'
+                });
+            }
+
+            if (q.trim().length < 2) {
+                console.log('Validation failed: query too short');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Từ khóa tìm kiếm phải có ít nhất 2 ký tự',
+                    error: 'QUERY_TOO_SHORT'
+                });
+            }
+
+            console.log('Starting member search...');
+            
+            // Simple search first - get all members and filter
+            const { Member, MembershipHistory, Membership } = require('../models');
+            const { Op } = require('sequelize');
+            
+            const cleanQuery = q.trim();
+            const searchConditions = [
+                { fullName: { [Op.iLike]: `%${cleanQuery}%` } },
+                { email: { [Op.iLike]: `%${cleanQuery}%` } },
+                { phone: { [Op.like]: `%${cleanQuery}%` } }
+            ];
+
+            const members = await Member.findAll({
+                where: { [Op.or]: searchConditions },
+                attributes: ['id', 'memberCode', 'fullName', 'email', 'phone', 'isActive', 'createdAt'],
+                limit: 20,
+                order: [['createdAt', 'DESC']]
+            });
+
+            console.log('Found members:', members.length);
+
+            res.json({
+                success: true,
+                data: members,
+                pagination: {
+                    total: members.length,
+                    page: 1,
+                    limit: 20,
+                    totalPages: 1,
+                    hasNext: false,
+                    hasPrev: false
+                },
+                message: `Tìm thấy ${members.length} kết quả cho "${cleanQuery}"`
+            });
+            
+        } catch (error) {
+            console.error('Search controller error:', error);
+            console.error('Error stack:', error.stack);
+            
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Lỗi tìm kiếm member',
+                error: error.toString()
+            });
+        }
+        
+        console.log('=== SEARCH REQUEST END ===');
+    }),
+
     // GET /api/members/statistics - Get member statistics (Admin only)
     getStatistics: asyncHandler(async (req, res) => {
         const statistics = await memberService.getMemberStatistics();

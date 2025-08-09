@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Manager Demo - Trang Chủ</title>
+    <style>
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+        }
+
+        .header h1 { 
+            font-size: 28px; 
+            margin-bottom: 15px; 
+        }
+
+        .header p { 
+            opacity: 0.9; 
+            font-size: 16px; 
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .demo-options {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .demo-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border-left: 4px solid #667eea;
+            text-align: left;
+        }
+
+        .demo-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .demo-card p {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: transform 0.2s;
+            text-decoration: none;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .features {
+            text-align: left;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #eee;
+        }
+
+        .features h4 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .features li {
+            padding: 5px 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .features li::before {
+            content: "✅ ";
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏋️ Gym Manager Demo</h1>
+            <p>Hệ thống quản lý phòng gym hoàn chỉnh</p>
+        </div>
+
+        <div class="content">
+            <div class="demo-options">
+                <div class="demo-card">
+                    <h3>🔐 Đăng nhập / Đăng ký</h3>
+                    <p>Truy cập hệ thống với tài khoản Admin, Trainer hoặc Member</p>
+                    <a href="auth.html" class="btn">Vào trang Authentication</a>
+                </div>
+
+                <div class="demo-card">
+                    <h3>📊 Dashboard Demo</h3>
+                    <p>Xem trực tiếp dashboard quản lý lớp học và thành viên</p>
+                    <a href="dashboard.html" class="btn">Vào Dashboard</a>
+                </div>
+            </div>
+
+            <div class="features">
+                <h4>🚀 Tính năng hệ thống:</h4>
+                <ul>
+                    <li>Authentication với JWT & Role-based access</li>
+                    <li>Quản lý thành viên & gói membership</li>
+                    <li>Quản lý lớp học & lịch tập</li>
+                    <li>Đăng ký lớp học & check-in/check-out</li>
+                    <li>Analytics & reports</li>
+                    <li>API demo với tất cả endpoints</li>
+                </ul>
+            </div>
+
+            <div class="features" style="border-top: none; padding-top: 20px; margin-top: 20px;">
+                <h4>👤 Tài khoản demo:</h4>
+                <ul style="font-size: 13px;">
+                    <li><strong>Admin:</strong> admin@gym.com / admin123</li>
+                    <li><strong>Member:</strong> Đăng ký mới hoặc dùng API demo</li>
+                    <li><strong>Trainer:</strong> Đăng ký với role trainer</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
