@@ -346,7 +346,20 @@ const classController = {
     // POST /api/classes/schedules/:id/enroll
     enrollInClass: asyncHandler(async (req, res) => {
         const { id: scheduleId } = req.params;
-        const userId = req.user.userId;
+        
+        console.log('🔍 Enroll Controller Debug:');
+        console.log('📋 req.user:', req.user);
+        console.log('🆔 scheduleId:', scheduleId);
+        
+        const userId = req.user.userId || req.user.id;
+        console.log('👤 Using userId:', userId);
+        
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Không tìm thấy thông tin người dùng trong token'
+            });
+        }
 
         const enrollment = await classService.enrollInClass(scheduleId, userId);
 

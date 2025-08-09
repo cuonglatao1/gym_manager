@@ -22,12 +22,19 @@ const validate = (schema) => {
 
 // Simple ID validation
 const validateId = (req, res, next) => {
-    const id = parseInt(req.params.id);
-    if (!id || id <= 0) {
-        throw new ValidationError('ID phải là số dương');
+    try {
+        const id = parseInt(req.params.id);
+        if (!id || isNaN(id) || id <= 0) {
+            throw new ValidationError('ID phải là số dương');
+        }
+        req.params.id = id;
+        next();
+    } catch (error) {
+        console.error('validateId error:', error);
+        console.error('req.params:', req.params);
+        console.error('req.url:', req.url);
+        throw new ValidationError('ID không hợp lệ');
     }
-    req.params.id = id;
-    next();
 };
 
 // Member validation schemas (simplified)

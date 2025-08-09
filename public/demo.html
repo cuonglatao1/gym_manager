@@ -1,0 +1,2287 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Manager - Demo Dashboard</title>
+    <style>
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 { 
+            font-size: 32px; 
+            margin-bottom: 10px; 
+        }
+
+        .header p { 
+            opacity: 0.9; 
+            font-size: 16px; 
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-content {
+            padding: 30px;
+            min-height: 500px;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: transform 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-purple {
+            background: #6f42c1;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-primary { background: #d1ecf1; color: #0c5460; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+
+        .success {
+            color: #155724;
+            background: #d4edda;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+
+        .demo-section {
+            margin-bottom: 30px;
+        }
+
+        .demo-section h4 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .api-response {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏋️ Gym Manager Demo Dashboard</h1>
+            <p>Complete Class Management System Demo</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('overview')">📊 Overview</button>
+            <button class="nav-tab" onclick="showTab('classes')">🏃 Classes</button>
+            <button class="nav-tab" onclick="showTab('schedules')">📅 Schedules</button>
+            <button class="nav-tab" onclick="showTab('members')">👥 Members</button>
+            <button class="nav-tab" onclick="showTab('analytics')">📈 Analytics</button>
+            <button class="nav-tab" onclick="showTab('api-demo')">🔧 API Demo</button>
+            <button class="nav-tab" onclick="logout()" style="background: #dc3545; color: white;">🚪 Đăng xuất</button>
+        </div>
+
+        <div class="tab-content">
+            <!-- Overview Tab -->
+            <div id="overview" class="tab-pane active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalClasses">-</div>
+                        <div class="stat-label">Total Classes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalSchedules">-</div>
+                        <div class="stat-label">Active Schedules</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalEnrollments">-</div>
+                        <div class="stat-label">Total Enrollments</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="attendanceRate">-</div>
+                        <div class="stat-label">Attendance Rate</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🚀 System Features</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                        <div>
+                            <h4>✅ Authentication System</h4>
+                            <ul>
+                                <li>JWT Token-based auth</li>
+                                <li>Role-based permissions</li>
+                                <li>Admin, Trainer, Member roles</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>✅ Class Management</h4>
+                            <ul>
+                                <li>Class types (Yoga, HIIT, Boxing)</li>
+                                <li>Trainer assignment</li>
+                                <li>Schedule management</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>✅ Enrollment System</h4>
+                            <ul>
+                                <li>Member registration</li>
+                                <li>Check-in/Check-out</li>
+                                <li>Personal dashboards</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>✅ Analytics & Reports</h4>
+                            <ul>
+                                <li>Popular classes</li>
+                                <li>Attendance statistics</li>
+                                <li>Revenue tracking</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Classes Tab -->
+            <div id="classes" class="tab-pane">
+                <div class="card">
+                    <h3>📚 Class Types</h3>
+                    <button class="btn" onclick="loadClassTypes()">Load Class Types</button>
+                    <div id="classTypesContainer" class="loading">Click "Load Class Types" to see available class types</div>
+                </div>
+
+                <div class="card">
+                    <h3>🏃 All Classes</h3>
+                    <button class="btn" onclick="loadClasses()">Load Classes</button>
+                    <div id="classesContainer" class="loading">Click "Load Classes" to see all classes</div>
+                </div>
+            </div>
+
+            <!-- Schedules Tab -->
+            <div id="schedules" class="tab-pane">
+                <div class="card">
+                    <h3>📅 Lịch Tập Hôm Nay</h3>
+                    <button class="btn" onclick="testApiConnection()">🔍 Kiểm Tra API</button>
+                    <button class="btn" onclick="loadSchedules()">Tải Lịch Từ API</button>
+                    <button class="btn btn-secondary" onclick="showDemoSchedules()">Xem Lịch Demo</button>
+                    <button class="btn btn-success" onclick="createSampleSchedules()">Tạo Lịch Mẫu</button>
+                    <div id="schedulesContainer" class="loading">Click "Xem Lịch Demo" để xem lịch tập mẫu</div>
+                </div>
+
+                <div class="card">
+                    <h3>📊 Lịch Tuần Này</h3>
+                    <div id="weeklySchedule">
+                        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 20px;">
+                            <div style="text-align: center; font-weight: bold; padding: 10px; background: #f8f9fa; border-radius: 5px;">Thứ 2</div>
+                            <div style="text-align: center; font-weight: bold; padding: 10px; background: #f8f9fa; border-radius: 5px;">Thứ 3</div>
+                            <div style="text-align: center; font-weight: bold; padding: 10px; background: #f8f9fa; border-radius: 5px;">Thứ 4</div>
+                            <div style="text-align: center; font-weight: bold; padding: 10px; background: #f8f9fa; border-radius: 5px;">Thứ 5</div>
+                            <div style="text-align: center; font-weight: bold; padding: 10px; background: #f8f9fa; border-radius: 5px;">Thứ 6</div>
+                            <div style="text-align: center; font-weight: bold; padding: 10px; background: #f8f9fa; border-radius: 5px;">Thứ 7</div>
+                            <div style="text-align: center; font-weight: bold; padding: 10px; background: #f8f9fa; border-radius: 5px;">Chủ Nhật</div>
+                            
+                            <!-- Monday -->
+                            <div style="padding: 10px; background: white; border-radius: 5px; border: 1px solid #dee2e6;">
+                                <div style="font-size: 12px; color: #667eea; font-weight: bold;">6:00 - 7:00</div>
+                                <div style="font-size: 11px; margin-top: 5px;">Morning Yoga</div>
+                                <div style="font-size: 10px; color: #666;">PT: Mai Anh</div>
+                            </div>
+                            
+                            <!-- Tuesday -->
+                            <div style="padding: 10px; background: white; border-radius: 5px; border: 1px solid #dee2e6;">
+                                <div style="font-size: 12px; color: #28a745; font-weight: bold;">7:00 - 8:00</div>
+                                <div style="font-size: 11px; margin-top: 5px;">HIIT Training</div>
+                                <div style="font-size: 10px; color: #666;">PT: Minh Tuấn</div>
+                            </div>
+                            
+                            <!-- Wednesday -->
+                            <div style="padding: 10px; background: white; border-radius: 5px; border: 1px solid #dee2e6;">
+                                <div style="font-size: 12px; color: #dc3545; font-weight: bold;">6:30 - 7:30</div>
+                                <div style="font-size: 11px; margin-top: 5px;">Boxing Class</div>
+                                <div style="font-size: 10px; color: #666;">PT: Hoàng Nam</div>
+                            </div>
+                            
+                            <!-- Thursday -->
+                            <div style="padding: 10px; background: white; border-radius: 5px; border: 1px solid #dee2e6;">
+                                <div style="font-size: 12px; color: #667eea; font-weight: bold;">6:00 - 7:00</div>
+                                <div style="font-size: 11px; margin-top: 5px;">Pilates</div>
+                                <div style="font-size: 10px; color: #666;">PT: Thu Hà</div>
+                            </div>
+                            
+                            <!-- Friday -->
+                            <div style="padding: 10px; background: white; border-radius: 5px; border: 1px solid #dee2e6;">
+                                <div style="font-size: 12px; color: #ffc107; font-weight: bold;">7:00 - 8:30</div>
+                                <div style="font-size: 11px; margin-top: 5px;">Zumba Dance</div>
+                                <div style="font-size: 10px; color: #666;">PT: Linh Chi</div>
+                            </div>
+                            
+                            <!-- Saturday -->
+                            <div style="padding: 10px; background: white; border-radius: 5px; border: 1px solid #dee2e6;">
+                                <div style="font-size: 12px; color: #28a745; font-weight: bold;">8:00 - 9:30</div>
+                                <div style="font-size: 11px; margin-top: 5px;">CrossFit</div>
+                                <div style="font-size: 10px; color: #666;">PT: Đức Anh</div>
+                            </div>
+                            
+                            <!-- Sunday -->
+                            <div style="padding: 10px; background: white; border-radius: 5px; border: 1px solid #dee2e6;">
+                                <div style="font-size: 12px; color: #667eea; font-weight: bold;">9:00 - 10:00</div>
+                                <div style="font-size: 11px; margin-top: 5px;">Yoga Flow</div>
+                                <div style="font-size: 10px; color: #666;">PT: Mai Anh</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Members Tab -->
+            <div id="members" class="tab-pane">
+                <div class="card">
+                    <h3>👥 Member Management</h3>
+                    <button class="btn" onclick="loadMembers()">Load Members</button>
+                    <button class="btn btn-secondary" onclick="loadMemberStats()">Member Statistics</button>
+                    <div id="membersContainer" class="loading">Click "Load Members" to see gym members</div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div id="analytics" class="tab-pane">
+                <div class="card">
+                    <h3>📊 Popular Classes</h3>
+                    <button class="btn" onclick="loadPopularClasses()">Load Popular Classes</button>
+                    <div id="popularClassesContainer" class="loading">Click to load popular classes analytics</div>
+                </div>
+
+                <div class="card">
+                    <h3>📈 Attendance Statistics</h3>
+                    <button class="btn" onclick="loadAttendanceStats()">Load Attendance Stats</button>
+                    <div id="attendanceStatsContainer" class="loading">Click to load attendance statistics</div>
+                </div>
+            </div>
+
+            <!-- API Demo Tab -->
+            <div id="api-demo" class="tab-pane">
+                <div class="demo-section">
+                    <h4>🔐 Authentication Demo</h4>
+                    <button class="btn" onclick="demoLogin()">Demo Login as Admin</button>
+                    <button class="btn btn-secondary" onclick="demoLoginMember()">Login as Member</button>
+                    <button class="btn btn-purple" onclick="demoLoginTrainer()">Login as Trainer</button>
+                    <button class="btn btn-warning" onclick="debugUsers()">🔍 Debug Users</button>
+                    <button class="btn btn-info" onclick="debugClasses()">🔍 Debug Classes</button>
+                    <button class="btn btn-success" onclick="forceCreateMembers()">👥 Force Create Members</button>
+                    <button class="btn btn-primary" onclick="createTodaySchedules()">📅 Create Tomorrow's Schedules</button>
+                    <div id="authDemo"></div>
+                </div>
+
+                <div class="demo-section">
+                    <h4>🏃 Class Management Demo</h4>
+                    <button class="btn" onclick="demoCreateClassType()">Create Class Type</button>
+                    <button class="btn btn-secondary" onclick="demoCreateClass()">Create Class</button>
+                    <div id="classDemo"></div>
+                </div>
+
+                <div class="demo-section">
+                    <h4>📅 Schedule Demo</h4>
+                    <button class="btn" onclick="testScheduleAPIs()">Test All Schedule APIs</button>
+                    <button class="btn btn-secondary" onclick="loadAllSchedulesDemo()">View All Schedules</button>
+                    <button class="btn btn-success" onclick="demoCreateSchedule()">Create Schedule</button>
+                    <button class="btn" onclick="demoEnrollment()">Member Enrollment</button>
+                    <div id="scheduleDemo"></div>
+                </div>
+
+                <div class="demo-section">
+                    <h4>📊 Live API Response</h4>
+                    <div id="apiResponse" class="api-response">API responses will appear here...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000/api';
+        let authToken = null;
+
+        // Tab functionality
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Utility functions
+        function showLoading(containerId) {
+            document.getElementById(containerId).innerHTML = '<div class="loading">Loading...</div>';
+        }
+
+        function showError(containerId, message) {
+            document.getElementById(containerId).innerHTML = `<div class="error">Error: ${message}</div>`;
+        }
+
+        function showSuccess(containerId, message) {
+            document.getElementById(containerId).innerHTML = `<div class="success">${message}</div>`;
+        }
+
+        function displayApiResponse(data) {
+            document.getElementById('apiResponse').innerHTML = 
+                `<strong>Response:</strong><br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+
+        // API calls
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+                };
+
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    headers,
+                    ...options
+                });
+
+                const data = await response.json();
+                displayApiResponse(data);
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'API call failed');
+                }
+                
+                return data;
+            } catch (error) {
+                displayApiResponse({ error: error.message });
+                throw error;
+            }
+        }
+
+        // Debug function
+        async function debugUsers() {
+            try {
+                const response = await apiCall('/debug/users');
+                
+                if (response.success) {
+                    const users = response.data.users;
+                    let html = '<div class="success">🔍 Debug Users:<br>';
+                    
+                    users.forEach(user => {
+                        html += `👤 ${user.email} (${user.role}) - Member: ${user.member ? user.member.memberCode : 'NO MEMBER'}<br>`;
+                    });
+                    
+                    html += `<br>Total: ${users.length} users</div>`;
+                    document.getElementById('authDemo').innerHTML = html;
+                } else {
+                    document.getElementById('authDemo').innerHTML = `
+                        <div class="error">❌ Debug failed: ${response.message}</div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('authDemo').innerHTML = `
+                    <div class="error">❌ Debug error: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Debug classes function
+        async function debugClasses() {
+            try {
+                const response = await apiCall('/debug/classes');
+                
+                if (response.success) {
+                    const data = response.data;
+                    let html = '<div class="success">🔍 Debug Classes:<br>';
+                    
+                    html += `📊 Total Classes: ${data.totalClasses}<br>`;
+                    html += `📅 Total Schedules: ${data.totalSchedules}<br><br>`;
+                    
+                    if (data.classes.length > 0) {
+                        html += '<strong>Classes:</strong><br>';
+                        data.classes.forEach(cls => {
+                            html += `🏃 ${cls.name} (ID: ${cls.id}) - Trainer: ${cls.trainerId} - Room: ${cls.room}<br>`;
+                        });
+                    }
+                    
+                    if (data.recentSchedules.length > 0) {
+                        html += '<br><strong>Recent Schedules:</strong><br>';
+                        data.recentSchedules.forEach(schedule => {
+                            html += `📅 Class ${schedule.classId} - ${schedule.date} at ${new Date(schedule.startTime).toLocaleTimeString()}<br>`;
+                        });
+                    }
+                    
+                    html += '</div>';
+                    document.getElementById('authDemo').innerHTML = html;
+                } else {
+                    document.getElementById('authDemo').innerHTML = `
+                        <div class="error">❌ Debug failed: ${response.message}</div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('authDemo').innerHTML = `
+                    <div class="error">❌ Debug error: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Force create members function
+        async function forceCreateMembers() {
+            try {
+                document.getElementById('authDemo').innerHTML = '<div class="info">🔄 Creating members...</div>';
+                
+                const response = await apiCall('/debug/create-members', {
+                    method: 'POST'
+                });
+                
+                if (response.success) {
+                    document.getElementById('authDemo').innerHTML = `
+                        <div class="success">
+                            ✅ ${response.message}<br>
+                            <small>Check server console for details. Click "Debug Users" to verify.</small>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('authDemo').innerHTML = `
+                        <div class="error">❌ Failed: ${response.message}</div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('authDemo').innerHTML = `
+                    <div class="error">❌ Error: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Create today's schedules for testing
+        async function createTodaySchedules() {
+            try {
+                if (!authToken) {
+                    throw new Error('Please login first');
+                }
+
+                document.getElementById('authDemo').innerHTML = '<div class="info">🔄 Creating today\'s schedules...</div>';
+
+                // Get available classes
+                const classesResponse = await apiCall('/classes');
+                if (!classesResponse.success || !classesResponse.data.classes || classesResponse.data.classes.length === 0) {
+                    throw new Error('No classes available.');
+                }
+
+                // Get current user info
+                const userResponse = await apiCall('/auth/me');
+                if (!userResponse.success) {
+                    throw new Error('Cannot get current user info.');
+                }
+
+                const classes = classesResponse.data.classes.slice(0, 3); // Use first 3 classes
+                const results = [];
+                let created = 0;
+
+                for (let i = 0; i < classes.length; i++) {
+                    try {
+                        const cls = classes[i];
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1); // Tomorrow
+                        
+                        // Create schedule for tomorrow morning/afternoon
+                        const startTime = new Date(tomorrow);
+                        startTime.setHours(9 + i * 2, 0, 0, 0); // 9AM, 11AM, 1PM
+                        
+                        const endTime = new Date(startTime);
+                        endTime.setMinutes(startTime.getMinutes() + (cls.duration || 60));
+
+                        const scheduleData = {
+                            date: tomorrow.toISOString().split('T')[0],
+                            startTime: startTime.toISOString(),
+                            endTime: endTime.toISOString(),
+                            trainerId: userResponse.data.id,
+                            maxParticipants: cls.maxParticipants || 20,
+                            room: cls.room || 'Demo Studio',
+                            notes: `Tomorrow's demo schedule - ${cls.name}`
+                        };
+
+                        const response = await apiCall(`/classes/${cls.id}/schedules`, {
+                            method: 'POST',
+                            body: JSON.stringify(scheduleData)
+                        });
+
+                        if (response.success) {
+                            created++;
+                            results.push(`✅ ${cls.name} at ${startTime.getHours()}:00 (tomorrow)`);
+                        }
+                    } catch (error) {
+                        results.push(`❌ Failed to create schedule: ${error.message}`);
+                    }
+                }
+
+                document.getElementById('authDemo').innerHTML = `
+                    <div class="success">
+                        ✅ Created ${created}/${classes.length} schedules for tomorrow<br>
+                        ${results.join('<br>')}
+                        <br><small>Now you can test enrollment!</small>
+                    </div>
+                `;
+
+            } catch (error) {
+                document.getElementById('authDemo').innerHTML = `
+                    <div class="error">❌ Error: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Authentication
+        async function demoLogin() {
+            try {
+                const loginData = {
+                    email: 'admin@gym.com',
+                    password: 'admin123'
+                };
+
+                const response = await apiCall('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify(loginData)
+                });
+
+                if (response.success) {
+                    authToken = response.data.accessToken;
+                    document.getElementById('authDemo').innerHTML = `
+                        <div class="success">
+                            ✅ Admin Login successful! <br>
+                            Role: ${response.data.user.role} <br>
+                            User: ${response.data.user.fullName}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('authDemo').innerHTML = `
+                    <div class="error">❌ Admin Login failed: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Member Authentication
+        async function demoLoginMember() {
+            try {
+                const loginData = {
+                    email: 'member1@gmail.com',
+                    password: 'member123'
+                };
+
+                const response = await apiCall('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify(loginData)
+                });
+
+                if (response.success) {
+                    authToken = response.data.accessToken;
+                    document.getElementById('authDemo').innerHTML = `
+                        <div class="success">
+                            ✅ Member Login successful! <br>
+                            Role: ${response.data.user.role} <br>
+                            User: ${response.data.user.fullName} <br>
+                            <small>Now you can test enrollment features!</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('authDemo').innerHTML = `
+                    <div class="error">❌ Member Login failed: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Trainer Authentication
+        async function demoLoginTrainer() {
+            try {
+                const loginData = {
+                    email: 'trainer1@gym.com',
+                    password: 'trainer123'
+                };
+
+                const response = await apiCall('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify(loginData)
+                });
+
+                if (response.success) {
+                    authToken = response.data.accessToken;
+                    document.getElementById('authDemo').innerHTML = `
+                        <div class="success">
+                            ✅ Trainer Login successful! <br>
+                            Role: ${response.data.user.role} <br>
+                            User: ${response.data.user.fullName} <br>
+                            <small>Now you can create classes and schedules!</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('authDemo').innerHTML = `
+                    <div class="error">❌ Trainer Login failed: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Load overview stats
+        async function loadOverviewStats() {
+            try {
+                // Get attendance stats for overview
+                const stats = await apiCall('/classes/analytics/attendance');
+                if (stats.success) {
+                    document.getElementById('totalSchedules').textContent = stats.data.totalSchedules || 0;
+                    document.getElementById('totalEnrollments').textContent = stats.data.totalEnrollments || 0;
+                    document.getElementById('attendanceRate').textContent = `${stats.data.attendanceRate || 0}%`;
+                }
+            } catch (error) {
+                console.log('Stats not available yet');
+            }
+
+            try {
+                // Get class types count
+                const classTypes = await apiCall('/classes/types');
+                if (classTypes.success) {
+                    document.getElementById('totalClasses').textContent = classTypes.data.length || 0;
+                }
+            } catch (error) {
+                console.log('Class types not available yet');
+            }
+        }
+
+        // Load class types
+        async function loadClassTypes() {
+            showLoading('classTypesContainer');
+            try {
+                const response = await apiCall('/classes/types');
+                if (response.success) {
+                    const html = `
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Duration</th>
+                                    <th>Max Participants</th>
+                                    <th>Difficulty</th>
+                                    <th>Equipment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${response.data.map(type => `
+                                    <tr>
+                                        <td><strong>${type.name}</strong></td>
+                                        <td>${type.duration} min</td>
+                                        <td>${type.maxParticipants}</td>
+                                        <td><span class="badge badge-${type.difficulty === 'beginner' ? 'success' : type.difficulty === 'intermediate' ? 'warning' : 'primary'}">${type.difficulty}</span></td>
+                                        <td>${Array.isArray(type.equipment) ? type.equipment.join(', ') : 'N/A'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                    document.getElementById('classTypesContainer').innerHTML = html;
+                }
+            } catch (error) {
+                showError('classTypesContainer', error.message);
+            }
+        }
+
+        // Load classes
+        async function loadClasses() {
+            showLoading('classesContainer');
+            try {
+                const response = await apiCall('/classes');
+                if (response.success) {
+                    const html = `
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Class Name</th>
+                                    <th>Type</th>
+                                    <th>Trainer</th>
+                                    <th>Duration</th>
+                                    <th>Max Participants</th>
+                                    <th>Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${response.data.classes.map(cls => `
+                                    <tr>
+                                        <td><strong>${cls.name}</strong></td>
+                                        <td>${cls.classType ? cls.classType.name : 'N/A'}</td>
+                                        <td>${cls.trainer ? cls.trainer.fullName : 'N/A'}</td>
+                                        <td>${cls.duration} min</td>
+                                        <td>${cls.maxParticipants}</td>
+                                        <td>${cls.price.toLocaleString()} VND</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        <p><strong>Total Classes:</strong> ${response.data.pagination.totalItems}</p>
+                    `;
+                    document.getElementById('classesContainer').innerHTML = html;
+                }
+            } catch (error) {
+                showError('classesContainer', error.message);
+            }
+        }
+
+        // Load schedules - fixed version with better error handling
+        async function loadSchedules() {
+            showLoading('schedulesContainer');
+            try {
+                console.log('🔄 Loading schedules from API...');
+                console.log('API Base URL:', API_BASE_URL);
+                console.log('Auth Token:', authToken ? 'Present' : 'Missing');
+                
+                // Try direct fetch first to diagnose issues
+                const response = await fetch(`${API_BASE_URL}/classes/schedules`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+                    }
+                });
+
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response headers:', response.headers);
+
+                // Check if server is responding at all
+                if (!response) {
+                    throw new Error('Không thể kết nối đến server. Kiểm tra server có chạy trên localhost:3000 không?');
+                }
+
+                const contentType = response.headers.get('content-type');
+                console.log('📄 Content-Type:', contentType);
+
+                // Check if response is HTML (server error page)
+                if (!contentType || !contentType.includes('application/json')) {
+                    const textResponse = await response.text();
+                    console.log('❌ Non-JSON response received:', textResponse.substring(0, 500));
+                    
+                    if (textResponse.includes('Cannot GET')) {
+                        throw new Error('API endpoint không tồn tại. Kiểm tra server có route /api/classes/schedules không?');
+                    } else if (textResponse.includes('<html')) {
+                        throw new Error('Server trả về HTML thay vì JSON. Server có thể chưa chạy hoặc có lỗi.');
+                    } else {
+                        throw new Error(`Server trả về ${contentType || 'unknown content'} thay vì JSON`);
+                    }
+                }
+
+                let data;
+                try {
+                    data = await response.json();
+                    console.log('📦 API Response data:', data);
+                } catch (jsonError) {
+                    console.error('❌ JSON parsing error:', jsonError);
+                    throw new Error('Server trả về JSON không hợp lệ');
+                }
+
+                // Check for API errors
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('API endpoint /classes/schedules không tìm thấy (404)');
+                    } else if (response.status === 401) {
+                        throw new Error('Chưa đăng nhập. Vào tab API Demo để login trước.');
+                    } else if (response.status === 403) {
+                        throw new Error('Không có quyền truy cập. Kiểm tra role của user.');
+                    } else if (response.status === 500) {
+                        throw new Error(`Lỗi server (500): ${data.message || 'Internal server error'}`);
+                    } else {
+                        throw new Error(`HTTP ${response.status}: ${data.message || 'Unknown error'}`);
+                    }
+                }
+
+                // Handle successful response
+                if (data.success) {
+                    let schedules = [];
+                    let pagination = null;
+                    
+                    // Handle different response formats
+                    if (Array.isArray(data.data)) {
+                        schedules = data.data;
+                        console.log('📋 Found schedules (array format):', schedules.length);
+                    } else if (data.data && data.data.schedules) {
+                        schedules = data.data.schedules;
+                        pagination = data.data.pagination;
+                        console.log('📋 Found schedules (paginated format):', schedules.length);
+                    } else if (data.data) {
+                        // Maybe data is directly the schedules
+                        if (data.data.length !== undefined) {
+                            schedules = [data.data];
+                        } else {
+                            schedules = [];
+                        }
+                        console.log('📋 Found schedules (other format):', schedules.length);
+                    } else {
+                        schedules = [];
+                        console.log('📋 No schedules found in response');
+                    }
+
+                    if (schedules.length === 0) {
+                        document.getElementById('schedulesContainer').innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: #666;">
+                                <h4>📅 Chưa có lịch tập nào</h4>
+                                <p>API kết nối thành công nhưng chưa có lịch tập nào được tạo.</p>
+                                <div style="margin-top: 20px;">
+                                    <button class="btn btn-success" onclick="createSampleSchedules()">Tạo Lịch Mẫu</button>
+                                    <button class="btn btn-secondary" onclick="showDemoSchedules()">Xem Lịch Demo</button>
+                                    <button class="btn" onclick="testApiConnection()">Kiểm Tra API</button>
+                                </div>
+                                <div style="margin-top: 15px; padding: 15px; background: #d1ecf1; border-radius: 8px; border-left: 4px solid #0c5460;">
+                                    <p><strong>ℹ️ API Response:</strong></p>
+                                    <pre style="font-size: 12px; color: #0c5460;">${JSON.stringify(data, null, 2)}</pre>
+                                </div>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    // Build HTML table
+                    const html = `
+                        <div class="success" style="margin-bottom: 20px;">
+                            ✅ Tải thành công ${schedules.length} lịch tập từ API
+                        </div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Lớp Tập</th>
+                                    <th>Ngày</th>
+                                    <th>Thời Gian</th>
+                                    <th>Phòng</th>
+                                    <th>Học Viên</th>
+                                    <th>Trạng Thái</th>
+                                    <th>Hành Động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${schedules.map(schedule => {
+                                    // Handle different time formats safely
+                                    let startTime = 'N/A', endTime = 'N/A';
+                                    try {
+                                        if (schedule.startTime) {
+                                            const start = new Date(schedule.startTime);
+                                            if (!isNaN(start.getTime())) {
+                                                startTime = start.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                                            }
+                                        }
+                                        if (schedule.endTime) {
+                                            const end = new Date(schedule.endTime);
+                                            if (!isNaN(end.getTime())) {
+                                                endTime = end.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                                            }
+                                        }
+                                    } catch (e) {
+                                        console.log('⚠️ Time parsing error:', e);
+                                    }
+                                    
+                                    // Get class and trainer names safely
+                                    const className = schedule.Class?.name || schedule.class?.name || 'N/A';
+                                    const trainerName = schedule.Trainer?.fullName || schedule.trainer?.fullName || 'N/A';
+                                    
+                                    return `
+                                        <tr>
+                                            <td><strong>#${schedule.id || 'N/A'}</strong></td>
+                                            <td><strong>${className}</strong></td>
+                                            <td>${schedule.date || 'N/A'}</td>
+                                            <td>${startTime} - ${endTime}</td>
+                                            <td>${schedule.room || 'N/A'}</td>
+                                            <td>${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0}</td>
+                                            <td><span class="badge badge-${schedule.status === 'scheduled' ? 'primary' : schedule.status === 'completed' ? 'success' : 'warning'}">${schedule.status || 'N/A'}</span></td>
+                                            <td>
+                                                <button class="btn" style="font-size: 12px; padding: 5px 10px;" onclick="viewScheduleDetail(${schedule.id})">Chi tiết</button>
+                                                ${schedule.status === 'scheduled' ? `<button class="btn btn-success" style="font-size: 12px; padding: 5px 10px;" onclick="enrollInSchedule(${schedule.id})">Đăng ký</button>` : ''}
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                        ${pagination ? `
+                            <div style="margin-top: 15px; padding: 15px; background: #e8f5e8; border-radius: 8px; border-left: 4px solid #28a745;">
+                                <p><strong>📊 Thống kê:</strong></p>
+                                <ul style="margin-top: 10px; padding-left: 20px;">
+                                    <li>Tổng số lịch: <strong>${pagination.totalItems}</strong></li>
+                                    <li>Trang hiện tại: <strong>${pagination.currentPage}/${pagination.totalPages}</strong></li>
+                                    <li>Lịch trên trang: <strong>${schedules.length}</strong></li>
+                                </ul>
+                            </div>
+                        ` : `
+                            <div style="margin-top: 15px; padding: 15px; background: #e8f5e8; border-radius: 8px; border-left: 4px solid #28a745;">
+                                <p><strong>📊 Thống kê:</strong></p>
+                                <p>Tổng số lịch hiển thị: <strong>${schedules.length}</strong></p>
+                            </div>
+                        `}
+                        <div style="margin-top: 15px;">
+                            <button class="btn" onclick="loadSchedulesToday()">Lịch Hôm Nay</button>
+                            <button class="btn btn-secondary" onclick="loadSchedulesThisWeek()">Lịch Tuần Này</button>
+                            <button class="btn btn-success" onclick="createSampleSchedules()">Tạo Lịch Mẫu</button>
+                        </div>
+                    `;
+                    document.getElementById('schedulesContainer').innerHTML = html;
+                } else {
+                    throw new Error(`API trả về thất bại: ${data.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('❌ Error loading schedules:', error);
+                
+                // Determine error type and show appropriate message
+                let errorMessage = error.message;
+                let suggestions = [];
+                
+                if (error.message.includes('fetch')) {
+                    errorMessage = 'Không thể kết nối đến server';
+                    suggestions = [
+                        'Kiểm tra server có chạy trên localhost:3000',
+                        'Chạy lệnh: npm start hoặc node app.js',
+                        'Kiểm tra firewall hoặc antivirus'
+                    ];
+                } else if (error.message.includes('401') || error.message.includes('login')) {
+                    errorMessage = 'Chưa đăng nhập';
+                    suggestions = [
+                        'Vào tab "API Demo" và click "Demo Login as Admin"',
+                        'Kiểm tra token có hết hạn không'
+                    ];
+                } else if (error.message.includes('404')) {
+                    errorMessage = 'API endpoint không tồn tại';
+                    suggestions = [
+                        'Kiểm tra routes/classRoutes.js có tồn tại không',
+                        'Kiểm tra app.js có import classRoutes không'
+                    ];
+                }
+                
+                document.getElementById('schedulesContainer').innerHTML = `
+                    <div class="error">
+                        ❌ <strong>Lỗi tải lịch từ API:</strong> ${errorMessage}
+                        ${suggestions.length > 0 ? `
+                            <div style="margin-top: 10px;">
+                                <strong>💡 Gợi ý khắc phục:</strong>
+                                <ul style="margin-top: 5px; padding-left: 20px;">
+                                    ${suggestions.map(s => `<li>${s}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                        <div style="margin-top: 15px;">
+                            <button class="btn btn-secondary" onclick="showDemoSchedules()">Xem Lịch Demo</button>
+                            <button class="btn" onclick="loadSchedules()">Thử lại</button>
+                            <button class="btn btn-primary" onclick="testApiConnection()">Kiểm tra API</button>
+                        </div>
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer; color: #dc3545;">🔍 Chi tiết lỗi (click để mở)</summary>
+                            <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-top: 5px; font-size: 12px; overflow-x: auto;">${error.stack || error.message}</pre>
+                        </details>
+                    </div>
+                `;
+            }
+        }
+
+        // Load today's schedules
+        async function loadSchedulesToday() {
+            showLoading('schedulesContainer');
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const response = await apiCall(`/classes/schedules?date=${today}`);
+                
+                if (response.success) {
+                    const schedules = Array.isArray(response.data) ? response.data : response.data.schedules || [];
+                    
+                    if (schedules.length === 0) {
+                        document.getElementById('schedulesContainer').innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: #666;">
+                                <h4>📅 Không có lịch tập hôm nay (${today})</h4>
+                                <div style="margin-top: 20px;">
+                                    <button class="btn" onclick="loadSchedules()">Xem Tất Cả Lịch</button>
+                                    <button class="btn btn-secondary" onclick="showDemoSchedules()">Xem Lịch Demo</button>
+                                </div>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    document.getElementById('schedulesContainer').innerHTML = `
+                        <div class="success" style="margin-bottom: 20px;">
+                            ✅ Tìm thấy ${schedules.length} lịch tập hôm nay (${today})
+                        </div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Lớp Tập</th>
+                                    <th>Thời Gian</th>
+                                    <th>Phòng</th>
+                                    <th>Huấn Luyện Viên</th>
+                                    <th>Học Viên</th>
+                                    <th>Trạng Thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${schedules.map(schedule => {
+                                    const startTime = schedule.startTime ? new Date(schedule.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                                    const endTime = schedule.endTime ? new Date(schedule.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                                    return `
+                                        <tr>
+                                            <td><strong>${schedule.Class?.name || schedule.class?.name || 'N/A'}</strong></td>
+                                            <td>${startTime} - ${endTime}</td>
+                                            <td>${schedule.room || 'N/A'}</td>
+                                            <td>${schedule.Trainer?.fullName || schedule.trainer?.fullName || 'N/A'}</td>
+                                            <td>${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0}</td>
+                                            <td><span class="badge badge-${schedule.status === 'scheduled' ? 'primary' : 'success'}">${schedule.status || 'N/A'}</span></td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 15px;">
+                            <button class="btn" onclick="loadSchedules()">Xem Tất Cả</button>
+                            <button class="btn btn-secondary" onclick="loadSchedulesThisWeek()">Lịch Tuần Này</button>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                showError('schedulesContainer', error.message);
+            }
+        }
+
+        // Load this week's schedules
+        async function loadSchedulesThisWeek() {
+            showLoading('schedulesContainer');
+            try {
+                const today = new Date();
+                const startOfWeek = new Date(today);
+                startOfWeek.setDate(today.getDate() - today.getDay());
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                
+                const startDate = startOfWeek.toISOString().split('T')[0];
+                const endDate = endOfWeek.toISOString().split('T')[0];
+                
+                const response = await apiCall(`/classes/schedules?startDate=${startDate}&endDate=${endDate}`);
+                
+                if (response.success) {
+                    const schedules = Array.isArray(response.data) ? response.data : response.data.schedules || [];
+                    
+                    if (schedules.length === 0) {
+                        document.getElementById('schedulesContainer').innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: #666;">
+                                <h4>📅 Không có lịch tập tuần này</h4>
+                                <p>Từ ${startDate} đến ${endDate}</p>
+                                <div style="margin-top: 20px;">
+                                    <button class="btn" onclick="loadSchedules()">Xem Tất Cả Lịch</button>
+                                    <button class="btn btn-secondary" onclick="showDemoSchedules()">Xem Lịch Demo</button>
+                                </div>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    document.getElementById('schedulesContainer').innerHTML = `
+                        <div class="success" style="margin-bottom: 20px;">
+                            ✅ Tìm thấy ${schedules.length} lịch tập tuần này (${startDate} - ${endDate})
+                        </div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Lớp Tập</th>
+                                    <th>Ngày</th>
+                                    <th>Thời Gian</th>
+                                    <th>Huấn Luyện Viên</th>
+                                    <th>Học Viên</th>
+                                    <th>Trạng Thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${schedules.map(schedule => {
+                                    const startTime = schedule.startTime ? new Date(schedule.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                                    const endTime = schedule.endTime ? new Date(schedule.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                                    return `
+                                        <tr>
+                                            <td><strong>${schedule.Class?.name || schedule.class?.name || 'N/A'}</strong></td>
+                                            <td>${schedule.date || 'N/A'}</td>
+                                            <td>${startTime} - ${endTime}</td>
+                                            <td>${schedule.Trainer?.fullName || schedule.trainer?.fullName || 'N/A'}</td>
+                                            <td>${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0}</td>
+                                            <td><span class="badge badge-${schedule.status === 'scheduled' ? 'primary' : 'success'}">${schedule.status || 'N/A'}</span></td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                        <div style="margin-top: 15px;">
+                            <button class="btn" onclick="loadSchedules()">Xem Tất Cả</button>
+                            <button class="btn btn-secondary" onclick="loadSchedulesToday()">Lịch Hôm Nay</button>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                showError('schedulesContainer', error.message);
+            }
+        }
+
+        // View schedule detail
+        async function viewScheduleDetail(scheduleId) {
+            try {
+                const response = await apiCall(`/classes/schedules/${scheduleId}`);
+                if (response.success) {
+                    const schedule = response.data;
+                    alert(`Chi tiết lịch #${schedule.id}:
+Lớp: ${schedule.Class?.name || 'N/A'}
+Ngày: ${schedule.date}
+Thời gian: ${new Date(schedule.startTime).toLocaleTimeString('vi-VN')} - ${new Date(schedule.endTime).toLocaleTimeString('vi-VN')}
+Phòng: ${schedule.room || 'N/A'}
+Huấn luyện viên: ${schedule.Trainer?.fullName || 'N/A'}
+Học viên: ${schedule.currentParticipants}/${schedule.maxParticipants}
+Trạng thái: ${schedule.status}
+Ghi chú: ${schedule.notes || 'Không có'}`);
+                }
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        // Enroll in schedule
+        async function enrollInSchedule(scheduleId) {
+            try {
+                if (!authToken) {
+                    alert('Vui lòng đăng nhập trước (vào tab API Demo)');
+                    return;
+                }
+                
+                const response = await apiCall(`/classes/schedules/${scheduleId}/enroll`, {
+                    method: 'POST'
+                });
+                
+                if (response.success) {
+                    alert('✅ Đăng ký thành công!');
+                    loadSchedules(); // Reload to update participant count
+                } else {
+                    alert('❌ Đăng ký thất bại: ' + (response.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Lỗi đăng ký: ' + error.message);
+            }
+        }
+
+        // Load members
+        async function loadMembers() {
+            showLoading('membersContainer');
+            try {
+                if (!authToken) {
+                    throw new Error('Please login first (go to API Demo tab)');
+                }
+                const response = await apiCall('/members');
+                if (response.success) {
+                    const html = `
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Member Code</th>
+                                    <th>Full Name</th>
+                                    <th>Phone</th>
+                                    <th>Join Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${response.data.members.map(member => `
+                                    <tr>
+                                        <td><strong>${member.memberCode}</strong></td>
+                                        <td>${member.fullName}</td>
+                                        <td>${member.phone}</td>
+                                        <td>${member.joinDate}</td>
+                                        <td><span class="badge badge-${member.isActive ? 'success' : 'warning'}">${member.isActive ? 'Active' : 'Inactive'}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        <p><strong>Total Members:</strong> ${response.data.pagination.totalItems}</p>
+                    `;
+                    document.getElementById('membersContainer').innerHTML = html;
+                }
+            } catch (error) {
+                showError('membersContainer', error.message);
+            }
+        }
+
+        // Load member stats
+        async function loadMemberStats() {
+            showLoading('membersContainer');
+            try {
+                if (!authToken) {
+                    throw new Error('Please login first (go to API Demo tab)');
+                }
+                const response = await apiCall('/members/statistics');
+                if (response.success) {
+                    const stats = response.data;
+                    const html = `
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number">${stats.totalMembers}</div>
+                                <div class="stat-label">Total Members</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${stats.activeMembers}</div>
+                                <div class="stat-label">Active Members</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${stats.membersWithActiveMembership}</div>
+                                <div class="stat-label">With Active Membership</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${stats.membersWithoutMembership}</div>
+                                <div class="stat-label">Without Membership</div>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('membersContainer').innerHTML = html;
+                }
+            } catch (error) {
+                showError('membersContainer', error.message);
+            }
+        }
+
+        // Load popular classes
+        async function loadPopularClasses() {
+            showLoading('popularClassesContainer');
+            try {
+                if (!authToken) {
+                    throw new Error('Please login first (go to API Demo tab)');
+                }
+                const response = await apiCall('/classes/analytics/popular?limit=5');
+                if (response.success) {
+                    const html = `
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Class Name</th>
+                                    <th>Type</th>
+                                    <th>Difficulty</th>
+                                    <th>Enrollments</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${response.data.map(cls => `
+                                    <tr>
+                                        <td><strong>${cls.name}</strong></td>
+                                        <td>${cls.classType ? cls.classType.name : 'N/A'}</td>
+                                        <td><span class="badge badge-${cls.classType && cls.classType.difficulty === 'beginner' ? 'success' : 'primary'}">${cls.classType ? cls.classType.difficulty : 'N/A'}</span></td>
+                                        <td>${cls.enrollmentCount || 0}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                    document.getElementById('popularClassesContainer').innerHTML = html;
+                }
+            } catch (error) {
+                showError('popularClassesContainer', error.message);
+            }
+        }
+
+        // Load attendance stats
+        async function loadAttendanceStats() {
+            showLoading('attendanceStatsContainer');
+            try {
+                if (!authToken) {
+                    throw new Error('Please login first (go to API Demo tab)');
+                }
+                const response = await apiCall('/classes/analytics/attendance');
+                if (response.success) {
+                    const stats = response.data;
+                    const html = `
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number">${stats.totalSchedules}</div>
+                                <div class="stat-label">Total Schedules</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${stats.totalEnrollments}</div>
+                                <div class="stat-label">Total Enrollments</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${stats.totalAttendance}</div>
+                                <div class="stat-label">Attended</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">${stats.attendanceRate}%</div>
+                                <div class="stat-label">Attendance Rate</div>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('attendanceStatsContainer').innerHTML = html;
+                }
+            } catch (error) {
+                showError('attendanceStatsContainer', error.message);
+            }
+        }
+
+        // Demo functions
+        async function demoCreateClassType() {
+            try {
+                if (!authToken) {
+                    throw new Error('Please login first');
+                }
+
+                const classTypeData = {
+                    name: `Demo Class ${Date.now()}`,
+                    description: 'Auto-generated demo class type',
+                    duration: 45,
+                    maxParticipants: 15,
+                    equipment: ['demo equipment'],
+                    difficulty: 'intermediate',
+                    color: '#ff6b6b'
+                };
+
+                const response = await apiCall('/classes/types', {
+                    method: 'POST',
+                    body: JSON.stringify(classTypeData)
+                });
+
+                document.getElementById('classDemo').innerHTML = `
+                    <div class="success">✅ Class type created: ${response.data.name}</div>
+                `;
+            } catch (error) {
+                document.getElementById('classDemo').innerHTML = `
+                    <div class="error">❌ Failed: ${error.message}</div>
+                `;
+            }
+        }
+
+        async function demoCreateClass() {
+            try {
+                if (!authToken) {
+                    throw new Error('Please login first');
+                }
+
+                // First get available class types
+                const typesResponse = await apiCall('/classes/types');
+                if (!typesResponse.success || !typesResponse.data || typesResponse.data.length === 0) {
+                    throw new Error('No class types available. Please create a class type first.');
+                }
+
+                const firstClassType = typesResponse.data[0];
+                
+                // Get current user info for trainerId
+                const userResponse = await apiCall('/auth/me');
+                if (!userResponse.success) {
+                    throw new Error('Cannot get current user info. Please login again.');
+                }
+
+                const classData = {
+                    classTypeId: firstClassType.id,
+                    name: `Demo ${firstClassType.name} Class ${Date.now()}`,
+                    description: 'Auto-generated demo class',
+                    trainerId: userResponse.data.id, // Use current user as trainer
+                    duration: firstClassType.duration || 60,
+                    maxParticipants: firstClassType.maxParticipants || 20,
+                    price: 150000,
+                    room: 'Demo Studio'
+                };
+
+                const response = await apiCall('/classes', {
+                    method: 'POST',
+                    body: JSON.stringify(classData)
+                });
+
+                document.getElementById('classDemo').innerHTML = `
+                    <div class="success">✅ Class created: ${response.data.name}</div>
+                `;
+            } catch (error) {
+                document.getElementById('classDemo').innerHTML = `
+                    <div class="error">❌ Failed: ${error.message}</div>
+                `;
+            }
+        }
+
+        async function demoCreateSchedule() {
+            try {
+                if (!authToken) {
+                    throw new Error('Please login first');
+                }
+
+                // First, get available classes
+                const classesResponse = await apiCall('/classes');
+                if (!classesResponse.success || !classesResponse.data.classes || classesResponse.data.classes.length === 0) {
+                    throw new Error('No classes available. Please create a class first.');
+                }
+
+                const firstClass = classesResponse.data.classes[0];
+                console.log(`Using class: ${firstClass.name} (ID: ${firstClass.id})`);
+
+                // Get current user info for trainerId
+                const userResponse = await apiCall('/auth/me');
+                if (!userResponse.success) {
+                    throw new Error('Cannot get current user info. Please login again.');
+                }
+
+                // Create schedule for tomorrow
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const startTime = new Date(tomorrow);
+                startTime.setHours(14, 0, 0, 0); // 2 PM tomorrow
+                const endTime = new Date(startTime);
+                endTime.setMinutes(startTime.getMinutes() + (firstClass.duration || 60));
+
+                const scheduleData = {
+                    date: tomorrow.toISOString().split('T')[0],
+                    startTime: startTime.toISOString(),
+                    endTime: endTime.toISOString(),
+                    trainerId: userResponse.data.id,
+                    maxParticipants: firstClass.maxParticipants || 20,
+                    room: firstClass.room || 'Demo Studio',
+                    notes: `Demo schedule for ${firstClass.name} - ${new Date().toLocaleString()}`
+                };
+
+                console.log('Creating schedule with data:', scheduleData);
+
+                const response = await apiCall(`/classes/${firstClass.id}/schedules`, {
+                    method: 'POST',
+                    body: JSON.stringify(scheduleData)
+                });
+
+                document.getElementById('scheduleDemo').innerHTML = `
+                    <div class="success">✅ Schedule created for class "${firstClass.name}" on ${response.data.date}</div>
+                    <div style="margin-top: 10px;">
+                        <button class="btn btn-secondary" onclick="loadAllSchedulesDemo()">View All Schedules</button>
+                        <button class="btn" onclick="testScheduleAPIs()">Test All Schedule APIs</button>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Create schedule error:', error);
+                document.getElementById('scheduleDemo').innerHTML = `
+                    <div class="error">❌ Failed: ${error.message}</div>
+                    <div style="margin-top: 10px;">
+                        <button class="btn btn-secondary" onclick="testScheduleAPIs()">Test Schedule APIs</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Test all schedule APIs
+        async function testScheduleAPIs() {
+            document.getElementById('scheduleDemo').innerHTML = `
+                <div class="loading">Testing Schedule APIs...</div>
+            `;
+            
+            let results = [];
+            
+            // Test 1: Get all schedules
+            try {
+                const response = await apiCall('/classes/schedules');
+                results.push({
+                    test: 'GET /classes/schedules',
+                    success: true,
+                    result: `Found ${Array.isArray(response.data) ? response.data.length : response.data?.schedules?.length || 0} schedules`
+                });
+            } catch (error) {
+                results.push({
+                    test: 'GET /classes/schedules',
+                    success: false,
+                    result: error.message
+                });
+            }
+
+            // Test 2: Get schedules with date filter
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const response = await apiCall(`/classes/schedules?date=${today}`);
+                results.push({
+                    test: `GET /classes/schedules?date=${today}`,
+                    success: true,
+                    result: `Found ${Array.isArray(response.data) ? response.data.length : response.data?.schedules?.length || 0} schedules for today`
+                });
+            } catch (error) {
+                results.push({
+                    test: 'GET /classes/schedules (today)',
+                    success: false,
+                    result: error.message
+                });
+            }
+
+            // Test 3: Get schedules with date range
+            try {
+                const startDate = new Date().toISOString().split('T')[0];
+                const endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                const response = await apiCall(`/classes/schedules?startDate=${startDate}&endDate=${endDate}`);
+                results.push({
+                    test: `GET /classes/schedules?startDate=${startDate}&endDate=${endDate}`,
+                    success: true,
+                    result: `Found ${Array.isArray(response.data) ? response.data.length : response.data?.schedules?.length || 0} schedules this week`
+                });
+            } catch (error) {
+                results.push({
+                    test: 'GET /classes/schedules (week range)',
+                    success: false,
+                    result: error.message
+                });
+            }
+
+            // Test 4: Try to get specific schedule details (if any schedules exist)
+            try {
+                const allSchedules = await apiCall('/classes/schedules');
+                let schedules = [];
+                
+                if (Array.isArray(allSchedules.data)) {
+                    schedules = allSchedules.data;
+                } else if (allSchedules.data?.schedules) {
+                    schedules = allSchedules.data.schedules;
+                }
+                
+                if (schedules.length > 0) {
+                    const firstSchedule = schedules[0];
+                    const response = await apiCall(`/classes/schedules/${firstSchedule.id}`);
+                    results.push({
+                        test: `GET /classes/schedules/${firstSchedule.id}`,
+                        success: true,
+                        result: `Schedule details retrieved for class: ${response.data.Class?.name || 'N/A'}`
+                    });
+                } else {
+                    results.push({
+                        test: 'GET /classes/schedules/:id',
+                        success: false,
+                        result: 'No schedules available to test'
+                    });
+                }
+            } catch (error) {
+                results.push({
+                    test: 'GET /classes/schedules/:id',
+                    success: false,
+                    result: error.message
+                });
+            }
+
+            // Display results
+            const html = `
+                <div style="margin-bottom: 20px;">
+                    <h4>🧪 Schedule API Test Results</h4>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>API Endpoint</th>
+                            <th>Status</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${results.map(result => `
+                            <tr>
+                                <td><code>${result.test}</code></td>
+                                <td><span class="badge badge-${result.success ? 'success' : 'warning'}">${result.success ? '✅ PASS' : '❌ FAIL'}</span></td>
+                                <td style="max-width: 300px; word-break: break-word;">${result.result}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <p><strong>📊 Summary:</strong></p>
+                    <p>✅ Passed: <strong>${results.filter(r => r.success).length}/${results.length}</strong></p>
+                    <p>❌ Failed: <strong>${results.filter(r => !r.success).length}/${results.length}</strong></p>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button class="btn" onclick="demoCreateSchedule()">Create Demo Schedule</button>
+                    <button class="btn btn-secondary" onclick="loadAllSchedulesDemo()">View All Schedules</button>
+                </div>
+            `;
+            
+            document.getElementById('scheduleDemo').innerHTML = html;
+        }
+
+        // Load all schedules for demo
+        async function loadAllSchedulesDemo() {
+            try {
+                const response = await apiCall('/classes/schedules');
+                
+                if (response.success) {
+                    let schedules = [];
+                    
+                    if (Array.isArray(response.data)) {
+                        schedules = response.data;
+                    } else if (response.data.schedules) {
+                        schedules = response.data.schedules;
+                    }
+                    
+                    const html = `
+                        <div class="success" style="margin-bottom: 15px;">
+                            ✅ Loaded ${schedules.length} schedules from API
+                        </div>
+                        ${schedules.length > 0 ? `
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Class</th>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${schedules.slice(0, 5).map(schedule => `
+                                        <tr>
+                                            <td>#${schedule.id}</td>
+                                            <td>${schedule.Class?.name || schedule.class?.name || 'N/A'}</td>
+                                            <td>${schedule.date || 'N/A'}</td>
+                                            <td>${schedule.startTime ? new Date(schedule.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</td>
+                                            <td><span class="badge badge-primary">${schedule.status || 'N/A'}</span></td>
+                                        </tr>
+                                    `).join('')}
+                                    ${schedules.length > 5 ? `
+                                        <tr>
+                                            <td colspan="5" style="text-align: center; color: #666;">
+                                                ... and ${schedules.length - 5} more schedules
+                                            </td>
+                                        </tr>
+                                    ` : ''}
+                                </tbody>
+                            </table>
+                        ` : '<p>No schedules found in the system.</p>'}
+                        <div style="margin-top: 15px;">
+                            <button class="btn" onclick="testScheduleAPIs()">Test All APIs</button>
+                            <button class="btn btn-success" onclick="demoCreateSchedule()">Create New Schedule</button>
+                        </div>
+                    `;
+                    
+                    document.getElementById('scheduleDemo').innerHTML = html;
+                } else {
+                    throw new Error(response.message || 'Failed to load schedules');
+                }
+            } catch (error) {
+                document.getElementById('scheduleDemo').innerHTML = `
+                    <div class="error">❌ Failed to load schedules: ${error.message}</div>
+                `;
+            }
+        }
+
+        async function demoEnrollment() {
+            try {
+                if (!authToken) {
+                    document.getElementById('scheduleDemo').innerHTML = `
+                        <div class="error">
+                            ❌ Please login first!<br>
+                            <strong>Steps:</strong><br>
+                            1. Click "Login as Member" button above<br>
+                            2. Then try enrollment again
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Get first available schedule
+                const schedulesResponse = await apiCall('/classes/schedules?limit=5');
+                if (!schedulesResponse.success || !schedulesResponse.data.schedules || schedulesResponse.data.schedules.length === 0) {
+                    document.getElementById('scheduleDemo').innerHTML = `
+                        <div class="error">❌ No schedules available for enrollment demo</div>
+                    `;
+                    return;
+                }
+
+                // Find a schedule with available slots that hasn't started yet
+                let availableSchedule = null;
+                const currentTime = new Date();
+                for (const schedule of schedulesResponse.data.schedules) {
+                    const startTime = new Date(schedule.startTime);
+                    const hasSlots = schedule.currentParticipants < schedule.maxParticipants;
+                    const isFuture = startTime > currentTime;
+                    const isScheduled = schedule.status === 'scheduled';
+                    
+                    console.log(`🔍 Checking schedule ${schedule.id}:`, {
+                        startTime: startTime.toISOString(),
+                        currentTime: currentTime.toISOString(),
+                        hasSlots,
+                        isFuture,
+                        isScheduled
+                    });
+                    
+                    if (hasSlots && isFuture && isScheduled) {
+                        availableSchedule = schedule;
+                        break;
+                    }
+                }
+
+                if (!availableSchedule) {
+                    document.getElementById('scheduleDemo').innerHTML = `
+                        <div class="error">
+                            ❌ No future schedules with available slots found.<br>
+                            <strong>Solutions:</strong><br>
+                            1. Click "📅 Create Tomorrow's Schedules" to create new schedules<br>
+                            2. Or check if there are schedules for tomorrow
+                        </div>
+                        <button class="btn btn-primary" onclick="createTodaySchedules()" style="margin-top: 10px;">📅 Create Tomorrow's Schedules</button>
+                    `;
+                    return;
+                }
+
+                // Try to enroll current user
+                const enrollResponse = await apiCall(`/classes/schedules/${availableSchedule.id}/enroll`, {
+                    method: 'POST'
+                });
+
+                if (enrollResponse.success) {
+                    document.getElementById('scheduleDemo').innerHTML = `
+                        <div class="success">
+                            ✅ Enrollment successful!<br>
+                            📅 Class: ${availableSchedule.Class?.name || 'N/A'}<br>
+                            🕐 Time: ${availableSchedule.date} ${new Date(availableSchedule.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}<br>
+                            👥 Participants: ${availableSchedule.currentParticipants + 1}/${availableSchedule.maxParticipants}<br>
+                            🏠 Room: ${availableSchedule.room || 'N/A'}
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <button class="btn btn-secondary" onclick="loadAllSchedulesDemo()">View Updated Schedules</button>
+                            <button class="btn" onclick="demoEnrollment()">Try Another Enrollment</button>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('scheduleDemo').innerHTML = `
+                        <div class="error">❌ Enrollment failed: ${enrollResponse.message || 'Unknown error'}</div>
+                        <div style="margin-top: 10px;">
+                            <small><strong>Common causes:</strong><br>
+                            • Already enrolled in this class<br>
+                            • Class is full<br>
+                            • Need to login as Member (not Admin)</small>
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                document.getElementById('scheduleDemo').innerHTML = `
+                    <div class="error">❌ Enrollment demo error: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Show demo schedules
+        function showDemoSchedules() {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            const demoSchedules = [
+                {
+                    class: { name: 'Morning Yoga' },
+                    date: today.toISOString().split('T')[0],
+                    startTime: '06:00',
+                    endTime: '07:00',
+                    trainer: { fullName: 'Mai Anh' },
+                    currentParticipants: 12,
+                    maxParticipants: 20,
+                    status: 'scheduled'
+                },
+                {
+                    class: { name: 'HIIT Training' },
+                    date: today.toISOString().split('T')[0],
+                    startTime: '07:30',
+                    endTime: '08:30',
+                    trainer: { fullName: 'Minh Tuấn' },
+                    currentParticipants: 15,
+                    maxParticipants: 15,
+                    status: 'full'
+                },
+                {
+                    class: { name: 'Boxing Class' },
+                    date: today.toISOString().split('T')[0],
+                    startTime: '18:00',
+                    endTime: '19:00',
+                    trainer: { fullName: 'Hoàng Nam' },
+                    currentParticipants: 8,
+                    maxParticipants: 12,
+                    status: 'scheduled'
+                },
+                {
+                    class: { name: 'Evening Yoga' },
+                    date: today.toISOString().split('T')[0],
+                    startTime: '19:30',
+                    endTime: '20:30',
+                    trainer: { fullName: 'Thu Hà' },
+                    currentParticipants: 18,
+                    maxParticipants: 25,
+                    status: 'scheduled'
+                },
+                {
+                    class: { name: 'Zumba Dance' },
+                    date: tomorrow.toISOString().split('T')[0],
+                    startTime: '07:00',
+                    endTime: '08:30',
+                    trainer: { fullName: 'Linh Chi' },
+                    currentParticipants: 22,
+                    maxParticipants: 30,
+                    status: 'scheduled'
+                }
+            ];
+
+            const html = `
+                <div class="success" style="margin-bottom: 20px;">
+                    ✅ Hiển thị lịch demo - ${demoSchedules.length} lớp tập
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Lớp Tập</th>
+                            <th>Ngày</th>
+                            <th>Thời Gian</th>
+                            <th>Huấn Luyện Viên</th>
+                            <th>Học Viên</th>
+                            <th>Trạng Thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${demoSchedules.map(schedule => `
+                            <tr>
+                                <td><strong>${schedule.class.name}</strong></td>
+                                <td>${schedule.date}</td>
+                                <td>${schedule.startTime} - ${schedule.endTime}</td>
+                                <td>${schedule.trainer.fullName}</td>
+                                <td>${schedule.currentParticipants}/${schedule.maxParticipants}</td>
+                                <td><span class="badge badge-${schedule.status === 'scheduled' ? 'primary' : schedule.status === 'completed' ? 'success' : schedule.status === 'full' ? 'warning' : 'primary'}">${schedule.status === 'scheduled' ? 'Đã lên lịch' : schedule.status === 'completed' ? 'Hoàn thành' : schedule.status === 'full' ? 'Đã đầy' : schedule.status}</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196f3;">
+                    <h4 style="color: #1976d2; margin-bottom: 10px;">📋 Thông Tin Lịch Demo</h4>
+                    <ul style="margin: 0; padding-left: 20px; color: #424242;">
+                        <li>Tổng số lớp hôm nay: <strong>${demoSchedules.filter(s => s.date === today.toISOString().split('T')[0]).length}</strong></li>
+                        <li>Tổng số học viên đăng ký: <strong>${demoSchedules.reduce((sum, s) => sum + s.currentParticipants, 0)}</strong></li>
+                        <li>Lớp đã đầy: <strong>${demoSchedules.filter(s => s.status === 'full').length}</strong></li>
+                        <li>Thời gian cao điểm: <strong>6:00-8:30 và 18:00-20:30</strong></li>
+                    </ul>
+                </div>
+            `;
+            
+            document.getElementById('schedulesContainer').innerHTML = html;
+        }
+
+        // Test API connection
+        async function testApiConnection() {
+            showLoading('schedulesContainer');
+            
+            const tests = [
+                { name: 'Server Health Check', url: 'http://localhost:3000/api/health' },
+                { name: 'API Root', url: 'http://localhost:3000/api' },
+                { name: 'Class Types', url: 'http://localhost:3000/api/classes/types' },
+                { name: 'Class Schedules', url: 'http://localhost:3000/api/classes/schedules' }
+            ];
+            
+            let results = [];
+            
+            for (const test of tests) {
+                try {
+                    console.log(`Testing: ${test.name} - ${test.url}`);
+                    
+                    const response = await fetch(test.url, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+                        }
+                    });
+                    
+                    const contentType = response.headers.get('content-type');
+                    let data;
+                    
+                    if (contentType && contentType.includes('application/json')) {
+                        data = await response.json();
+                    } else {
+                        data = await response.text();
+                    }
+                    
+                    results.push({
+                        name: test.name,
+                        status: response.status,
+                        success: response.ok,
+                        contentType: contentType,
+                        data: typeof data === 'string' ? data.substring(0, 100) + '...' : data
+                    });
+                    
+                } catch (error) {
+                    results.push({
+                        name: test.name,
+                        status: 'ERROR',
+                        success: false,
+                        error: error.message
+                    });
+                }
+            }
+            
+            const html = `
+                <div style="margin-bottom: 20px;">
+                    <h4>🔍 Kết Quả Kiểm Tra API</h4>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Test</th>
+                            <th>Status</th>
+                            <th>Content-Type</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${results.map(result => `
+                            <tr>
+                                <td><strong>${result.name}</strong></td>
+                                <td><span class="badge badge-${result.success ? 'success' : 'warning'}">${result.status}</span></td>
+                                <td>${result.contentType || 'N/A'}</td>
+                                <td style="max-width: 300px; word-break: break-word;">
+                                    ${result.error ? `❌ ${result.error}` : result.success ? '✅ OK' : '⚠️ Failed'}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <h4>📋 Chẩn Đoán:</h4>
+                    <ul style="margin-top: 10px;">
+                        ${results.filter(r => r.success).length > 0 ? 
+                            `<li>✅ <strong>${results.filter(r => r.success).length}/${results.length}</strong> tests passed</li>` : 
+                            '<li>❌ Tất cả tests đều failed</li>'
+                        }
+                        ${results.some(r => r.contentType && !r.contentType.includes('application/json')) ? 
+                            '<li>⚠️ Server trả về HTML thay vì JSON - có thể server chưa chạy</li>' : ''
+                        }
+                        ${results.some(r => r.error && r.error.includes('fetch')) ? 
+                            '<li>🔌 Lỗi kết nối - kiểm tra server có chạy trên localhost:3000</li>' : ''
+                        }
+                    </ul>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button class="btn" onclick="loadSchedules()">Tải Lịch Từ API</button>
+                    <button class="btn btn-secondary" onclick="showDemoSchedules()">Xem Lịch Demo</button>
+                </div>
+            `;
+            
+            document.getElementById('schedulesContainer').innerHTML = html;
+        }
+
+        // Create sample schedules
+        async function createSampleSchedules() {
+            if (!authToken) {
+                document.getElementById('schedulesContainer').innerHTML = `
+                    <div class="error">❌ Vui lòng đăng nhập trước (vào tab API Demo)</div>
+                `;
+                return;
+            }
+
+            document.getElementById('schedulesContainer').innerHTML = `
+                <div class="loading">Đang tạo lịch mẫu...</div>
+            `;
+
+            try {
+                const sampleSchedules = [
+                    {
+                        date: new Date().toISOString().split('T')[0],
+                        startTime: new Date(new Date().setHours(6, 0, 0, 0)).toISOString(),
+                        endTime: new Date(new Date().setHours(7, 0, 0, 0)).toISOString(),
+                        maxParticipants: 20,
+                        room: 'Studio A',
+                        notes: 'Morning Yoga - Lớp yoga buổi sáng'
+                    },
+                    {
+                        date: new Date().toISOString().split('T')[0],
+                        startTime: new Date(new Date().setHours(18, 0, 0, 0)).toISOString(),
+                        endTime: new Date(new Date().setHours(19, 0, 0, 0)).toISOString(),
+                        maxParticipants: 15,
+                        room: 'Studio B',
+                        notes: 'Evening Boxing - Lớp boxing buổi tối'
+                    }
+                ];
+
+                let createdCount = 0;
+                let results = [];
+
+                for (const scheduleData of sampleSchedules) {
+                    try {
+                        const response = await apiCall('/classes/1/schedules', {
+                            method: 'POST',
+                            body: JSON.stringify(scheduleData)
+                        });
+                        
+                        if (response.success) {
+                            createdCount++;
+                            results.push(`✅ Tạo lịch thành công: ${scheduleData.notes}`);
+                        }
+                    } catch (error) {
+                        results.push(`❌ Lỗi tạo lịch: ${error.message}`);
+                    }
+                }
+
+                const html = `
+                    <div class="${createdCount > 0 ? 'success' : 'error'}" style="margin-bottom: 20px;">
+                        ${createdCount > 0 ? `✅ Đã tạo ${createdCount}/${sampleSchedules.length} lịch mẫu` : '❌ Không thể tạo lịch mẫu'}
+                    </div>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                        <h4>Kết quả tạo lịch:</h4>
+                        <ul style="margin-top: 10px;">
+                            ${results.map(result => `<li>${result}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <button class="btn" onclick="loadSchedules()">Tải lại lịch từ API</button>
+                        <button class="btn btn-secondary" onclick="showDemoSchedules()">Xem lịch demo</button>
+                    </div>
+                `;
+
+                document.getElementById('schedulesContainer').innerHTML = html;
+
+            } catch (error) {
+                document.getElementById('schedulesContainer').innerHTML = `
+                    <div class="error">❌ Lỗi tạo lịch mẫu: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                const savedTokens = localStorage.getItem('tokens');
+                if (savedTokens) {
+                    const tokens = JSON.parse(savedTokens);
+                    
+                    // Call logout API
+                    await fetch(`${API_BASE_URL}/auth/logout`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refreshToken: tokens.refreshToken })
+                    });
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+            
+            // Clear local storage and redirect
+            localStorage.removeItem('tokens');
+            authToken = null;
+            window.location.href = 'index.html';
+        }
+
+        // Auto-load overview on page load
+        window.addEventListener('load', async () => {
+            // Check for stored authentication tokens
+            const savedTokens = localStorage.getItem('tokens');
+            if (savedTokens) {
+                try {
+                    const tokens = JSON.parse(savedTokens);
+                    authToken = tokens.accessToken;
+                    
+                    // Verify token is still valid
+                    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const userData = await response.json();
+                        console.log('Auto-authenticated user:', userData.data);
+                        
+                        // Update header to show user info
+                        document.querySelector('.header p').innerHTML = 
+                            `Chào mừng <strong>${userData.data.fullName || userData.data.username}</strong> (${userData.data.role})`;
+                    } else {
+                        // Token invalid, redirect to login
+                        localStorage.removeItem('tokens');
+                        window.location.href = 'index.html';
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Auto-login error:', error);
+                    localStorage.removeItem('tokens');
+                    window.location.href = 'index.html';
+                    return;
+                }
+            } else {
+                // No tokens found, redirect to login
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            loadOverviewStats();
+        });
+    </script>
+</body>
+</html>

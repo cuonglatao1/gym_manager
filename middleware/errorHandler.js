@@ -52,12 +52,16 @@ const globalErrorHandler = (err, req, res, next) => {
     let error = { ...err };
     error.message = err.message;
 
-    // Log error
-    console.error('Error:', {
+    // Log error with more details
+    console.error('🔴 ERROR DETAILS:', {
         message: err.message,
+        name: err.name,
         stack: err.stack,
         url: req.originalUrl,
         method: req.method,
+        params: req.params,
+        query: req.query,
+        body: req.body,
         timestamp: new Date().toISOString()
     });
 
@@ -76,7 +80,7 @@ const globalErrorHandler = (err, req, res, next) => {
 
     // Mongoose validation error
     if (err.name === 'ValidationError') {
-        const message = Object.values(err.errors).map(val => val.message).join(', ');
+        const message = err.errors ? Object.values(err.errors).map(val => val.message).join(', ') : 'Validation error';
         error = new ValidationError(message);
     }
 
@@ -106,6 +110,12 @@ const globalErrorHandler = (err, req, res, next) => {
     if (err.name === 'SequelizeForeignKeyConstraintError') {
         const message = 'Referenced resource not found';
         error = new NotFoundError(message);
+    }
+
+    // Handle "WHERE parameter id undefined" errors
+    if (err.message && err.message.includes('WHERE parameter') && err.message.includes('undefined')) {
+        const message = 'ID parameter is required and cannot be undefined';
+        error = new ValidationError(message);
     }
 
     // Send error response

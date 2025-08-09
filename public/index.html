@@ -225,7 +225,13 @@
                 <p><strong>Email:</strong> <span id="userEmail"></span></p>
                 <p><strong>Họ tên:</strong> <span id="userFullName"></span></p>
                 <p><strong>Vai trò:</strong> <span id="userRole"></span></p>
-                <button onclick="logout()" class="btn logout-btn">Đăng xuất</button>
+                <div style="margin-top: 15px;">
+                    <button onclick="redirectToBusiness()" class="btn" style="margin-bottom: 10px;">🏢 Vào phần Business</button>
+                    <button onclick="logout()" class="btn logout-btn">Đăng xuất</button>
+                </div>
+                <p style="margin-top: 10px; font-size: 12px; color: #666; text-align: center;">
+                    Đang tự động chuyển hướng sau <span id="countdown">3</span> giây...
+                </p>
             </div>
         </div>
     </div>
@@ -367,6 +373,30 @@
             document.querySelector('.tabs').style.display = 'none';
             document.querySelector('.form.active').style.display = 'none';
             document.getElementById('userInfo').style.display = 'block';
+            
+            // Bắt đầu đếm ngược và tự động chuyển hướng
+            startCountdown();
+        }
+
+        // Chuyển hướng đến trang business
+        function redirectToBusiness() {
+            window.location.href = 'demo.html';
+        }
+
+        // Đếm ngược và tự động chuyển hướng
+        function startCountdown() {
+            let countdown = 3;
+            const countdownElement = document.getElementById('countdown');
+            
+            const timer = setInterval(() => {
+                countdown--;
+                countdownElement.textContent = countdown;
+                
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    redirectToBusiness();
+                }
+            }, 1000);
         }
 
         // Chuyển đổi role sang tiếng Việt

@@ -43,6 +43,8 @@ const authController = {
     login: async (req, res) => {
         try {
             const { email, password } = req.body;
+            
+            console.log('🔍 Login attempt:', email);
 
             if (!email || !password) {
                 return res.status(400).json({
@@ -52,6 +54,8 @@ const authController = {
             }
 
             const result = await authService.login(email, password);
+            
+            console.log('✅ Login successful for:', email, 'Role:', result.user.role);
 
             res.json({
                 success: true,
@@ -60,6 +64,7 @@ const authController = {
             });
 
         } catch (error) {
+            console.error('❌ Login failed for:', req.body.email, 'Error:', error.message);
             res.status(401).json({
                 success: false,
                 message: error.message

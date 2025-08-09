@@ -22,7 +22,14 @@ router.get('/types/:id', validateId, classController.getClassTypeById);
 // GET /api/classes - Get all classes (filter by type, trainer, status)
 router.get('/', classController.getAllClasses);
 
-// GET /api/classes/:id - Get class details
+// ===== CLASS SCHEDULE ROUTES (must come before /:id) =====
+// GET /api/classes/schedules - Get class schedules (filter by date, class, trainer)
+router.get('/schedules', classController.getClassSchedules);
+
+// GET /api/classes/schedules/:id - Get schedule details
+router.get('/schedules/:id', validateId, classController.getScheduleById);
+
+// GET /api/classes/:id - Get class details (must come after /schedules)
 router.get('/:id', validateId, classController.getClassById);
 
 // ===== PROTECTED ROUTES - Admin & Trainer =====
@@ -76,12 +83,7 @@ router.delete('/:id',
     classController.deleteClass
 );
 
-// ===== CLASS SCHEDULE ROUTES =====
-// GET /api/classes/schedules - Get class schedules (filter by date, class, trainer)
-router.get('/schedules', classController.getClassSchedules);
-
-// GET /api/classes/schedules/:id - Get schedule details
-router.get('/schedules/:id', validateId, classController.getScheduleById);
+// ===== SCHEDULE MANAGEMENT ROUTES (Admin & Trainer) =====
 
 // POST /api/classes/:id/schedules - Create class schedule (Admin & Trainer)
 router.post('/:id/schedules', 

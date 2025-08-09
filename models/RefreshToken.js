@@ -23,7 +23,8 @@ const RefreshToken = sequelize.define('RefreshToken', {
     },
     expiresAt: {
         type: DataTypes.DATE,
-        allowNull: false,
+        allowNull: false,   
+        
         field: 'expires_at'
     },
     isRevoked: {

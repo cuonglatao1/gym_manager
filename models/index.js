@@ -163,51 +163,54 @@ Member.prototype.hasActiveMembership = async function() {
 User.prototype.getUpcomingSchedules = async function(limit = 10) {
     if (this.role !== 'trainer') return [];
     
-    return await ClassSchedule.findAll({
-        where: {
-            trainerId: this.id,
-            startTime: { [require('sequelize').Op.gte]: new Date() },
-            status: 'scheduled'
-        },
-        include: [
-            {
-                model: Class,
-                as: 'class',
-                include: [{ model: ClassType, as: 'classType' }]
-            }
-        ],
-        order: [['startTime', 'ASC']],
-        limit
-    });
+    try {
+        return await ClassSchedule.findAll({
+            where: {
+                trainerId: this.id,
+                startTime: { [require('sequelize').Op.gte]: new Date() },
+                status: 'scheduled'
+            },
+            include: [
+                {
+                    model: Class,
+                    as: 'class',
+                    required: false
+                }
+            ],
+            order: [['startTime', 'ASC']],
+            limit: parseInt(limit)
+        });
+    } catch (error) {
+        console.error('Error in getUpcomingSchedules:', error);
+        return [];
+    }
 };
 
-// Helper method to get member's upcoming enrollments
+// Helper method to get member's upcoming enrollments (simplified)
 Member.prototype.getUpcomingEnrollments = async function(limit = 10) {
-    return await ClassEnrollment.findAll({
-        where: {
-            memberId: this.id,
-            status: 'enrolled'
-        },
-        include: [
-            {
-                model: ClassSchedule,
-                as: 'classSchedule',
-                where: {
-                    startTime: { [require('sequelize').Op.gte]: new Date() }
-                },
-                include: [
-                    {
-                        model: Class,
-                        as: 'class',
-                        include: [{ model: ClassType, as: 'classType' }]
+    try {
+        return await ClassEnrollment.findAll({
+            where: {
+                memberId: this.id,
+                status: 'enrolled'
+            },
+            include: [
+                {
+                    model: ClassSchedule,
+                    as: 'classSchedule',
+                    where: {
+                        startTime: { [require('sequelize').Op.gte]: new Date() }
                     },
-                    { model: User, as: 'trainer', attributes: ['id', 'fullName'] }
-                ]
-            }
-        ],
-        order: [[{ model: ClassSchedule, as: 'classSchedule' }, 'startTime', 'ASC']],
-        limit
-    });
+                    required: true
+                }
+            ],
+            order: [['id', 'DESC']],
+            limit: parseInt(limit)
+        });
+    } catch (error) {
+        console.error('Error in getUpcomingEnrollments:', error);
+        return [];
+    }
 };
 
 module.exports = {
