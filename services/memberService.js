@@ -1,5 +1,5 @@
 // services/memberService.js
-const { Member, Membership, MembershipHistory, User } = require('../models');
+const { Member, Membership, MembershipHistory, User, ClassEnrollment } = require('../models');
 const { Op } = require('sequelize');
 
 class MemberService {
@@ -390,6 +390,97 @@ class MemberService {
             console.error('Search members error:', error);
             throw new Error(`Database search failed: ${error.message}`);
         }
+    }
+
+    async deleteMember(memberId) {
+        // Check if member exists
+        const member = await Member.findByPk(memberId);
+        if (!member) {
+            throw new Error('Không tìm thấy thành viên');
+        }
+
+        // Check if member has active enrollments
+        const activeEnrollments = await ClassEnrollment.findAll({
+            where: {
+                memberId: memberId,
+                status: { [Op.in]: ['enrolled', 'attended'] }
+            }
+        });
+
+        if (activeEnrollments.length > 0) {
+            // Cancel all active enrollments first
+            await ClassEnrollment.update(
+                { status: 'cancelled' },
+                {
+                    where: {
+                        memberId: memberId,
+                        status: { [Op.in]: ['enrolled', 'attended'] }
+                    }
+                }
+            );
+        }
+
+        // Soft delete or deactivate member (preserve data for history)
+        await member.update({ 
+            isActive: false,
+            email: `deleted_${member.id}_${member.email}`,
+            memberCode: `DELETED_${member.memberCode}`
+        });
+
+        // Also deactivate associated user account
+        if (member.userId) {
+            await User.update(
+                { isActive: false },
+                { where: { id: member.userId } }
+            );
+        }
+
+        return {
+            message: 'Xóa thành viên thành công'
+        };
+    }
+
+    async cancelCurrentMembership(memberId) {
+        // Check if member exists
+        const member = await Member.findByPk(memberId);
+        if (!member) {
+            throw new Error('Không tìm thấy thành viên');
+        }
+
+        // Find current active membership
+        const currentMembership = await MembershipHistory.findOne({
+            where: {
+                memberId: memberId,
+                status: 'active',
+                endDate: { [Op.gt]: new Date() }
+            },
+            include: [
+                {
+                    model: Membership,
+                    as: 'membership'
+                }
+            ]
+        });
+
+        if (!currentMembership) {
+            throw new Error('Không tìm thấy gói thành viên hiện tại');
+        }
+
+        // Cancel the membership
+        await currentMembership.update({ 
+            status: 'cancelled',
+            endDate: new Date()
+        });
+
+        return {
+            message: 'Hủy gói thành viên thành công',
+            membership: {
+                id: currentMembership.id,
+                membershipName: currentMembership.membership.name,
+                endDate: currentMembership.endDate,
+                status: 'cancelled'
+            }
+        };
     }
 }
 

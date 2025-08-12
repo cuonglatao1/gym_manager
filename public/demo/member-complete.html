@@ -1,0 +1,2102 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Dashboard - Gym Manager</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .role-header {
+            background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 10px;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        .main-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e1e5e9;
+        }
+        
+        .tab-btn {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn.active {
+            color: #5b86e5;
+            border-bottom-color: #5b86e5;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .section-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .class-card {
+            background: #f8f9fa;
+            border-left: 4px solid #5b86e5;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 0 8px 8px 0;
+            transition: transform 0.2s;
+        }
+        
+        .class-card:hover {
+            transform: translateX(5px);
+        }
+        
+        .class-card.today {
+            background: #e8f5e8;
+            border-left-color: #28a745;
+        }
+        
+        .class-card.can-checkin {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+            box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+        }
+        
+        .class-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        
+        .class-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .class-meta {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .class-time {
+            font-size: 16px;
+            font-weight: bold;
+            color: #5b86e5;
+            margin-bottom: 5px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .checkin-section {
+            background: #f0f8ff;
+            border: 2px solid #5b86e5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .qr-input {
+            width: 100%;
+            max-width: 300px;
+            padding: 15px;
+            font-size: 16px;
+            text-align: center;
+            border: 2px solid #5b86e5;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .empty-state .icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+        
+        .close:hover {
+            color: #5b86e5;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+
+        /* Membership Cards Styles */
+        .membership-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .membership-card {
+            background: #fff;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .membership-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: #5b86e5;
+        }
+
+        .membership-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .membership-title {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .membership-price {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .membership-body {
+            padding: 20px;
+        }
+
+        .membership-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .membership-duration {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .membership-benefits {
+            margin-bottom: 20px;
+        }
+
+        .membership-benefits p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .membership-footer {
+            padding: 0 20px 20px;
+        }
+
+        .btn-purchase {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-purchase:hover {
+            background: linear-gradient(135deg, #218838 0%, #17a085 100%);
+            transform: translateY(-1px);
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            border-left: 4px solid #5b86e5;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .history-item p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="role-header">
+            <h1>👤 Member Dashboard</h1>
+            <p>Xin chào <span id="memberName">Member</span>! Chào mừng đến với phòng gym</p>
+            <button onclick="logout()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; float: right;">Đăng xuất</button>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalEnrollments">-</div>
+                <div>Lớp đã đăng ký</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalCheckIns">-</div>
+                <div>Lần tập luyện</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todayClasses">-</div>
+                <div>Lớp hôm nay</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="membershipDays">-</div>
+                <div>Ngày còn lại</div>
+            </div>
+        </div>
+
+        <!-- Quick Check-in -->
+        <div class="checkin-section">
+            <h3>🚀 Check-in nhanh</h3>
+            <p>Nhập tên lớp hoặc <strong>mã lớp</strong> để check-in</p>
+            <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid #1976d2;">
+                <small style="color: #666;">
+                    💡 <strong>Mẹo:</strong> Bạn có thể nhập mã lớp (VD: <code style="background: #e3f2fd; color: #1976d2; padding: 2px 4px; border-radius: 3px;">SCH000016</code>) hoặc tên lớp (VD: "Yoga", "Pilates").<br>
+                    📋 Xem mã lớp trong danh sách "Lịch tập sắp tới" bên dưới và click để copy!
+                </small>
+            </div>
+            <input type="text" id="quickCheckinCode" class="qr-input" placeholder="Nhập mã lớp (VD: SCH000016) hoặc tên lớp (VD: Core Pilates)">
+            <br>
+            <button class="btn btn-primary btn-lg" onclick="quickCheckIn()">✅ Check-in</button>
+            <button class="btn btn-secondary btn-lg" onclick="showAvailableClasses()" style="margin-left: 10px;">📋 Xem lớp có thể check-in</button>
+            <div id="quickCheckinResult"></div>
+            <div id="availableClassesList" style="margin-top: 15px;"></div>
+        </div>
+
+        <!-- Main Navigation Tabs -->
+        <div class="main-tabs">
+            <button class="tab-btn active" onclick="switchTab('upcoming')">⏰ Lịch tập sắp tới</button>
+            <button class="tab-btn" onclick="switchTab('history')">📊 Lịch sử</button>
+            <button class="tab-btn" onclick="switchTab('explore')">🔍 Khám phá</button>
+            <button class="tab-btn" onclick="switchTab('memberships')">💳 Mua gói</button>
+            <button class="tab-btn" onclick="switchTab('profile')">👤 Hồ sơ</button>
+        </div>
+
+        <!-- Tab: Upcoming -->
+        <div id="upcoming" class="tab-content active">
+            <div class="section-card">
+                <h3>⏰ Lịch tập sắp tới</h3>
+                <div class="filter-bar">
+                    <input type="date" id="upcomingDate" onchange="loadUpcomingSchedules()">
+                    <select id="classTypeFilter" onchange="loadUpcomingSchedules()">
+                        <option value="">Tất cả loại</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="loadUpcomingSchedules()">🔄 Tải lại</button>
+                </div>
+                <div id="upcomingSchedules" class="loading">Đang tải...</div>
+            </div>
+        </div>
+
+        <!-- Tab: History -->
+        <div id="history" class="tab-content">
+            <div class="section-card">
+                <h3>📊 Lịch sử tập luyện</h3>
+                <div class="filter-bar">
+                    <input type="month" id="historyMonth" onchange="loadHistory()">
+                    <select id="historyClassFilter" onchange="loadHistory()">
+                        <option value="">Tất cả lớp</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="loadHistory()">🔄 Tải lại</button>
+                </div>
+                <div id="historyList" class="loading">Đang tải...</div>
+            </div>
+        </div>
+
+        <!-- Tab: Explore -->
+        <div id="explore" class="tab-content">
+            <div class="section-card">
+                <h3>🔍 Khám phá lớp tập</h3>
+                <div class="filter-bar">
+                    <input type="date" id="exploreDate" onchange="loadAvailableClasses()">
+                    <select id="exploreTypeFilter" onchange="loadAvailableClasses()">
+                        <option value="">Tất cả loại</option>
+                    </select>
+                    <input type="text" id="exploreSearch" placeholder="Tìm kiếm lớp..." onkeyup="searchClasses()">
+                    <button class="btn btn-secondary" onclick="loadAvailableClasses()">🔄 Tải lại</button>
+                </div>
+                <div id="availableClasses" class="loading">Đang tải...</div>
+            </div>
+        </div>
+
+        <!-- Tab: Memberships -->
+        <div id="memberships" class="tab-content">
+            <div class="section-card">
+                <h3>💳 Gói tập hiện tại</h3>
+                <div id="currentMembershipInfo" class="loading">Đang tải...</div>
+            </div>
+            
+            <div class="section-card">
+                <h3>🛒 Mua gói tập mới</h3>
+                <p style="margin-bottom: 15px; color: #666;">Chọn gói tập phù hợp với nhu cầu của bạn:</p>
+                <div id="availableMembershipsList" class="loading">Đang tải...</div>
+            </div>
+            
+            <div class="section-card">
+                <h3>📋 Lịch sử gói tập</h3>
+                <div id="membershipHistoryList" class="loading">Đang tải...</div>
+            </div>
+        </div>
+
+        <!-- Tab: Profile -->
+        <div id="profile" class="tab-content">
+            <div class="form-grid">
+                <div class="section-card">
+                    <h3>👤 Thông tin cá nhân</h3>
+                    <div id="memberProfile" class="loading">Đang tải...</div>
+                </div>
+                
+                <div class="section-card">
+                    <h3>💳 Gói tập hiện tại</h3>
+                    <div id="membershipInfo" class="loading">Đang tải...</div>
+                </div>
+                
+                <div class="section-card">
+                    <h3>📈 Thống kê cá nhân</h3>
+                    <div id="personalStats" class="loading">Đang tải...</div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="formModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Chi tiết</h3>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="modalContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Debug Panel -->
+    <div style="position: fixed; bottom: 0; left: 0; right: 0; background: #000; color: #0f0; font-family: monospace; font-size: 11px; padding: 5px; height: 80px; overflow-y: auto; z-index: 9999; border-top: 1px solid #333;">
+        <div style="font-weight: bold; color: #fff; margin-bottom: 2px;">🔍 API Response Monitor</div>
+        <div id="apiDebugLog"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000/api';
+        let currentUser = null;
+        let memberData = null;
+
+        // API Call Function with Debug
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const token = localStorage.getItem('gym_auth_token');
+            
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { 'Authorization': `Bearer ${token}` })
+                }
+            };
+            
+            if (body && (method === 'POST' || method === 'PUT')) {
+                options.body = JSON.stringify(body);
+            }
+            
+            logApiDebug(`🚀 ${method} ${endpoint}`, 'request');
+            if (body) logApiDebug(`📤 Body: ${JSON.stringify(body)}`, 'request');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    logApiDebug(`❌ ${response.status} ${data.message || 'API call failed'}`, 'error');
+                    throw new Error(data.message || 'API call failed');
+                }
+                
+                logApiDebug(`✅ ${response.status} Success`, 'success');
+                return data;
+            } catch (error) {
+                logApiDebug(`💥 Error: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        function logApiDebug(message, type = 'info') {
+            const debugLog = document.getElementById('apiDebugLog');
+            if (!debugLog) return;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                'request': '#00bfff',
+                'response': '#00ff00', 
+                'success': '#32cd32',
+                'error': '#ff6b6b',
+                'info': '#ffffff'
+            };
+            
+            const logEntry = document.createElement('div');
+            logEntry.style.color = colors[type] || colors.info;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            debugLog.appendChild(logEntry);
+            debugLog.scrollTop = debugLog.scrollHeight;
+            
+            // Keep only last 50 entries
+            while (debugLog.children.length > 50) {
+                debugLog.removeChild(debugLog.firstChild);
+            }
+        }
+
+        // Tab Management
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            // Load data for the selected tab
+            switch(tabName) {
+                case 'upcoming':
+                    loadUpcomingSchedules();
+                    break;
+                case 'history':
+                    loadHistory();
+                    break;
+                case 'explore':
+                    loadAvailableClasses();
+                    break;
+                case 'memberships':
+                    loadMemberships();
+                    break;
+                case 'profile':
+                    loadProfile();
+                    break;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            if (checkAuth()) {
+                initDashboard();
+            }
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('gym_auth_token');
+            const userInfo = localStorage.getItem('gym_user_info');
+            
+            if (!token || !userInfo) {
+                window.location.href = 'index.html';
+                return false;
+            }
+            
+            currentUser = JSON.parse(userInfo);
+            if (currentUser.role !== 'member') {
+                window.location.href = 'index.html';
+                return false;
+            }
+            
+            document.getElementById('memberName').textContent = currentUser.fullName || currentUser.username || 'Member';
+            return true;
+        }
+
+        async function initDashboard() {
+            try {
+                await Promise.all([
+                    loadStats(),
+                    loadUpcomingSchedules(),
+                    loadClassTypes()
+                ]);
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+            }
+        }
+
+        // Load Statistics
+        async function loadStats() {
+            try {
+                // Get my enrollments, check-ins, and today's schedules
+                const [historyResponse, checkInsResponse, todayResponse] = await Promise.all([
+                    apiCall('/classes/my/history'),
+                    apiCall('/classes/my/checkins'),
+                    apiCall('/classes/my/today-schedules')
+                ]);
+                
+                // Fix API response structure handling
+                const enrollments = historyResponse.data?.enrollments || [];
+                const checkIns = checkInsResponse.data?.checkIns || [];
+                // The today-schedules API returns schedules directly in data array
+                const todaySchedules = todayResponse.data || [];
+                
+                // Debug logging
+                console.log('📊 Stats Debug:', {
+                    enrollments: enrollments.length,
+                    checkIns: checkIns.length,
+                    todaySchedules: todaySchedules.length,
+                    todaySchedulesData: todaySchedules
+                });
+                
+                // Update stats
+                document.getElementById('totalEnrollments').textContent = enrollments.length;
+                document.getElementById('totalCheckIns').textContent = checkIns.length;
+                document.getElementById('todayClasses').textContent = todaySchedules.length;
+                
+                // Load membership info from localStorage or calculate remaining days
+                await loadMembershipDays();
+                
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                // Set default values on error
+                document.getElementById('totalEnrollments').textContent = '0';
+                document.getElementById('totalCheckIns').textContent = '0';
+                document.getElementById('todayClasses').textContent = '0';
+                document.getElementById('membershipDays').textContent = '-';
+            }
+        }
+
+        // Load membership remaining days
+        async function loadMembershipDays() {
+            try {
+                // Get member info from localStorage
+                const userInfo = JSON.parse(localStorage.getItem('gym_user_info') || '{}');
+                let membershipDays = '-';
+                
+                // Try to get membership history to find active membership
+                const membershipHistory = JSON.parse(localStorage.getItem('gym_membership_history') || '[]');
+                
+                if (membershipHistory.length > 0) {
+                    // Find the most recent active membership
+                    const activeMembership = membershipHistory
+                        .filter(m => m.status === 'active')
+                        .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))[0];
+                    
+                    if (activeMembership && activeMembership.endDate) {
+                        const endDate = new Date(activeMembership.endDate);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        endDate.setHours(0, 0, 0, 0);
+                        
+                        const diffTime = endDate - today;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        if (diffDays > 0) {
+                            membershipDays = diffDays;
+                        } else if (diffDays === 0) {
+                            membershipDays = 'Hôm nay';
+                        } else {
+                            membershipDays = 'Hết hạn';
+                        }
+                    }
+                }
+                
+                document.getElementById('membershipDays').textContent = membershipDays;
+                
+            } catch (error) {
+                console.error('Error loading membership days:', error);
+                document.getElementById('membershipDays').textContent = '-';
+            }
+        }
+
+        // Load Upcoming Schedules
+        async function loadUpcomingSchedules() {
+            const container = document.getElementById('upcomingSchedules');
+            container.innerHTML = '<div class="loading">Đang tải...</div>';
+            
+            try {
+                const response = await apiCall('/classes/my/schedules');
+                const allSchedules = response.data?.schedules || [];
+                
+                // Ensure we have an array
+                if (!Array.isArray(allSchedules)) {
+                    console.error('allSchedules is not an array:', allSchedules);
+                    container.innerHTML = '<div class="error">❌ Lỗi dữ liệu không hợp lệ</div>';
+                    return;
+                }
+                
+                // Get filter values
+                const selectedDate = document.getElementById('upcomingDate')?.value;
+                const selectedType = document.getElementById('classTypeFilter')?.value;
+                
+                // Filter schedules
+                let filteredSchedules = allSchedules.filter(schedule => {
+                    const scheduleDate = new Date(schedule.startTime);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    scheduleDate.setHours(0, 0, 0, 0);
+                    
+                    // Always show today and future classes
+                    let dateMatch = scheduleDate >= today;
+                    
+                    // If specific date selected, filter by that date
+                    if (selectedDate) {
+                        const filterDate = new Date(selectedDate);
+                        filterDate.setHours(0, 0, 0, 0);
+                        dateMatch = scheduleDate.getTime() === filterDate.getTime();
+                    }
+                    
+                    // Filter by class type if selected
+                    let typeMatch = true;
+                    if (selectedType) {
+                        typeMatch = schedule.class?.classType?.id?.toString() === selectedType;
+                    }
+                    
+                    return dateMatch && typeMatch;
+                });
+                
+                const schedules = filteredSchedules;
+                
+                if (schedules.length === 0) {
+                    let emptyMessage = '';
+                    if (selectedDate || selectedType) {
+                        emptyMessage = `
+                            <div class="empty-state">
+                                <div class="icon">🔍</div>
+                                <h3>Không tìm thấy lịch tập</h3>
+                                <p>Không có lịch tập nào phù hợp với bộ lọc đã chọn.</p>
+                                <button class="btn btn-secondary" onclick="clearFilters()">🔄 Xóa bộ lọc</button>
+                            </div>
+                        `;
+                    } else {
+                        emptyMessage = `
+                            <div class="empty-state">
+                                <div class="icon">⏰</div>
+                                <h3>Không có lịch tập sắp tới</h3>
+                                <p>Hãy đăng ký thêm lớp tập!</p>
+                                <button class="btn btn-primary" onclick="switchTab('explore')">🔍 Khám phá lớp tập</button>
+                            </div>
+                        `;
+                    }
+                    container.innerHTML = emptyMessage;
+                    return;
+                }
+
+                let html = '';
+                schedules.forEach(schedule => {
+                    const startTime = new Date(schedule.startTime);
+                    const endTime = new Date(schedule.endTime);
+                    
+                    html += `
+                        <div class="class-card">
+                            <div class="class-header">
+                                <div>
+                                    <div class="class-title">${schedule.class?.name || 'N/A'}</div>
+                                    <div class="class-time">
+                                        ${startTime.toLocaleDateString('vi-VN')} 
+                                        ${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - 
+                                        ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}
+                                    </div>
+                                    <div class="class-meta">
+                                        <span style="color: ${schedule.class?.classType?.color || '#666'}">${schedule.class?.classType?.name || 'N/A'}</span>
+                                        • ${schedule.room || 'Chưa có phòng'}
+                                        • HLV: ${schedule.class?.trainer?.fullName || 'N/A'}
+                                    </div>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-info" onclick="viewScheduleDetails(${schedule.id})">👁️ Chi tiết</button>
+                                    <button class="btn btn-sm btn-warning" onclick="cancelEnrollment(${schedule.id})">❌ Hủy đăng ký</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+        
+        // Clear filters for upcoming schedules
+        function clearFilters() {
+            document.getElementById('upcomingDate').value = '';
+            document.getElementById('classTypeFilter').value = '';
+            loadUpcomingSchedules();
+        }
+
+        // Load History
+        async function loadHistory() {
+            const container = document.getElementById('historyList');
+            container.innerHTML = '<div class="loading">Đang tải...</div>';
+            
+            try {
+                const response = await apiCall('/classes/my/history');
+                const enrollments = response.data?.enrollments || [];
+                
+                if (enrollments.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="icon">📊</div>
+                            <h3>Chưa có lịch sử tập luyện</h3>
+                            <p>Hãy tham gia lớp tập đầu tiên!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Lớp học</th>
+                                <th>Loại</th>
+                                <th>Ngày</th>
+                                <th>Thời gian</th>
+                                <th>Trạng thái</th>
+                                <th>HLV</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                enrollments.forEach(enrollment => {
+                    const schedule = enrollment.classSchedule;
+                    const startTime = schedule ? new Date(schedule.startTime) : null;
+                    
+                    html += `
+                        <tr>
+                            <td>${schedule?.class?.name || 'N/A'}</td>
+                            <td><span style="color: ${schedule?.class?.classType?.color || '#666'}">${schedule?.class?.classType?.name || 'N/A'}</span></td>
+                            <td>${startTime ? startTime.toLocaleDateString('vi-VN') : 'N/A'}</td>
+                            <td>${startTime ? startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'}) : 'N/A'}</td>
+                            <td>${enrollment.checkinTime ? 
+                                `<span style="color: #28a745; font-weight: bold;">✅ Đã tham gia</span>` :
+                                `<span style="color: #ffc107; font-weight: bold;">⏳ Đã đăng ký</span>`
+                            }</td>
+                            <td>${schedule?.class?.trainer?.fullName || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Load Available Classes
+        async function loadAvailableClasses() {
+            const container = document.getElementById('availableClasses');
+            container.innerHTML = '<div class="loading">Đang tải...</div>';
+            
+            try {
+                const dateFilter = document.getElementById('exploreDate')?.value;
+                const typeFilter = document.getElementById('exploreTypeFilter')?.value;
+                const searchFilter = document.getElementById('exploreSearch')?.value.toLowerCase().trim();
+                
+                let endpoint = '/classes/schedules';
+                const params = [];
+                
+                if (dateFilter) {
+                    params.push(`startDate=${dateFilter}`);
+                    params.push(`endDate=${dateFilter}`);
+                }
+                
+                if (params.length > 0) {
+                    endpoint += '?' + params.join('&');
+                }
+                
+                const response = await apiCall(endpoint);
+                let schedules = response.data?.schedules || [];
+                
+                // Filter by class type if selected
+                if (typeFilter) {
+                    schedules = schedules.filter(schedule => 
+                        schedule.class?.classType?.id == typeFilter
+                    );
+                }
+                
+                // Filter by search text if provided
+                if (searchFilter) {
+                    schedules = schedules.filter(schedule => {
+                        const className = (schedule.class?.name || '').toLowerCase();
+                        const classTypeName = (schedule.class?.classType?.name || '').toLowerCase();
+                        const trainerName = (schedule.class?.trainer?.fullName || '').toLowerCase();
+                        const room = (schedule.room || '').toLowerCase();
+                        
+                        return className.includes(searchFilter) || 
+                               classTypeName.includes(searchFilter) || 
+                               trainerName.includes(searchFilter) || 
+                               room.includes(searchFilter);
+                    });
+                }
+                
+                if (schedules.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="icon">🔍</div>
+                            <h3>Không tìm thấy lớp tập phù hợp</h3>
+                            <p>Hãy thử điều chỉnh bộ lọc hoặc chọn ngày khác!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                schedules.forEach(schedule => {
+                    const startTime = new Date(schedule.startTime);
+                    const endTime = new Date(schedule.endTime);
+                    const now = new Date();
+                    const isPast = endTime < now;
+                    const isFull = (schedule.currentParticipants || 0) >= (schedule.maxParticipants || 0);
+                    
+                    html += `
+                        <div class="class-card ${isPast ? 'past' : ''}">
+                            <div class="class-header">
+                                <div>
+                                    <div class="class-title">${schedule.class?.name || 'N/A'}</div>
+                                    <div class="class-time">
+                                        ${startTime.toLocaleDateString('vi-VN')} 
+                                        ${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - 
+                                        ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}
+                                    </div>
+                                    <div class="class-meta">
+                                        <span style="color: ${schedule.class?.classType?.color || '#666'}">${schedule.class?.classType?.name || 'N/A'}</span>
+                                        • ${schedule.room || 'Chưa có phòng'}
+                                        • HLV: ${schedule.class?.trainer?.fullName || 'N/A'}
+                                        • ${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0} người
+                                        ${schedule.class?.price ? ` • ${parseInt(schedule.class.price).toLocaleString('vi-VN')}đ` : ''}
+                                    </div>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-info" onclick="viewClassDetails(${schedule.class?.id})">👁️ Chi tiết</button>
+                                    ${!isPast && !isFull ? 
+                                        `<button class="btn btn-sm btn-success" onclick="enrollInClass(${schedule.id})">✅ Đăng ký</button>` :
+                                        `<span class="btn btn-sm btn-secondary disabled">${isPast ? 'Đã qua' : 'Đã đầy'}</span>`
+                                    }
+                                </div>
+                            </div>
+                            ${schedule.class?.description ? `<div style="margin-top: 10px; color: #666;">${schedule.class.description}</div>` : ''}
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Load Profile
+        async function loadProfile() {
+            try {
+                // Load member profile
+                const profileResponse = await apiCall('/auth/me');
+                const memberProfile = profileResponse.data || {};
+                
+                document.getElementById('memberProfile').innerHTML = `
+                    <div id="profileView">
+                        <p><strong>Họ tên:</strong> ${memberProfile.fullName || currentUser.fullName || 'N/A'}</p>
+                        <p><strong>Email:</strong> ${memberProfile.email || currentUser.email || 'N/A'}</p>
+                        <p><strong>Username:</strong> ${memberProfile.username || currentUser.username || 'N/A'}</p>
+                        <p><strong>Vai trò:</strong> Thành viên</p>
+                        <button class="btn btn-primary" onclick="editProfile()">✏️ Chỉnh sửa</button>
+                    </div>
+                    <div id="profileEdit" style="display: none;">
+                        <form onsubmit="saveProfile(event)">
+                            <div style="margin-bottom: 15px;">
+                                <label><strong>Họ tên:</strong></label>
+                                <input type="text" id="editFullName" value="${memberProfile.fullName || currentUser.fullName || ''}" 
+                                       required style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label><strong>Email:</strong></label>
+                                <input type="email" id="editEmail" value="${memberProfile.email || currentUser.email || ''}" 
+                                       required style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <button type="submit" class="btn btn-primary">💾 Lưu</button>
+                                <button type="button" class="btn btn-secondary" onclick="cancelEdit()" style="margin-left: 10px;">❌ Hủy</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                
+                // Load current membership package
+                await loadCurrentMembershipDisplay();
+                
+                // Load personal stats with real data
+                await loadPersonalStats();
+                
+                // Load available memberships
+                const membershipsResponse = await apiCall('/members/memberships/all');
+                const memberships = membershipsResponse.data || [];
+                
+                let membershipHtml = '';
+                memberships.forEach(membership => {
+                    membershipHtml += `
+                        <div class="class-card">
+                            <div class="class-header">
+                                <div>
+                                    <div class="class-title">${membership.name}</div>
+                                    <div class="class-meta">
+                                        ${membership.durationDays} ngày • ${parseInt(membership.price).toLocaleString('vi-VN')}đ
+                                    </div>
+                                    <div style="color: #666; margin-top: 5px;">${membership.description || ''}</div>
+                                </div>
+                                <button class="btn btn-sm btn-primary" onclick="purchaseMembership(${membership.id})">💳 Mua</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('availableMemberships').innerHTML = membershipHtml || '<p>Không có gói tập nào.</p>';
+                
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        // Edit Profile Functions
+        function editProfile() {
+            document.getElementById('profileView').style.display = 'none';
+            document.getElementById('profileEdit').style.display = 'block';
+        }
+
+        function cancelEdit() {
+            document.getElementById('profileView').style.display = 'block';
+            document.getElementById('profileEdit').style.display = 'none';
+        }
+
+        async function saveProfile(event) {
+            event.preventDefault();
+            try {
+                const fullName = document.getElementById('editFullName').value.trim();
+                const email = document.getElementById('editEmail').value.trim();
+
+                if (!fullName || !email) {
+                    alert('❌ Vui lòng nhập đầy đủ thông tin');
+                    return;
+                }
+
+                console.log('Updating profile:', { fullName, email });
+                
+                // Call API to update profile
+                const response = await apiCall('/auth/update-profile', 'PUT', {
+                    fullName: fullName,
+                    email: email
+                });
+
+                if (response.success) {
+                    // Update current user info
+                    currentUser.fullName = fullName;
+                    currentUser.email = email;
+                    localStorage.setItem('gym_user_info', JSON.stringify(currentUser));
+
+                    alert('✅ Cập nhật thông tin thành công!');
+                    cancelEdit();
+                    loadProfile(); // Reload to show updated info
+                } else {
+                    alert('❌ Lỗi cập nhật: ' + (response.message || 'Không xác định'));
+                }
+            } catch (error) {
+                console.error('Error saving profile:', error);
+                alert('❌ Lỗi cập nhật thông tin: ' + error.message);
+            }
+        }
+
+
+        // Load Current Membership Display
+        async function loadCurrentMembershipDisplay() {
+            try {
+                const membershipHistory = JSON.parse(localStorage.getItem('gym_membership_history') || '[]');
+                const recentPurchase = localStorage.getItem('recent_membership_purchase');
+
+                let membershipHtml = '<p>Chưa có gói tập nào</p>';
+
+                if (recentPurchase) {
+                    const purchaseInfo = JSON.parse(recentPurchase);
+                    const endDate = new Date(purchaseInfo.endDate || new Date(Date.now() + purchaseInfo.duration * 24 * 60 * 60 * 1000));
+                    const remainingDays = Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24));
+
+                    membershipHtml = `
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px;">
+                            <h4 style="margin: 0 0 10px 0;">🏋️ ${purchaseInfo.name}</h4>
+                            <p style="margin: 5px 0;"><strong>Thời hạn:</strong> ${purchaseInfo.duration} ngày</p>
+                            <p style="margin: 5px 0;"><strong>Giá:</strong> ${parseInt(purchaseInfo.price || 0).toLocaleString('vi-VN')}đ</p>
+                            <p style="margin: 5px 0;"><strong>Ngày còn lại:</strong> ${remainingDays > 0 ? remainingDays : 'Hết hạn'} ngày</p>
+                            <p style="margin: 5px 0; opacity: 0.9;"><small>Ngày mua: ${new Date(purchaseInfo.purchaseDate).toLocaleDateString('vi-VN')}</small></p>
+                        </div>
+                    `;
+                } else if (membershipHistory.length > 0) {
+                    const activeMembership = membershipHistory.find(m => m.status === 'active');
+                    if (activeMembership) {
+                        const endDate = new Date(activeMembership.endDate);
+                        const remainingDays = Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24));
+
+                        membershipHtml = `
+                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px;">
+                                <h4 style="margin: 0 0 10px 0;">🏋️ ${activeMembership.name}</h4>
+                                <p style="margin: 5px 0;"><strong>Thời hạn:</strong> ${activeMembership.duration} ngày</p>
+                                <p style="margin: 5px 0;"><strong>Giá:</strong> ${parseInt(activeMembership.price || 0).toLocaleString('vi-VN')}đ</p>
+                                <p style="margin: 5px 0;"><strong>Ngày còn lại:</strong> ${remainingDays > 0 ? remainingDays : 'Hết hạn'} ngày</p>
+                                <p style="margin: 5px 0; opacity: 0.9;"><small>Ngày mua: ${new Date(activeMembership.startDate).toLocaleDateString('vi-VN')}</small></p>
+                            </div>
+                        `;
+                    }
+                }
+
+                document.getElementById('membershipInfo').innerHTML = membershipHtml;
+            } catch (error) {
+                console.error('Error loading membership display:', error);
+                document.getElementById('membershipInfo').innerHTML = '<p>Lỗi tải thông tin gói tập</p>';
+            }
+        }
+
+        // Load Personal Stats
+        async function loadPersonalStats() {
+            try {
+                // Get real data from APIs instead of using stats endpoint that doesn't exist
+                const [historyResponse, checkInsResponse] = await Promise.all([
+                    apiCall('/classes/my/history'),
+                    apiCall('/classes/my/checkins')
+                ]);
+
+                const enrollments = historyResponse.data?.enrollments || [];
+                const checkIns = checkInsResponse.data?.checkIns || [];
+
+                // Calculate real statistics
+                const totalEnrolled = enrollments.length;
+                const totalAttended = checkIns.length;
+                const attendanceRate = totalEnrolled > 0 ? (totalAttended / totalEnrolled) * 100 : 0;
+
+                // Calculate total classes completed (not just checked in, but actually attended)
+                const attendedClasses = checkIns.filter(c => c.checkoutTime || c.status === 'attended').length;
+
+                document.getElementById('personalStats').innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                        <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: bold; color: #5b86e5;">${totalEnrolled}</div>
+                            <div style="color: #666; font-size: 14px;">Lớp đã đăng ký</div>
+                        </div>
+                        <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: bold; color: #e74c3c;">${totalAttended}</div>
+                            <div style="color: #666; font-size: 14px;">Lần check-in</div>
+                        </div>
+                        <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: bold; color: #f39c12;">${attendedClasses}</div>
+                            <div style="color: #666; font-size: 14px;">Lớp đã hoàn thành</div>
+                        </div>
+                        <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                            <div style="font-size: 24px; font-weight: bold; color: #16a085;">${Math.round(attendanceRate)}%</div>
+                            <div style="color: #666; font-size: 14px;">Tỷ lệ tham gia</div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading personal stats:', error);
+                document.getElementById('personalStats').innerHTML = `
+                    <p>❌ Không thể tải thống kê cá nhân</p>
+                `;
+            }
+        }
+
+        // Load Memberships Tab
+        async function loadMemberships() {
+            try {
+                // Load current membership info
+                loadCurrentMembershipInfo();
+                
+                // Load available memberships for purchase
+                loadAvailableMemberships();
+                
+                // Load membership history
+                loadMembershipHistory();
+                
+            } catch (error) {
+                console.error('Error loading memberships:', error);
+            }
+        }
+
+        // Load current membership information (simplified for member dashboard)
+        function loadCurrentMembershipInfo() {
+            // Check localStorage for recently purchased membership
+            const recentPurchase = localStorage.getItem('recent_membership_purchase');
+            
+            if (recentPurchase) {
+                try {
+                    const purchaseInfo = JSON.parse(recentPurchase);
+                    const today = new Date();
+                    const endDate = new Date(today);
+                    endDate.setDate(today.getDate() + purchaseInfo.duration);
+                    
+                    document.getElementById('currentMembershipInfo').innerHTML = `
+                        <div class="membership-info">
+                            <h3>📅 Gói hiện tại: ${purchaseInfo.name}</h3>
+                            <p>📆 <strong>Ngày bắt đầu:</strong> ${today.toLocaleDateString('vi-VN')}</p>
+                            <p>📅 <strong>Ngày kết thúc:</strong> ${endDate.toLocaleDateString('vi-VN')}</p>
+                            <p>💰 <strong>Giá:</strong> ${parseInt(purchaseInfo.price).toLocaleString('vi-VN')}đ</p>
+                            <p>✅ <strong>Trạng thái:</strong> <span class="badge badge-warning">Chờ thanh toán</span></p>
+                            <p><small>💡 Vui lòng thanh toán tại quầy để kích hoạt gói tập</small></p>
+                        </div>
+                    `;
+                    return;
+                } catch (error) {
+                    console.error('Error parsing recent purchase:', error);
+                }
+            }
+            
+            // Default display when no membership
+            document.getElementById('currentMembershipInfo').innerHTML = `
+                <div class="membership-info">
+                    <h3>📅 Chưa có gói tập nào</h3>
+                    <p>Hãy mua gói tập đầu tiên để bắt đầu tập luyện!</p>
+                </div>
+            `;
+        }
+
+        // Load available memberships for purchase
+        async function loadAvailableMemberships() {
+            try {
+                const membershipsResponse = await apiCall('/members/memberships/all');
+                const memberships = membershipsResponse.data || [];
+                
+                let membershipHtml = '<div class="membership-grid">';
+                memberships.forEach(membership => {
+                    membershipHtml += `
+                        <div class="membership-card">
+                            <div class="membership-header">
+                                <h4 class="membership-title">${membership.name}</h4>
+                                <div class="membership-price">${parseInt(membership.price).toLocaleString('vi-VN')}đ</div>
+                            </div>
+                            <div class="membership-body">
+                                <p class="membership-description">${membership.description || ''}</p>
+                                <p class="membership-duration">⏱️ <strong>Thời hạn:</strong> ${membership.duration} ngày</p>
+                                <div class="membership-benefits">
+                                    ${membership.benefits ? membership.benefits.map(benefit => `<p>✅ ${benefit}</p>`).join('') : ''}
+                                </div>
+                            </div>
+                            <div class="membership-footer">
+                                <button class="btn btn-primary btn-purchase" onclick="purchaseMembership(${membership.id})">
+                                    💳 Mua gói này
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                membershipHtml += '</div>';
+                
+                document.getElementById('availableMembershipsList').innerHTML = membershipHtml || '<p>Không có gói tập nào.</p>';
+                
+            } catch (error) {
+                document.getElementById('availableMembershipsList').innerHTML = '<p class="error">Lỗi tải danh sách gói tập</p>';
+            }
+        }
+
+        // Load membership history
+        function loadMembershipHistory() {
+            try {
+                const purchaseHistory = [];
+                
+                // Get recent purchase from localStorage
+                const recentPurchase = localStorage.getItem('recent_membership_purchase');
+                if (recentPurchase) {
+                    try {
+                        const purchaseInfo = JSON.parse(recentPurchase);
+                        purchaseHistory.push(purchaseInfo);
+                    } catch (error) {
+                        console.error('Error parsing recent purchase:', error);
+                    }
+                }
+                
+                // Get all purchases from localStorage history
+                const allHistory = localStorage.getItem('membership_purchase_history');
+                if (allHistory) {
+                    try {
+                        const historyList = JSON.parse(allHistory);
+                        purchaseHistory.push(...historyList);
+                    } catch (error) {
+                        console.error('Error parsing purchase history:', error);
+                    }
+                }
+                
+                if (purchaseHistory.length === 0) {
+                    document.getElementById('membershipHistoryList').innerHTML = `
+                        <div class="empty-state">
+                            <div class="icon">📊</div>
+                            <h3>Chưa có lịch sử mua gói</h3>
+                            <p>Hãy mua gói tập đầu tiên để bắt đầu tập luyện!</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let historyHtml = '';
+                purchaseHistory.forEach((purchase, index) => {
+                    const purchaseDate = new Date(purchase.purchaseDate).toLocaleDateString('vi-VN');
+                    const endDate = new Date(purchase.purchaseDate);
+                    endDate.setDate(endDate.getDate() + purchase.duration);
+                    const isRecent = index === 0 && recentPurchase;
+                    
+                    // Determine status and badge
+                    let status, badgeClass, icon;
+                    if (isRecent) {
+                        status = 'Chờ thanh toán';
+                        badgeClass = 'warning';
+                        icon = '🆕';
+                    } else if (purchase.status === 'replaced') {
+                        status = 'Đã thay thế';
+                        badgeClass = 'secondary';
+                        icon = '🔄';
+                    } else {
+                        status = 'Hoàn thành';
+                        badgeClass = 'success';
+                        icon = '✅';
+                    }
+                    
+                    // Show replacement date if available
+                    const dateInfo = purchase.completedDate ? 
+                        `Từ ${purchaseDate} đến ${new Date(purchase.completedDate).toLocaleDateString('vi-VN')}` :
+                        `Từ ${purchaseDate} đến ${endDate.toLocaleDateString('vi-VN')}`;
+                    
+                    historyHtml += `
+                        <div class="history-item ${isRecent ? 'recent-purchase' : ''}">
+                            <p><strong>${icon} ${purchase.name}</strong> - ${parseInt(purchase.price).toLocaleString('vi-VN')}đ</p>
+                            <p><small>${dateInfo} • 
+                            <span class="badge badge-${badgeClass}">${status}</span>
+                            ${isRecent ? ' • 💡 Vui lòng thanh toán tại quầy' : ''}
+                            ${purchase.type === 'upgrade' ? ' • 🔄 Đổi gói' : ''}
+                            </small></p>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('membershipHistoryList').innerHTML = historyHtml;
+                
+            } catch (error) {
+                console.error('Error loading membership history:', error);
+                document.getElementById('membershipHistoryList').innerHTML = '<p class="error">Lỗi tải lịch sử gói tập</p>';
+            }
+        }
+
+        // Load Class Types
+        async function loadClassTypes() {
+            try {
+                const response = await apiCall('/classes/types');
+                const types = response.data || [];
+                
+                const selects = ['classTypeFilter', 'exploreTypeFilter'];
+                selects.forEach(selectId => {
+                    const select = document.getElementById(selectId);
+                    if (select) {
+                        select.innerHTML = '<option value="">Tất cả loại</option>';
+                        types.forEach(type => {
+                            const option = document.createElement('option');
+                            option.value = type.id;
+                            option.textContent = type.name;
+                            select.appendChild(option);
+                        });
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading class types:', error);
+            }
+        }
+
+        // Quick Check-in
+        // Quick Check-in by class name
+        async function quickCheckIn() {
+            const classNameOrCode = document.getElementById('quickCheckinCode').value.trim();
+            const resultDiv = document.getElementById('quickCheckinResult');
+            
+            if (!classNameOrCode) {
+                resultDiv.innerHTML = '<div class="error">❌ Vui lòng nhập tên lớp hoặc mã!</div>';
+                return;
+            }
+            
+            try {
+                // First try to find schedules by class name
+                const todayResponse = await apiCall('/classes/my/today-schedules');
+                const availableSchedules = todayResponse.data || [];
+                
+                // Search for matching classes by name or schedule code (case insensitive)
+                const matchingSchedules = availableSchedules.filter(schedule => {
+                    const className = (schedule.class?.name || '').toLowerCase();
+                    const classType = (schedule.class?.classType?.name || '').toLowerCase();
+                    const search = classNameOrCode.toLowerCase();
+                    const scheduleCode = `SCH${schedule.id.toString().padStart(6, '0')}`;
+                    
+                    return className.includes(search) || classType.includes(search) || 
+                           schedule.id.toString() === classNameOrCode ||
+                           scheduleCode.toLowerCase() === search;
+                });
+                
+                if (matchingSchedules.length === 0) {
+                    resultDiv.innerHTML = `<div class="error">❌ Không tìm thấy lớp "${classNameOrCode}" hôm nay hoặc bạn chưa đăng ký!</div>`;
+                    return;
+                }
+                
+                if (matchingSchedules.length === 1) {
+                    // Found exactly one match, check-in directly
+                    const schedule = matchingSchedules[0];
+                    const now = new Date();
+                    const scheduleStart = new Date(schedule.startTime);
+                    
+                    // Check if can check in (15 minutes before to 30 minutes after start)
+                    const canCheckInStart = new Date(scheduleStart.getTime() - 15 * 60 * 1000);
+                    const canCheckInEnd = new Date(scheduleStart.getTime() + 30 * 60 * 1000);
+                    const canCheckin = now >= canCheckInStart && now <= canCheckInEnd;
+                    
+                    // Check if already checked in
+                    if (schedule.checkinTime) {
+                        resultDiv.innerHTML = `<div class="success">✅ Bạn đã check-in lớp "${schedule.class?.name}" lúc ${new Date(schedule.checkinTime).toLocaleTimeString('vi-VN')}</div>`;
+                        return;
+                    }
+                    
+                    if (!canCheckin) {
+                        const minutesToStart = Math.ceil((canCheckInStart - now) / (1000 * 60));
+                        const minutesAfterEnd = Math.ceil((now - canCheckInEnd) / (1000 * 60));
+                        
+                        if (now < canCheckInStart) {
+                            resultDiv.innerHTML = `<div class="warning">⏰ Lớp "${schedule.class?.name}" chưa đến giờ check-in. Check-in sẽ mở sau ${minutesToStart} phút (15 phút trước giờ học)</div>`;
+                        } else {
+                            resultDiv.innerHTML = `<div class="error">❌ Lớp "${schedule.class?.name}" đã quá thời gian check-in (${minutesAfterEnd} phút sau khi kết thúc check-in)</div>`;
+                        }
+                        return;
+                    }
+                    
+                    await checkInToClass(schedule.id);
+                    document.getElementById('quickCheckinCode').value = '';
+                } else {
+                    // Multiple matches, show options
+                    let html = `<div class="info">🔍 Tìm thấy ${matchingSchedules.length} lớp phù hợp:</div>`;
+                    matchingSchedules.forEach(schedule => {
+                        const now = new Date();
+                        const scheduleStart = new Date(schedule.date + 'T' + schedule.startTime);
+                        const timeDiff = (scheduleStart - now) / (1000 * 60); // minutes
+                        const canCheckin = timeDiff >= -15 && timeDiff <= 60; // 15 mins before to 60 mins after
+                        
+                        html += `
+                            <div style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background: ${canCheckin ? '#fff3cd' : '#f8f9fa'};">
+                                <strong>${schedule.class?.name}</strong> - ${schedule.startTime}<br>
+                                <small>${schedule.class?.classType?.name} | Phòng: ${schedule.room || 'N/A'}</small><br>
+                                ${canCheckin ? 
+                                    `<button class="btn btn-sm btn-success" onclick="checkInToClass(${schedule.id})">✅ Check-in</button>` :
+                                    '<span class="btn btn-sm btn-secondary disabled">Chưa đến giờ</span>'
+                                }
+                            </div>
+                        `;
+                    });
+                    resultDiv.innerHTML = html;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ ${error.message}</div>`;
+            }
+        }
+
+        // Show only enrolled classes for today that can be checked in
+        async function showAvailableClasses() {
+            const resultDiv = document.getElementById('availableClassesList');
+            
+            try {
+                // Get only enrolled classes for today
+                const todayResponse = await apiCall('/classes/my/today-schedules');
+                const enrolledSchedules = todayResponse.data || [];
+                
+                if (enrolledSchedules.length === 0) {
+                    resultDiv.innerHTML = '<div class="info">📅 Hôm nay bạn chưa có lớp nào được đăng ký.</div>';
+                    return;
+                }
+                
+                let html = '<div class="info"><strong>📋 Lớp đã đăng ký hôm nay (có thể check-in):</strong></div>';
+                
+                enrolledSchedules.forEach(schedule => {
+                    const now = new Date();
+                    const scheduleStart = new Date(schedule.startTime);
+                    const scheduleEnd = new Date(schedule.endTime);
+                    
+                    // Check if can check in (15 minutes before to 30 minutes after start)
+                    const canCheckInStart = new Date(scheduleStart.getTime() - 15 * 60 * 1000);
+                    const canCheckInEnd = new Date(scheduleStart.getTime() + 30 * 60 * 1000);
+                    const canCheckin = now >= canCheckInStart && now <= canCheckInEnd;
+                    
+                    const scheduleCode = `SCH${schedule.id.toString().padStart(6, '0')}`;
+                    const isCheckedIn = schedule.checkinTime;
+                    
+                    html += `
+                        <div style="margin: 10px 0; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: ${isCheckedIn ? '#e8f5e8' : canCheckin ? '#fff3cd' : '#f8f9fa'};">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="flex: 1;">
+                                    <div><strong>${schedule.class?.name || 'N/A'}</strong></div>
+                                    <div style="color: ${schedule.class?.classType?.color || '#666'}; font-weight: bold; margin: 4px 0;">
+                                        📂 ${schedule.class?.classType?.name || 'N/A'}
+                                    </div>
+                                    <div style="font-size: 13px; color: #666;">
+                                        ⏰ ${scheduleStart.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - 
+                                        ${scheduleEnd.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}
+                                        • 🏠 ${schedule.room || 'N/A'}
+                                        • 👨‍🏫 ${schedule.trainer?.fullName || 'N/A'}
+                                    </div>
+                                    <div style="margin-top: 8px;">
+                                        <code style="background: #e3f2fd; color: #1976d2; padding: 3px 6px; border-radius: 4px; font-size: 12px; cursor: pointer;" 
+                                              onclick="copyToClipboard('${scheduleCode}')" title="Click để copy mã">${scheduleCode}</code>
+                                        <small style="color: #666; margin-left: 8px;">👆 Click để copy mã</small>
+                                    </div>
+                                    ${isCheckedIn ? `<div style="margin-top: 8px; color: #28a745; font-size: 12px;">✅ Đã check-in lúc ${new Date(schedule.checkinTime).toLocaleTimeString('vi-VN')}</div>` : ''}
+                                </div>
+                                <div style="margin-left: 15px;">
+                                    ${isCheckedIn ? `
+                                        <span class="btn btn-sm btn-success disabled" style="white-space: nowrap;">
+                                            ✅ Đã check-in
+                                        </span>
+                                    ` : canCheckin ? `
+                                        <button class="btn btn-sm btn-success" onclick="quickCheckInById(${schedule.id}); showAvailableClasses();" style="white-space: nowrap;">
+                                            ✅ Check-in
+                                        </button>
+                                    ` : `
+                                        <span class="btn btn-sm btn-secondary disabled" style="white-space: nowrap; font-size: 11px;">
+                                            ${now < canCheckInStart ? '⏰ Chưa đến giờ' : '⏰ Đã quá giờ'}
+                                        </span>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ ${error.message}</div>`;
+            }
+        }
+
+        // Class Actions
+        async function checkInToClass(scheduleId) {
+            try {
+                const response = await apiCall(`/classes/schedules/${scheduleId}/checkin`, 'POST');
+                if (response.success) {
+                    // Show success message
+                    const resultDiv = document.getElementById('quickCheckinResult');
+                    resultDiv.innerHTML = '<div class="success">✅ Check-in thành công! Đã ghi nhận tham gia lớp học.</div>';
+                    
+                    // Clear available classes list
+                    document.getElementById('availableClassesList').innerHTML = '';
+                    
+                    // Reload data to reflect changes
+                    loadUpcomingSchedules();
+                    loadStats();
+                    
+                    // Clear success message after 3 seconds
+                    setTimeout(() => {
+                        resultDiv.innerHTML = '';
+                    }, 3000);
+                }
+            } catch (error) {
+                const resultDiv = document.getElementById('quickCheckinResult');
+                resultDiv.innerHTML = `<div class="error">❌ Check-in thất bại: ${error.message}</div>`;
+                console.error('Check-in error:', error);
+            }
+        }
+
+        async function enrollInClass(scheduleId) {
+            if (!confirm('Bạn có chắc muốn đăng ký lớp này?')) return;
+            
+            try {
+                const response = await apiCall(`/classes/schedules/${scheduleId}/enroll`, 'POST');
+                if (response.success) {
+                    alert('✅ Đăng ký thành công!');
+                    loadAvailableClasses();
+                    loadStats();
+                }
+            } catch (error) {
+                alert('❌ Lỗi: ' + error.message);
+            }
+        }
+
+        async function cancelEnrollment(scheduleId) {
+            if (!confirm('Bạn có chắc muốn hủy đăng ký?')) return;
+            
+            try {
+                const response = await apiCall(`/classes/schedules/${scheduleId}/enroll`, 'DELETE');
+                if (response.success) {
+                    alert('✅ Hủy đăng ký thành công!');
+                    loadUpcomingSchedules();
+                    loadUpcomingSchedules();
+                    loadStats();
+                }
+            } catch (error) {
+                alert('❌ Lỗi: ' + error.message);
+            }
+        }
+
+        // Modal Functions
+        function showModal(title, content) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('formModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('formModal').style.display = 'none';
+        }
+
+        // Placeholder functions  
+        async function viewScheduleDetails(id) { 
+            try {
+                // Get schedule details from API
+                const response = await apiCall(`/classes/schedules/${id}`);
+                
+                if (response.success) {
+                    const schedule = response.data;
+                    const scheduleCode = `SCH${schedule.id.toString().padStart(6, '0')}`;
+                    
+                    // Format dates and times
+                    const startTime = new Date(schedule.startTime);
+                    const endTime = new Date(schedule.endTime);
+                    const now = new Date();
+                    
+                    // Check enrollment status for this member
+                    let enrollmentInfo = '';
+                    try {
+                        const enrollmentResponse = await apiCall('/classes/my/schedules');
+                        const mySchedules = enrollmentResponse.data || [];
+                        const myEnrollment = mySchedules.find(s => s.id === schedule.id);
+                        
+                        if (myEnrollment) {
+                            enrollmentInfo = `
+                                <div style="background: #e8f5e8; padding: 12px; border-radius: 6px; border-left: 4px solid #4caf50; margin: 15px 0;">
+                                    <h4 style="color: #2e7d32; margin: 0 0 8px 0;">✅ Bạn đã đăng ký lớp này</h4>
+                                    <div><strong>Trạng thái:</strong> ${myEnrollment.enrollmentStatus === 'attended' ? '✅ Đã tham gia' : '📝 Đã đăng ký'}</div>
+                                    ${myEnrollment.checkinTime ? `<div><strong>Thời gian check-in:</strong> ${new Date(myEnrollment.checkinTime).toLocaleString('vi-VN')}</div>` : ''}
+                                </div>
+                            `;
+                        } else {
+                            enrollmentInfo = `
+                                <div style="background: #fff3e0; padding: 12px; border-radius: 6px; border-left: 4px solid #ff9800; margin: 15px 0;">
+                                    <div style="color: #f57c00;">ℹ️ Bạn chưa đăng ký lớp này</div>
+                                </div>
+                            `;
+                        }
+                    } catch (err) {
+                        console.log('Could not check enrollment status');
+                    }
+                    
+                    const content = `
+                        <div style="line-height: 1.6;">
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                <h4 style="color: #1976d2; margin: 0 0 10px 0;">🏋️ ${schedule.class?.name || 'N/A'}</h4>
+                                <div style="color: #666; margin-bottom: 10px;">${schedule.class?.description || ''}</div>
+                                <div style="color: ${schedule.class?.classType?.color || '#666'}; font-weight: bold;">
+                                    📂 ${schedule.class?.classType?.name || 'N/A'} • 
+                                    ${schedule.class?.classType?.difficulty === 'beginner' ? '🟢 Cơ bản' : 
+                                      schedule.class?.classType?.difficulty === 'intermediate' ? '🟡 Trung bình' : 
+                                      schedule.class?.classType?.difficulty === 'advanced' ? '🔴 Nâng cao' : 'N/A'}
+                                </div>
+                            </div>
+                            
+                            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+                                <h4 style="color: #1976d2; margin: 0 0 10px 0;">🔢 Mã lớp để check-in</h4>
+                                <div style="background: white; padding: 12px; border-radius: 6px; border: 2px solid #1976d2;">
+                                    <code style="font-size: 24px; font-weight: bold; color: #1976d2; font-family: 'Courier New', monospace;">${scheduleCode}</code>
+                                </div>
+                                <div style="margin-top: 8px;">
+                                    <button class="btn btn-sm btn-primary" onclick="copyToClipboard('${scheduleCode}')" style="font-size: 12px;">
+                                        📋 Copy mã
+                                    </button>
+                                </div>
+                                <small style="color: #666; display: block; margin-top: 8px;">
+                                    💡 Sử dụng mã này để check-in nhanh trong phần "Check-in nhanh"
+                                </small>
+                            </div>
+                            
+                            ${enrollmentInfo}
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                                <div>
+                                    <strong>📅 Ngày:</strong><br>
+                                    ${startTime.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                </div>
+                                <div>
+                                    <strong>⏰ Thời gian:</strong><br>
+                                    ${startTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - 
+                                    ${endTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                                <div>
+                                    <strong>👨‍🏫 Huấn luyện viên:</strong><br>
+                                    ${schedule.trainer?.fullName || 'N/A'}
+                                </div>
+                                <div>
+                                    <strong>🏠 Phòng:</strong><br>
+                                    ${schedule.room || 'N/A'}
+                                </div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                                <div>
+                                    <strong>👥 Số lượng:</strong><br>
+                                    ${schedule.currentParticipants}/${schedule.maxParticipants} người
+                                </div>
+                                <div>
+                                    <strong>💰 Giá:</strong><br>
+                                    ${schedule.class?.price ? Number(schedule.class.price).toLocaleString('vi-VN') + ' VNĐ' : 'Miễn phí'}
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <strong>📝 Ghi chú:</strong><br>
+                                ${schedule.notes || 'Không có ghi chú'}
+                            </div>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <strong>📊 Trạng thái:</strong><br>
+                                <span style="padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; 
+                                    ${schedule.status === 'scheduled' ? 'background: #e8f5e8; color: #2e7d32;' : 
+                                      schedule.status === 'completed' ? 'background: #e3f2fd; color: #1976d2;' : 
+                                      schedule.status === 'cancelled' ? 'background: #ffebee; color: #c62828;' : 'background: #f5f5f5; color: #666;'}">
+                                    ${schedule.status === 'scheduled' ? '📅 Đã lên lịch' : 
+                                      schedule.status === 'completed' ? '✅ Đã hoàn thành' : 
+                                      schedule.status === 'cancelled' ? '❌ Đã hủy' : schedule.status}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Show modal
+                    document.getElementById('modalTitle').textContent = `Chi tiết lịch tập - ${schedule.class?.name || 'N/A'}`;
+                    document.getElementById('modalContent').innerHTML = content;
+                    document.getElementById('formModal').style.display = 'block';
+                } else {
+                    alert('Không thể tải thông tin chi tiết lịch tập');
+                }
+            } catch (error) {
+                console.error('Error loading schedule details:', error);
+                alert('Có lỗi xảy ra khi tải thông tin chi tiết');
+            }
+        }
+
+
+        function viewClassDetails(id) { alert('Chức năng xem chi tiết lớp sẽ được phát triển'); }
+        
+        // Test function to check if JavaScript works
+        function testPurchase(id) {
+            alert('Button works! Testing purchase for ID: ' + id);
+            try {
+                purchaseMembership(id);
+            } catch (error) {
+                alert('Error calling purchaseMembership: ' + error.message);
+                console.error('Purchase error:', error);
+            }
+        }
+        
+        async function purchaseMembership(membershipId) {
+            console.log('🚀 purchaseMembership called with ID:', membershipId);
+            
+            const token = localStorage.getItem('gym_auth_token');
+            
+            if (!token) {
+                alert('❌ Vui lòng đăng nhập để mua gói tập');
+                return;
+            }
+            
+            try {
+                
+                // Get membership details first
+                const membershipResponse = await apiCall(`/members/memberships/${membershipId}`);
+                if (!membershipResponse.success) {
+                    alert('❌ Không thể tải thông tin gói tập. Vui lòng thử lại!');
+                    return;
+                }
+                
+                const membership = membershipResponse.data;
+                
+                // Check if member already has active membership
+                let hasActiveMembership = false;
+                let currentMembershipName = '';
+                
+                // Check from DOM first
+                const membershipInfoElement = document.querySelector('.membership-info h3');
+                if (membershipInfoElement && !membershipInfoElement.textContent.includes('Chưa có gói tập')) {
+                    hasActiveMembership = true;
+                    currentMembershipName = membershipInfoElement.textContent.replace('Gói hiện tại: ', '');
+                }
+                
+                // Show different confirmation messages
+                let confirmMessage;
+                if (hasActiveMembership) {
+                    confirmMessage = `⚠️ BẠN ĐÃ CÓ GÓI TẬP ĐANG HOẠT ĐỘNG!\n\n📦 Gói hiện tại: ${currentMembershipName}\n🔄 Gói mới: ${membership.name}\n💰 Giá: ${parseInt(membership.price).toLocaleString('vi-VN')}đ\n⏰ Thời hạn: ${membership.duration} ngày\n\n⚠️ Lưu ý: Gói hiện tại sẽ bị thay thế!\n\n❓ Bạn có chắc chắn muốn ĐỔI GÓI không?`;
+                } else {
+                    confirmMessage = `✅ Xác nhận mua gói "${membership.name}"?\n\n💰 Giá: ${parseInt(membership.price).toLocaleString('vi-VN')}đ\n⏰ Thời hạn: ${membership.duration} ngày\n\n❓ Bạn có muốn tiếp tục?`;
+                }
+                
+                if (confirm(confirmMessage)) {
+                    try {
+                        const response = await apiCall('/members/my/membership', 'POST', {
+                            membershipId: membershipId
+                        });
+                        
+                        if (response && response.success) {
+                            // Calculate dates
+                            const startDate = new Date();
+                            const endDate = new Date(startDate);
+                            endDate.setDate(endDate.getDate() + parseInt(membership.duration));
+                            
+                            const newPurchase = {
+                                id: response.data?.id || Date.now(),
+                                membershipId: membershipId,
+                                name: membership.name,
+                                price: membership.price,
+                                duration: membership.duration,
+                                startDate: startDate.toISOString(),
+                                endDate: endDate.toISOString(),
+                                purchaseDate: new Date().toISOString(),
+                                status: 'active',
+                                type: hasActiveMembership ? 'upgrade' : 'new'
+                            };
+                            
+                            // Save recent membership info
+                            localStorage.setItem('recent_membership_purchase', JSON.stringify(newPurchase));
+                            
+                            // Update membership history for stats calculation
+                            let membershipHistory = [];
+                            const existingMembershipHistory = localStorage.getItem('gym_membership_history');
+                            if (existingMembershipHistory) {
+                                try {
+                                    membershipHistory = JSON.parse(existingMembershipHistory);
+                                } catch (error) {
+                                    console.error('Error parsing existing membership history:', error);
+                                }
+                            }
+                            
+                            // If upgrading, mark previous memberships as replaced
+                            if (hasActiveMembership) {
+                                membershipHistory = membershipHistory.map(m => ({
+                                    ...m,
+                                    status: m.status === 'active' ? 'replaced' : m.status,
+                                    completedDate: m.status === 'active' ? new Date().toISOString() : m.completedDate
+                                }));
+                            }
+                            
+                            // Add new membership to history
+                            membershipHistory.unshift(newPurchase);
+                            
+                            // Save updated membership history
+                            localStorage.setItem('gym_membership_history', JSON.stringify(membershipHistory));
+                            
+                            // Update purchase history - add to complete history
+                            let fullHistory = [];
+                            const existingHistory = localStorage.getItem('membership_purchase_history');
+                            if (existingHistory) {
+                                try {
+                                    fullHistory = JSON.parse(existingHistory);
+                                } catch (error) {
+                                    console.error('Error parsing existing history:', error);
+                                }
+                            }
+                            
+                            // Add to full history for display
+                            fullHistory.unshift({
+                                name: membership.name,
+                                price: membership.price,
+                                duration: membership.duration,
+                                purchaseDate: new Date().toISOString(),
+                                type: hasActiveMembership ? 'upgrade' : 'new'
+                            });
+                            
+                            // Save updated history
+                            localStorage.setItem('membership_purchase_history', JSON.stringify(fullHistory));
+                            
+                            const successMessage = hasActiveMembership ? 
+                                `🔄 ĐỔI GÓI THÀNH CÔNG!\n\n✅ Đã đổi từ "${currentMembershipName}" sang "${membership.name}"!\n\n💰 Vui lòng thanh toán ${parseInt(membership.price).toLocaleString('vi-VN')}đ tại quầy lễ tân để kích hoạt gói mới.\n\n🎉 Cảm ơn bạn đã sử dụng dịch vụ!` :
+                                `✅ MUA GÓI THÀNH CÔNG!\n\n🎉 Đăng ký gói "${membership.name}" thành công!\n\n💰 Vui lòng thanh toán ${parseInt(membership.price).toLocaleString('vi-VN')}đ tại quầy lễ tân để kích hoạt gói tập.\n\n🎉 Cảm ơn bạn đã sử dụng dịch vụ!`;
+                            
+                            alert(successMessage);
+                            
+                            // Refresh membership info and stats immediately
+                            loadCurrentMembershipInfo();
+                            loadMembershipHistory();
+                            loadStats(); // Refresh stats to show updated membership days
+                            
+                            // If on memberships tab, refresh it too
+                            const activeTab = document.querySelector('.tab-content.active');
+                            if (activeTab && activeTab.id === 'memberships') {
+                                setTimeout(() => {
+                                    loadMemberships();
+                                }, 500);
+                            }
+                        } else {
+                            alert('❌ THẤT BẠI: ' + (response?.message || 'Lỗi không xác định'));
+                        }
+                    } catch (error) {
+                        alert('❌ API LỖI: ' + error.message);
+                        console.error('API error:', error);
+                    }
+                } else {
+                    alert('❌ Đã hủy mua gói');
+                }
+            } catch (error) {
+                alert('❌ FUNCTION ERROR: ' + error.message);
+                console.error('Function error:', error);
+            }
+        }
+        function searchClasses() { 
+            // Trigger search when user types
+            loadAvailableClasses(); 
+        }
+
+        function logout() {
+            localStorage.removeItem('gym_auth_token');
+            localStorage.removeItem('gym_user_info');
+            window.location.href = 'index.html';
+        }
+
+        // Copy to clipboard function
+        function copyToClipboard(text) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast(`Copied: ${text}`, 'success');
+                }).catch(() => {
+                    fallbackCopyToClipboard(text);
+                });
+            } else {
+                fallbackCopyToClipboard(text);
+            }
+        }
+
+        function fallbackCopyToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showToast(`Copied: ${text}`, 'success');
+            } catch (err) {
+                showToast('Copy failed, please copy manually', 'error');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3'};
+                color: white;
+                padding: 12px 24px;
+                border-radius: 4px;
+                z-index: 10000;
+                font-size: 14px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                animation: slideIn 0.3s ease-out;
+            `;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 2000);
+        }
+
+        // Quick check-in by schedule ID
+        async function quickCheckInById(scheduleId) {
+            try {
+                const response = await apiCall('/classes/my/quick-checkin', 'POST', {
+                    scheduleId: scheduleId
+                });
+
+                if (response.success) {
+                    showToast(`✅ ${response.message}`, 'success');
+                } else {
+                    showToast(`❌ ${response.message}`, 'error');
+                }
+            } catch (error) {
+                showToast(`❌ ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -12,19 +12,47 @@ const API_BASE_URL = 'http://localhost:3000/api';
  * @returns {Promise<Object>} - API response data
  */
 async function apiCall(endpoint, options = {}) {
+    const startTime = Date.now();
+    const method = options.method || 'GET';
+    
     try {
         const headers = {
             'Content-Type': 'application/json',
             ...(authToken && { 'Authorization': `Bearer ${authToken}` })
         };
 
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        let response = await fetch(`${API_BASE_URL}${endpoint}`, {
             headers,
             ...options
         });
 
-        const data = await response.json();
-        displayApiResponse(data);
+        let data = await response.json();
+        const duration = Date.now() - startTime;
+        
+        // Check if token expired and try to refresh
+        if (response.status === 401 && data.message && data.message.includes('hết hạn')) {
+            console.log('🔄 Token expired, attempting refresh...');
+            const refreshSuccess = await refreshAuthToken();
+            
+            if (refreshSuccess) {
+                console.log('✅ Token refreshed successfully, retrying original request');
+                // Retry the original request with new token
+                const newHeaders = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                };
+                
+                response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    headers: newHeaders,
+                    ...options
+                });
+                
+                data = await response.json();
+            }
+        }
+        
+        // Log API call to real-time panel
+        logApiCall(method, endpoint, response.status, data, duration);
         
         if (!response.ok) {
             throw new Error(data.message || 'API call failed');
@@ -32,8 +60,92 @@ async function apiCall(endpoint, options = {}) {
         
         return data;
     } catch (error) {
-        displayApiResponse({ error: error.message });
+        const duration = Date.now() - startTime;
+        logApiCall(method, endpoint, 'ERROR', { error: error.message }, duration);
         throw error;
+    }
+}
+
+/**
+ * Log API call to real-time response panel
+ * @param {string} method - HTTP method
+ * @param {string} endpoint - API endpoint
+ * @param {number|string} status - Response status
+ * @param {Object} data - Response data
+ * @param {number} duration - Request duration in ms
+ */
+function logApiCall(method, endpoint, status, data, duration) {
+    const timestamp = new Date().toLocaleTimeString('vi-VN');
+    const statusClass = status >= 200 && status < 300 ? 'status-success' : 'status-error';
+    
+    const logEntry = `
+<span class="timestamp">[${timestamp}]</span> <span class="method">${method}</span> <span class="url">${endpoint}</span>
+<span class="${statusClass}">Status: ${status}</span> | Duration: ${duration}ms
+Response: ${JSON.stringify(data, null, 2)}
+${'='.repeat(80)}
+`;
+    
+    const panel = document.getElementById('apiResponsePanel');
+    if (panel) {
+        panel.innerHTML = logEntry + panel.innerHTML;
+        // Keep only last 10 entries to prevent memory issues
+        const entries = panel.innerHTML.split('='.repeat(80));
+        if (entries.length > 11) {
+            panel.innerHTML = entries.slice(0, 11).join('='.repeat(80));
+        }
+        panel.scrollTop = 0;
+    }
+}
+
+/**
+ * Clear API response panel
+ */
+function clearApiResponse() {
+    const panel = document.getElementById('apiResponsePanel');
+    if (panel) {
+        panel.innerHTML = 'API responses sẽ hiển thị tại đây khi bạn thực hiện các thao tác...';
+    }
+}
+
+/**
+ * Refresh authentication token using stored refresh token
+ * @returns {Promise<boolean>} - Success status
+ */
+async function refreshAuthToken() {
+    try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) {
+            console.warn('No refresh token available');
+            return false;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ refreshToken })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            authToken = data.data.accessToken;
+            localStorage.setItem('authToken', authToken);
+            // Keep the same refresh token as it's reused
+            console.log('✅ Token refreshed successfully');
+            return true;
+        } else {
+            console.error('❌ Token refresh failed:', data.message);
+            // Clear stored tokens if refresh fails
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            authToken = null;
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Token refresh error:', error);
+        return false;
     }
 }
 
@@ -44,26 +156,10 @@ async function apiCall(endpoint, options = {}) {
 async function debugUsers() {
     try {
         const response = await apiCall('/debug/users');
-        
-        if (response.success) {
-            const users = response.data.users;
-            let html = '<div class="success">🔍 Debug Users:<br>';
-            
-            users.forEach(user => {
-                html += `👤 ${user.email} (${user.role}) - Member: ${user.member ? user.member.memberCode : 'NO MEMBER'}<br>`;
-            });
-            
-            html += `<br>Total: ${users.length} users</div>`;
-            document.getElementById('authDemo').innerHTML = html;
-        } else {
-            document.getElementById('authDemo').innerHTML = `
-                <div class="error">❌ Debug failed: ${response.message}</div>
-            `;
-        }
+        return response;
     } catch (error) {
-        document.getElementById('authDemo').innerHTML = `
-            <div class="error">❌ Debug error: ${error.message}</div>
-        `;
+        console.error('Debug users error:', error);
+        throw error;
     }
 }
 
@@ -159,6 +255,8 @@ async function demoLogin() {
 
         if (response.success) {
             authToken = response.data.accessToken;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('refreshToken', response.data.refreshToken);
             document.getElementById('authDemo').innerHTML = `
                 <div class="success">
                     ✅ Admin Login successful! <br>
@@ -192,6 +290,8 @@ async function demoLoginMember() {
 
         if (response.success) {
             authToken = response.data.accessToken;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('refreshToken', response.data.refreshToken);
             document.getElementById('authDemo').innerHTML = `
                 <div class="success">
                     ✅ Member Login successful! <br>
@@ -226,6 +326,8 @@ async function demoLoginTrainer() {
 
         if (response.success) {
             authToken = response.data.accessToken;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('refreshToken', response.data.refreshToken);
             document.getElementById('authDemo').innerHTML = `
                 <div class="success">
                     ✅ Trainer Login successful! <br>
@@ -813,17 +915,57 @@ async function viewScheduleDetail(scheduleId) {
         const response = await apiCall(`/classes/schedules/${scheduleId}`);
         if (response.success) {
             const schedule = response.data;
+            const classType = schedule.class?.classType?.name || 'N/A';
+            const price = schedule.class?.price ? schedule.class.price.toLocaleString('vi-VN') + ' VND' : 'Miễn phí';
             alert(`Chi tiết lịch #${schedule.id}:
-Lớp: ${schedule.Class?.name || 'N/A'}
+Lớp: ${schedule.class?.name || 'N/A'}
+Loại lớp: ${classType}
 Ngày: ${schedule.date}
 Thời gian: ${new Date(schedule.startTime).toLocaleTimeString('vi-VN')} - ${new Date(schedule.endTime).toLocaleTimeString('vi-VN')}
 Phòng: ${schedule.room || 'N/A'}
-Huấn luyện viên: ${schedule.Trainer?.fullName || 'N/A'}
+Huấn luyện viên: ${schedule.trainer?.fullName || 'N/A'}
 Học viên: ${schedule.currentParticipants}/${schedule.maxParticipants}
 Trạng thái: ${schedule.status}
+Giá: ${price}
 Ghi chú: ${schedule.notes || 'Không có'}`);
         }
     } catch (error) {
         alert('Lỗi: ' + error.message);
+    }
+}
+
+/**
+ * Delete schedule
+ * @param {number} scheduleId - Schedule ID to delete
+ * @param {string} className - Class name for confirmation
+ * @returns {Promise<void>}
+ */
+async function deleteSchedule(scheduleId, className) {
+    try {
+        if (!authToken) {
+            alert('Vui lòng đăng nhập trước (vào tab API Demo)');
+            return;
+        }
+        
+        const confirmed = confirm(`Bạn có chắc muốn xóa lịch lớp "${className}" (ID: ${scheduleId})?\n\nĐiều này sẽ:\n- Hủy tất cả đăng ký của lớp này\n- Không thể hoàn tác`);
+        if (!confirmed) {
+            return;
+        }
+        
+        const response = await apiCall(`/classes/schedules/${scheduleId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.success) {
+            alert('✅ Xóa lịch thành công!');
+            // Reload schedules if loadSchedules function exists
+            if (typeof loadSchedules === 'function') {
+                loadSchedules();
+            }
+        } else {
+            alert('❌ Xóa lịch thất bại: ' + (response.message || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('❌ Lỗi xóa lịch: ' + error.message);
     }
 }

@@ -152,6 +152,72 @@ const authController = {
                 message: error.message
             });
         }
+    },
+
+    // DELETE /api/auth/users/:id
+    deleteUser: async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            const result = await authService.deleteUser(id);
+
+            res.json({
+                success: true,
+                message: result.message
+            });
+
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    },
+
+    // PUT /api/auth/update-profile - Update user profile
+    updateProfile: async (req, res) => {
+        try {
+            const { fullName, email } = req.body;
+            const userId = req.user.userId;
+
+            // Validate input
+            if (!fullName || !email) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Họ tên và email là bắt buộc'
+                });
+            }
+
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email không hợp lệ'
+                });
+            }
+
+            const result = await authService.updateProfile(userId, { fullName, email });
+
+            res.json({
+                success: true,
+                message: 'Cập nhật thông tin thành công',
+                data: result
+            });
+
+        } catch (error) {
+            if (error.message.includes('Email đã tồn tại')) {
+                res.status(409).json({
+                    success: false,
+                    message: error.message
+                });
+            } else {
+                res.status(500).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+        }
     }
 };
 

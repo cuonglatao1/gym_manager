@@ -91,22 +91,24 @@ const membershipSchemas = {
     create: Joi.object({
         name: Joi.string().min(2).max(100).required()
             .messages({'any.required': 'Tên gói là bắt buộc'}),
-        description: Joi.string().max(1000).optional(),
+        description: Joi.string().max(1000).allow('').optional(),
         duration: Joi.number().integer().min(1).max(365).required()
             .messages({'any.required': 'Thời hạn là bắt buộc'}),
         price: Joi.number().positive().required()
             .messages({'any.required': 'Giá là bắt buộc'}),
         benefits: Joi.array().items(Joi.string()).optional(),
+        features: Joi.string().max(1000).allow('').optional(),
         maxClasses: Joi.number().integer().min(0).allow(null).optional(),
         hasPersonalTrainer: Joi.boolean().default(false)
     }),
 
     update: Joi.object({
         name: Joi.string().min(2).max(100).optional(),
-        description: Joi.string().max(1000).optional(),
+        description: Joi.string().max(1000).allow('').optional(),
         duration: Joi.number().integer().min(1).max(365).optional(),
         price: Joi.number().positive().optional(),
         benefits: Joi.array().items(Joi.string()).optional(),
+        features: Joi.string().max(1000).allow('').optional(),
         maxClasses: Joi.number().integer().min(0).allow(null).optional(),
         hasPersonalTrainer: Joi.boolean().optional(),
         isActive: Joi.boolean().optional()
@@ -139,31 +141,6 @@ module.exports = {
     membershipSchemas,
     authSchemas
 };
-// Class Type validation schemas
-const classTypeSchemas = {
-    create: Joi.object({
-        name: Joi.string().min(2).max(100).required()
-            .messages({'any.required': 'Tên loại lớp là bắt buộc'}),
-        description: Joi.string().max(1000).optional(),
-        duration: Joi.number().integer().min(15).max(180).required()
-            .messages({'any.required': 'Thời lượng là bắt buộc'}),
-        maxParticipants: Joi.number().integer().min(1).max(100).default(10),
-        equipment: Joi.array().items(Joi.string()).optional(),
-        difficulty: Joi.string().valid('beginner', 'intermediate', 'advanced').default('beginner'),
-        color: Joi.string().pattern(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional()
-    }),
-
-    update: Joi.object({
-        name: Joi.string().min(2).max(100).optional(),
-        description: Joi.string().max(1000).optional(),
-        duration: Joi.number().integer().min(15).max(180).optional(),
-        maxParticipants: Joi.number().integer().min(1).max(100).optional(),
-        equipment: Joi.array().items(Joi.string()).optional(),
-        difficulty: Joi.string().valid('beginner', 'intermediate', 'advanced').optional(),
-        color: Joi.string().pattern(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional(),
-        isActive: Joi.boolean().optional()
-    })
-};
 
 // Class validation schemas
 const classSchemas = {
@@ -172,12 +149,12 @@ const classSchemas = {
             .messages({'any.required': 'Class Type ID là bắt buộc'}),
         name: Joi.string().min(2).max(100).required()
             .messages({'any.required': 'Tên lớp là bắt buộc'}),
-        description: Joi.string().max(1000).optional(),
+        description: Joi.string().max(1000).allow('').optional(),
         trainerId: Joi.number().integer().positive().optional(),
         duration: Joi.number().integer().min(15).max(180).optional(),
         maxParticipants: Joi.number().integer().min(1).max(100).optional(),
         price: Joi.number().min(0).default(0),
-        room: Joi.string().max(50).optional(),
+        room: Joi.string().max(50).allow('').optional(),
         recurring: Joi.boolean().default(false),
         recurringPattern: Joi.object().optional()
     }),
@@ -185,12 +162,12 @@ const classSchemas = {
     update: Joi.object({
         classTypeId: Joi.number().integer().positive().optional(),
         name: Joi.string().min(2).max(100).optional(),
-        description: Joi.string().max(1000).optional(),
+        description: Joi.string().max(1000).allow('').optional(),
         trainerId: Joi.number().integer().positive().optional(),
         duration: Joi.number().integer().min(15).max(180).optional(),
         maxParticipants: Joi.number().integer().min(1).max(100).optional(),
         price: Joi.number().min(0).optional(),
-        room: Joi.string().max(50).optional(),
+        room: Joi.string().max(50).allow('').optional(),
         recurring: Joi.boolean().optional(),
         recurringPattern: Joi.object().optional(),
         isActive: Joi.boolean().optional()
@@ -200,38 +177,72 @@ const classSchemas = {
 // Class Schedule validation schemas
 const classScheduleSchemas = {
     create: Joi.object({
-        date: Joi.date().min('now').required()
+        date: Joi.date().required()
             .messages({'any.required': 'Ngày là bắt buộc'}),
-        startTime: Joi.date().required()
-            .messages({'any.required': 'Giờ bắt đầu là bắt buộc'}),
-        endTime: Joi.date().greater(Joi.ref('startTime')).required()
+        startTime: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).required()
+            .messages({
+                'any.required': 'Giờ bắt đầu là bắt buộc',
+                'string.pattern.base': 'Giờ bắt đầu phải có định dạng HH:MM'
+            }),
+        endTime: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).required()
             .messages({
                 'any.required': 'Giờ kết thúc là bắt buộc',
-                'date.greater': 'Giờ kết thúc phải sau giờ bắt đầu'
+                'string.pattern.base': 'Giờ kết thúc phải có định dạng HH:MM'
             }),
         trainerId: Joi.number().integer().positive().optional(),
         maxParticipants: Joi.number().integer().min(1).max(100).optional(),
-        room: Joi.string().max(50).optional(),
-        notes: Joi.string().max(500).optional()
+        room: Joi.string().max(50).allow('').optional(),
+        notes: Joi.string().max(500).allow('').optional()
     }),
 
     update: Joi.object({
-        date: Joi.date().min('now').optional(),
-        startTime: Joi.date().optional(),
-        endTime: Joi.date().optional(),
+        date: Joi.date().optional(),
+        startTime: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
+        endTime: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
         trainerId: Joi.number().integer().positive().optional(),
         maxParticipants: Joi.number().integer().min(1).max(100).optional(),
-        room: Joi.string().max(50).optional(),
-        notes: Joi.string().max(500).optional(),
+        room: Joi.string().max(50).allow('').optional(),
+        notes: Joi.string().max(500).allow('').optional(),
         status: Joi.string().valid('scheduled', 'ongoing', 'completed', 'cancelled').optional()
-    }).custom((value, helpers) => {
-        // Custom validation: endTime must be greater than startTime
-        if (value.startTime && value.endTime && value.endTime <= value.startTime) {
-            return helpers.error('date.endTimeAfterStart');
-        }
-        return value;
-    }).messages({
-        'date.endTimeAfterStart': 'Giờ kết thúc phải sau giờ bắt đầu'
+    })
+};
+
+// Enrollment validation schemas
+const enrollmentSchemas = {
+    enroll: Joi.object({
+        memberId: Joi.number().integer().positive().optional(), // For admin enrolling other members
+        notes: Joi.string().max(500).allow('').optional()
+    }),
+
+    checkin: Joi.object({
+        memberId: Joi.number().integer().positive().optional(), // For admin/trainer checking in members
+        notes: Joi.string().max(500).allow('').optional()
+    })
+};
+
+// Class Type validation schemas - fix description issue
+const classTypeSchemas = {
+    create: Joi.object({
+        name: Joi.string().min(2).max(100).required()
+            .messages({'any.required': 'Tên loại lớp là bắt buộc'}),
+        description: Joi.string().max(1000).allow('').optional(),
+        duration: Joi.number().integer().min(15).max(180).required()
+            .messages({'any.required': 'Thời lượng là bắt buộc'}),
+        maxParticipants: Joi.number().integer().min(1).max(100).default(10),
+        equipment: Joi.array().items(Joi.string()).optional(),
+        difficulty: Joi.string().valid('beginner', 'intermediate', 'advanced').default('beginner'),
+        color: Joi.string().pattern(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).allow('').optional()
+    }),
+
+    update: Joi.object({
+        name: Joi.string().min(2).max(100).optional(),
+        description: Joi.string().max(1000).allow('').optional(),
+        duration: Joi.number().integer().min(15).max(180).optional(),
+        maxParticipants: Joi.number().integer().min(1).max(100).optional(),
+        equipment: Joi.array().items(Joi.string()).optional(),
+        difficulty: Joi.string().valid('beginner', 'intermediate', 'advanced').optional(),
+        color: Joi.string().pattern(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).allow('').optional(),
+        isActive: Joi.boolean().optional()
     })
 };
 
@@ -242,7 +253,8 @@ module.exports = {
     memberSchemas,
     membershipSchemas,
     authSchemas,
-    classTypeSchemas,    // NEW!
+    classTypeSchemas,    // UPDATED!
     classSchemas,        // NEW!
-    classScheduleSchemas // NEW!
+    classScheduleSchemas, // NEW!
+    enrollmentSchemas    // NEW!
 };

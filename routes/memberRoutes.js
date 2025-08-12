@@ -59,12 +59,33 @@ router.put('/:id',
     memberController.update
 );
 
+// POST /api/members/my/membership - Member tự mua gói membership
+router.post('/my/membership', 
+    authenticate,
+    validate(memberSchemas.purchaseMembership),
+    memberController.purchaseMyMembership
+);
+
 router.post('/:id/membership', 
     authenticate, 
     authorize('admin', 'trainer'),
     validateId,
     validate(memberSchemas.purchaseMembership),
     memberController.purchaseMembership
+);
+
+router.delete('/:id', 
+    authenticate, 
+    authorize('admin'),
+    validateId,
+    memberController.deleteMember
+);
+
+router.delete('/:id/membership', 
+    authenticate, 
+    authorize('admin'),
+    validateId,
+    memberController.cancelMembership
 );
 
 // ===== MEMBERSHIP ROUTES =====

@@ -9,6 +9,7 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     padding: 20px;
+    padding-bottom: 320px; /* Space for API response panel */
 }
 
 .container {
@@ -219,6 +220,14 @@ body {
     margin: 10px 0;
 }
 
+.warning {
+    color: #856404;
+    background: #fff3cd;
+    padding: 10px;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
 .demo-section {
     margin-bottom: 30px;
 }
@@ -230,14 +239,80 @@ body {
     border-bottom: 2px solid #f0f0f0;
 }
 
+/* Real-time API Response Panel */
+.api-response-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 2px solid #667eea;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+    z-index: 1000;
+    max-height: 300px;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.api-response-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.api-response-header h4 {
+    margin: 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.btn-clear {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s;
+}
+
+.btn-clear:hover {
+    background: #c82333;
+}
+
 .api-response {
     background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    padding: 15px;
-    margin: 10px 0;
+    padding: 15px 20px;
     font-family: 'Courier New', monospace;
     font-size: 12px;
-    max-height: 200px;
+    height: 200px;
     overflow-y: auto;
+    white-space: pre-wrap;
+    color: #333;
+}
+
+.api-response .timestamp {
+    color: #667eea;
+    font-weight: bold;
+}
+
+.api-response .method {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.api-response .url {
+    color: #6f42c1;
+}
+
+.api-response .status-success {
+    color: #28a745;
+}
+
+.api-response .status-error {
+    color: #dc3545;
 }

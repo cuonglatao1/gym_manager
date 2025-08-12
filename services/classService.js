@@ -12,7 +12,7 @@ const { Op } = require('sequelize');
 class ClassService {
     // ===== CLASS TYPE SERVICES =====
 
-    async getAllClassTypes(isActive = 'all') {
+    async getAllClassTypes(isActive = 'true') {
         const whereCondition = {};
         if (isActive !== 'all') {
             whereCondition.isActive = isActive === 'true';
@@ -83,24 +83,26 @@ class ClassService {
             throw new Error('Không tìm thấy loại lớp');
         }
 
-        // Check if class type is being used
-        const classCount = await Class.count({
+        // Find all classes using this class type
+        const classes = await Class.findAll({
             where: { classTypeId: id }
         });
 
-        if (classCount > 0) {
-            // Don't delete, just deactivate
-            await classType.update({ isActive: false });
-            return {
-                deleted: false,
-                message: 'Đã vô hiệu hóa loại lớp (không thể xóa vì đã có lớp sử dụng)'
-            };
+        if (classes.length > 0) {
+            // Delete all classes using this class type (which will cascade to schedules and enrollments)
+            for (const classItem of classes) {
+                await this.deleteClass(classItem.id);
+            }
         }
 
-        await classType.destroy();
+        // Now safely delete the class type
+        await classType.destroy({ force: true });
+        
         return {
             deleted: true,
-            message: 'Xóa loại lớp thành công'
+            message: classes.length > 0 
+                ? `Xóa loại lớp thành công (đã xóa ${classes.length} lớp học liên quan)`
+                : 'Xóa loại lớp thành công'
         };
     }
 
@@ -112,7 +114,7 @@ class ClassService {
             limit = 10,
             classTypeId,
             trainerId,
-            isActive = 'all',
+            isActive = 'true',
             search = ''
         } = options;
 
@@ -271,24 +273,49 @@ class ClassService {
             throw new Error('Không tìm thấy lớp học');
         }
 
-        // Check if class has schedules
-        const scheduleCount = await ClassSchedule.count({
+        // Find all schedules for this class
+        const schedules = await ClassSchedule.findAll({
             where: { classId: id }
         });
 
-        if (scheduleCount > 0) {
-            // Don't delete, just deactivate
-            await classInfo.update({ isActive: false });
-            return {
-                deleted: false,
-                message: 'Đã vô hiệu hóa lớp học (không thể xóa vì đã có lịch)'
-            };
+        if (schedules.length > 0) {
+            // Cancel all enrollments for these schedules
+            const scheduleIds = schedules.map(s => s.id);
+            await ClassEnrollment.update(
+                { status: 'cancelled' },
+                {
+                    where: {
+                        classScheduleId: { [Op.in]: scheduleIds },
+                        status: { [Op.in]: ['enrolled', 'attended'] }
+                    }
+                }
+            );
+
+            // Cancel all schedules
+            await ClassSchedule.update(
+                { status: 'cancelled' },
+                {
+                    where: { classId: id }
+                }
+            );
         }
 
-        await classInfo.destroy();
+        // Delete all schedules for this class (hard delete)
+        if (schedules.length > 0) {
+            await ClassSchedule.destroy({
+                where: { classId: id },
+                force: true
+            });
+        }
+
+        // Now safely delete the class (hard delete)
+        await classInfo.destroy({ force: true });
+        
         return {
             deleted: true,
-            message: 'Xóa lớp học thành công'
+            message: schedules.length > 0 
+                ? `Xóa lớp học thành công (đã xóa ${schedules.length} lịch và hủy tất cả đăng ký)`
+                : 'Xóa lớp học thành công'
         };
     }
 
@@ -361,12 +388,13 @@ class ClassService {
                         model: Class,
                         as: 'class',
                         required: false,
+                        attributes: ['id', 'name', 'description', 'price', 'duration', 'maxParticipants'],
                         include: [
                             {
                                 model: ClassType,
                                 as: 'classType',
                                 required: false,
-                                attributes: ['id', 'name', 'difficulty', 'color']
+                                attributes: ['id', 'name', 'difficulty', 'color', 'description']
                             }
                         ]
                     },
@@ -374,7 +402,7 @@ class ClassService {
                         model: User,
                         as: 'trainer',
                         required: false,
-                        attributes: ['id', 'fullName', 'email']
+                        attributes: ['id', 'fullName', 'email', 'phone']
                     }
                 ],
                 limit: parseInt(limit),
@@ -492,6 +520,33 @@ class ClassService {
             throw new Error('Không tìm thấy huấn luyện viên');
         }
 
+        // Debug log to see what data we receive
+        console.log('🔍 Schedule Debug:');
+        console.log('📅 date:', date);
+        console.log('⏰ startTime:', startTime, typeof startTime);
+        console.log('⏰ endTime:', endTime, typeof endTime);
+        
+        // Convert date to string if it's a Date object
+        const dateString = date instanceof Date ? date.toISOString().split('T')[0] : date;
+        console.log('📅 dateString:', dateString);
+        
+        // Convert HH:MM time format to proper datetime for database
+        const startDateTime = new Date(`${dateString}T${startTime}:00`);
+        const endDateTime = new Date(`${dateString}T${endTime}:00`);
+
+        console.log('📅 startDateTime:', startDateTime);
+        console.log('📅 endDateTime:', endDateTime);
+
+        // Validate time
+        if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+            console.log('❌ Invalid date detected!');
+            throw new Error('Định dạng thời gian không hợp lệ');
+        }
+
+        if (endDateTime <= startDateTime) {
+            throw new Error('Thời gian kết thúc phải sau thời gian bắt đầu');
+        }
+
         // Check for trainer schedule conflict
         const conflictingSchedule = await ClassSchedule.findOne({
             where: {
@@ -500,15 +555,15 @@ class ClassService {
                 status: { [Op.ne]: 'cancelled' },
                 [Op.or]: [
                     {
-                        startTime: { [Op.between]: [startTime, endTime] }
+                        startTime: { [Op.between]: [startDateTime, endDateTime] }
                     },
                     {
-                        endTime: { [Op.between]: [startTime, endTime] }
+                        endTime: { [Op.between]: [startDateTime, endDateTime] }
                     },
                     {
                         [Op.and]: [
-                            { startTime: { [Op.lte]: startTime } },
-                            { endTime: { [Op.gte]: endTime } }
+                            { startTime: { [Op.lte]: startDateTime } },
+                            { endTime: { [Op.gte]: endDateTime } }
                         ]
                     }
                 ]
@@ -522,11 +577,12 @@ class ClassService {
         const schedule = await ClassSchedule.create({
             classId,
             date,
-            startTime,
-            endTime,
+            startTime: startDateTime,
+            endTime: endDateTime,
             trainerId,
             maxParticipants: maxParticipants || classInfo.maxParticipants,
-            room: room || classInfo.room
+            room: room || classInfo.room,
+            notes
         });
 
         return this.getScheduleById(schedule.id);
@@ -791,6 +847,69 @@ class ClassService {
         };
     }
 
+    async cancelEnrollmentById(enrollmentId, userId, userRole) {
+        const enrollment = await ClassEnrollment.findOne({
+            where: { id: enrollmentId },
+            include: [
+                {
+                    model: ClassSchedule,
+                    as: 'classSchedule'
+                },
+                {
+                    model: Member,
+                    as: 'member'
+                }
+            ]
+        });
+
+        if (!enrollment) {
+            throw new Error('Không tìm thấy đăng ký lớp');
+        }
+
+        // Check authorization - users can only cancel their own enrollments unless admin/trainer
+        if (userRole !== 'admin' && userRole !== 'trainer') {
+            const member = await Member.findOne({ where: { userId } });
+            if (!member || enrollment.memberId !== member.id) {
+                throw new Error('Không có quyền hủy đăng ký này');
+            }
+        }
+
+        if (enrollment.status === 'cancelled') {
+            throw new Error('Đăng ký đã được hủy trước đó');
+        }
+
+        if (!['enrolled', 'attended'].includes(enrollment.status)) {
+            throw new Error('Không thể hủy đăng ký với trạng thái hiện tại');
+        }
+
+        // Check if can cancel (e.g., not too close to class time)
+        const schedule = enrollment.classSchedule;
+        const now = new Date();
+        const classTime = new Date(schedule.startTime);
+        const timeDiff = classTime - now;
+        const hoursDiff = timeDiff / (1000 * 60 * 60);
+
+        if (hoursDiff < 2 && userRole !== 'admin' && userRole !== 'trainer') {
+            throw new Error('Không thể hủy đăng ký trong vòng 2 giờ trước giờ học');
+        }
+
+        await enrollment.update({ status: 'cancelled' });
+
+        // Update current participants count
+        await schedule.decrement('currentParticipants');
+
+        return {
+            message: 'Hủy đăng ký thành công',
+            enrollment: {
+                id: enrollment.id,
+                memberId: enrollment.memberId,
+                memberName: enrollment.member?.name,
+                classScheduleId: enrollment.classScheduleId,
+                status: 'cancelled'
+            }
+        };
+    }
+
     async checkInToClass(scheduleId, userId) {
         // Get member from userId
         const member = await Member.findOne({ where: { userId } });
@@ -870,6 +989,42 @@ class ClassService {
                 }
             ],
             order: [['enrollmentDate', 'ASC']]
+        });
+    }
+
+    // Get all enrollments with filters
+    async getAllEnrollments({ status = 'active', limit = 50 } = {}) {
+        const whereCondition = {};
+        
+        if (status === 'active') {
+            whereCondition.status = { [Op.in]: ['enrolled', 'attended'] };
+        } else if (status !== 'all') {
+            whereCondition.status = status;
+        }
+
+        return ClassEnrollment.findAll({
+            where: whereCondition,
+            include: [
+                {
+                    model: Member,
+                    as: 'member',
+                    attributes: ['id', 'memberCode', 'fullName', 'phone']
+                },
+                {
+                    model: ClassSchedule,
+                    as: 'classSchedule',
+                    attributes: ['id', 'date', 'startTime', 'endTime', 'status', 'trainerId'],
+                    include: [
+                        {
+                            model: Class,
+                            as: 'class',
+                            attributes: ['id', 'name', 'trainerId']
+                        }
+                    ]
+                }
+            ],
+            order: [['enrollmentDate', 'DESC']],
+            limit: parseInt(limit)
         });
     }
 
@@ -1050,7 +1205,7 @@ class ClassService {
                 return [];
             }
 
-            // Simplified query
+            // Query with full relationships
             return ClassEnrollment.findAll({
                 where: {
                     memberId: member.id,
@@ -1064,10 +1219,26 @@ class ClassService {
                             startTime: { [Op.gte]: new Date() },
                             status: { [Op.ne]: 'cancelled' }
                         },
-                        required: true
+                        required: true,
+                        include: [
+                            {
+                                model: Class,
+                                as: 'class',
+                                include: [
+                                    {
+                                        model: ClassType,
+                                        as: 'classType'
+                                    },
+                                    {
+                                        model: User,
+                                        as: 'trainer'
+                                    }
+                                ]
+                            }
+                        ]
                     }
                 ],
-                order: [['id', 'DESC']],
+                order: [[{ model: ClassSchedule, as: 'classSchedule' }, 'startTime', 'ASC']],
                 limit: parseInt(limit)
             });
         } catch (error) {
@@ -1200,6 +1371,728 @@ class ClassService {
                     itemsPerPage: parseInt(limit)
                 }
             };
+        }
+    }
+
+    // ===== CHECK-IN MANAGEMENT SERVICES =====
+
+    async getAllCheckIns(options = {}) {
+        try {
+            const {
+                page = 1,
+                limit = 50,
+                date,
+                startDate,
+                endDate,
+                status = 'attended'
+            } = options;
+
+            const offset = (parseInt(page) - 1) * parseInt(limit);
+            
+            // Build where condition for schedules
+            const scheduleWhere = {};
+            
+            if (date) {
+                scheduleWhere.date = date;
+            } else if (startDate && endDate) {
+                scheduleWhere.date = {
+                    [Op.between]: [startDate, endDate]
+                };
+            } else if (startDate) {
+                scheduleWhere.date = { [Op.gte]: startDate };
+            } else if (endDate) {
+                scheduleWhere.date = { [Op.lte]: endDate };
+            }
+
+            // Build where condition for enrollments
+            const enrollmentWhere = {};
+            if (status !== 'all') {
+                enrollmentWhere.status = status;
+            }
+            
+            // Only get enrollments with checkin time
+            enrollmentWhere.checkinTime = { [Op.ne]: null };
+
+            const { count, rows } = await ClassEnrollment.findAndCountAll({
+                where: enrollmentWhere,
+                include: [
+                    {
+                        model: Member,
+                        as: 'member',
+                        attributes: ['id', 'memberCode', 'fullName', 'phone'],
+                        required: true
+                    },
+                    {
+                        model: ClassSchedule,
+                        as: 'classSchedule',
+                        where: scheduleWhere,
+                        required: true,
+                        include: [
+                            {
+                                model: Class,
+                                as: 'class',
+                                attributes: ['id', 'name', 'price'],
+                                include: [
+                                    {
+                                        model: ClassType,
+                                        as: 'classType',
+                                        attributes: ['id', 'name', 'color']
+                                    }
+                                ]
+                            },
+                            {
+                                model: User,
+                                as: 'trainer',
+                                attributes: ['id', 'fullName']
+                            }
+                        ]
+                    }
+                ],
+                order: [['checkinTime', 'DESC']],
+                limit: parseInt(limit),
+                offset: offset,
+                distinct: true
+            });
+
+            return {
+                checkIns: rows,
+                pagination: {
+                    currentPage: parseInt(page),
+                    totalPages: Math.ceil(count / parseInt(limit)),
+                    totalItems: count,
+                    itemsPerPage: parseInt(limit)
+                }
+            };
+        } catch (error) {
+            console.error('Error in getAllCheckIns:', error);
+            return {
+                checkIns: [],
+                pagination: {
+                    currentPage: parseInt(page || 1),
+                    totalPages: 0,
+                    totalItems: 0,
+                    itemsPerPage: parseInt(limit || 50)
+                },
+                error: error.message
+            };
+        }
+    }
+
+    async getCheckInsByDate(date, options = {}) {
+        try {
+            const { limit = 100 } = options;
+            
+            const checkIns = await ClassEnrollment.findAll({
+                where: {
+                    checkinTime: { [Op.ne]: null },
+                    status: { [Op.in]: ['attended'] }
+                },
+                include: [
+                    {
+                        model: Member,
+                        as: 'member',
+                        attributes: ['id', 'memberCode', 'fullName', 'phone'],
+                        required: true
+                    },
+                    {
+                        model: ClassSchedule,
+                        as: 'classSchedule',
+                        where: { date },
+                        required: true,
+                        include: [
+                            {
+                                model: Class,
+                                as: 'class',
+                                attributes: ['id', 'name', 'price'],
+                                include: [
+                                    {
+                                        model: ClassType,
+                                        as: 'classType',
+                                        attributes: ['id', 'name', 'color']
+                                    }
+                                ]
+                            },
+                            {
+                                model: User,
+                                as: 'trainer',
+                                attributes: ['id', 'fullName']
+                            }
+                        ]
+                    }
+                ],
+                order: [['checkinTime', 'ASC']],
+                limit: parseInt(limit)
+            });
+
+            return checkIns;
+        } catch (error) {
+            console.error('Error in getCheckInsByDate:', error);
+            return [];
+        }
+    }
+
+    async getScheduleCheckIns(scheduleId) {
+        try {
+            const checkIns = await ClassEnrollment.findAll({
+                where: {
+                    classScheduleId: scheduleId,
+                    checkinTime: { [Op.ne]: null }
+                },
+                include: [
+                    {
+                        model: Member,
+                        as: 'member',
+                        attributes: ['id', 'memberCode', 'fullName', 'phone'],
+                        required: true
+                    }
+                ],
+                order: [['checkinTime', 'ASC']]
+            });
+
+            return checkIns;
+        } catch (error) {
+            console.error('Error in getScheduleCheckIns:', error);
+            return [];
+        }
+    }
+
+    // ===== MEMBER CLASS HISTORY SERVICES =====
+
+    async getMemberByMemberId(memberId) {
+        try {
+            return await Member.findByPk(memberId, {
+                attributes: ['id', 'userId', 'memberCode', 'fullName']
+            });
+        } catch (error) {
+            console.error('Error in getMemberByMemberId:', error);
+            return null;
+        }
+    }
+
+    async getMemberClassHistory(memberId, options = {}) {
+        try {
+            const {
+                page = 1,
+                limit = 20,
+                startDate,
+                endDate,
+                status = 'all'
+            } = options;
+
+            const offset = (parseInt(page) - 1) * parseInt(limit);
+            
+            // Build where condition for schedules
+            const scheduleWhere = {};
+            
+            if (startDate && endDate) {
+                scheduleWhere.date = {
+                    [Op.between]: [startDate, endDate]
+                };
+            } else if (startDate) {
+                scheduleWhere.date = { [Op.gte]: startDate };
+            } else if (endDate) {
+                scheduleWhere.date = { [Op.lte]: endDate };
+            }
+
+            // Build where condition for enrollments
+            const enrollmentWhere = { memberId };
+            if (status !== 'all') {
+                enrollmentWhere.status = status;
+            }
+
+            const { count, rows } = await ClassEnrollment.findAndCountAll({
+                where: enrollmentWhere,
+                include: [
+                    {
+                        model: ClassSchedule,
+                        as: 'classSchedule',
+                        where: scheduleWhere,
+                        required: true,
+                        include: [
+                            {
+                                model: Class,
+                                as: 'class',
+                                attributes: ['id', 'name', 'description', 'price'],
+                                include: [
+                                    {
+                                        model: ClassType,
+                                        as: 'classType',
+                                        attributes: ['id', 'name', 'color', 'difficulty']
+                                    }
+                                ]
+                            },
+                            {
+                                model: User,
+                                as: 'trainer',
+                                attributes: ['id', 'fullName']
+                            }
+                        ]
+                    }
+                ],
+                order: [['classSchedule', 'date', 'DESC'], ['classSchedule', 'startTime', 'DESC']],
+                limit: parseInt(limit),
+                offset: offset,
+                distinct: true
+            });
+
+            return {
+                history: rows,
+                pagination: {
+                    currentPage: parseInt(page),
+                    totalPages: Math.ceil(count / parseInt(limit)),
+                    totalItems: count,
+                    itemsPerPage: parseInt(limit)
+                }
+            };
+        } catch (error) {
+            console.error('Error in getMemberClassHistory:', error);
+            return {
+                history: [],
+                pagination: {
+                    currentPage: parseInt(page || 1),
+                    totalPages: 0,
+                    totalItems: 0,
+                    itemsPerPage: parseInt(limit || 20)
+                },
+                error: error.message
+            };
+        }
+    }
+
+    async getMemberClassStats(memberId, options = {}) {
+        try {
+            const {
+                startDate,
+                endDate,
+                period = 'month'
+            } = options;
+
+            // Build date range
+            let dateWhere = {};
+            if (startDate && endDate) {
+                dateWhere.date = {
+                    [Op.between]: [startDate, endDate]
+                };
+            } else {
+                // Default to last month if no date range specified
+                const endDateDefault = new Date();
+                const startDateDefault = new Date();
+                
+                if (period === 'year') {
+                    startDateDefault.setFullYear(endDateDefault.getFullYear() - 1);
+                } else if (period === 'quarter') {
+                    startDateDefault.setMonth(endDateDefault.getMonth() - 3);
+                } else { // month
+                    startDateDefault.setMonth(endDateDefault.getMonth() - 1);
+                }
+                
+                dateWhere.date = {
+                    [Op.between]: [startDateDefault.toISOString().split('T')[0], endDateDefault.toISOString().split('T')[0]]
+                };
+            }
+
+            // Get all enrollments for the member in the period
+            const enrollments = await ClassEnrollment.findAll({
+                where: { memberId },
+                include: [
+                    {
+                        model: ClassSchedule,
+                        as: 'classSchedule',
+                        where: dateWhere,
+                        required: true,
+                        include: [
+                            {
+                                model: Class,
+                                as: 'class',
+                                attributes: ['id', 'name', 'price'],
+                                include: [
+                                    {
+                                        model: ClassType,
+                                        as: 'classType',
+                                        attributes: ['id', 'name', 'color']
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            });
+
+            // Calculate statistics
+            const totalClasses = enrollments.length;
+            const attendedClasses = enrollments.filter(e => e.status === 'attended').length;
+            const missedClasses = enrollments.filter(e => e.status === 'enrolled').length;
+            const cancelledClasses = enrollments.filter(e => e.status === 'cancelled').length;
+            
+            // Calculate class types stats
+            const classTypeStats = {};
+            enrollments.forEach(enrollment => {
+                const classType = enrollment.classSchedule?.class?.classType?.name || 'Unknown';
+                if (!classTypeStats[classType]) {
+                    classTypeStats[classType] = {
+                        total: 0,
+                        attended: 0,
+                        missed: 0,
+                        cancelled: 0
+                    };
+                }
+                classTypeStats[classType].total++;
+                
+                if (enrollment.status === 'attended') {
+                    classTypeStats[classType].attended++;
+                } else if (enrollment.status === 'enrolled') {
+                    classTypeStats[classType].missed++;
+                } else if (enrollment.status === 'cancelled') {
+                    classTypeStats[classType].cancelled++;
+                }
+            });
+
+            // Calculate total cost
+            const totalCost = enrollments.reduce((sum, enrollment) => {
+                const price = parseFloat(enrollment.classSchedule?.class?.price || 0);
+                return sum + price;
+            }, 0);
+
+            // Calculate attendance rate
+            const attendanceRate = totalClasses > 0 ? ((attendedClasses / totalClasses) * 100).toFixed(2) : 0;
+
+            return {
+                summary: {
+                    totalClasses,
+                    attendedClasses,
+                    missedClasses,
+                    cancelledClasses,
+                    attendanceRate: parseFloat(attendanceRate),
+                    totalCost
+                },
+                classTypeStats,
+                period: {
+                    startDate: startDate || dateWhere.date[Op.between][0],
+                    endDate: endDate || dateWhere.date[Op.between][1],
+                    period
+                }
+            };
+        } catch (error) {
+            console.error('Error in getMemberClassStats:', error);
+            return {
+                summary: {
+                    totalClasses: 0,
+                    attendedClasses: 0,
+                    missedClasses: 0,
+                    cancelledClasses: 0,
+                    attendanceRate: 0,
+                    totalCost: 0
+                },
+                classTypeStats: {},
+                period: { startDate: null, endDate: null, period },
+                error: error.message
+            };
+        }
+    }
+
+    // ===== MEMBER CHECK-IN SERVICES =====
+
+    async getMemberCheckIns(userId, options = {}) {
+        try {
+            const {
+                page = 1,
+                limit = 20,
+                startDate,
+                endDate
+            } = options;
+
+            const offset = (parseInt(page) - 1) * parseInt(limit);
+
+            // First, find the member record for this user
+            const member = await Member.findOne({
+                where: { userId },
+                attributes: ['id']
+            });
+
+            if (!member) {
+                throw new Error('Member record not found for this user');
+            }
+
+            // Build where condition for schedules
+            const scheduleWhere = {};
+            
+            if (startDate && endDate) {
+                scheduleWhere.date = {
+                    [Op.between]: [startDate, endDate]
+                };
+            } else if (startDate) {
+                scheduleWhere.date = { [Op.gte]: startDate };
+            } else if (endDate) {
+                scheduleWhere.date = { [Op.lte]: endDate };
+            }
+
+            const { count, rows } = await ClassEnrollment.findAndCountAll({
+                where: {
+                    memberId: member.id,
+                    checkinTime: { [Op.ne]: null }
+                },
+                include: [
+                    {
+                        model: ClassSchedule,
+                        as: 'classSchedule',
+                        where: scheduleWhere,
+                        required: true,
+                        include: [
+                            {
+                                model: Class,
+                                as: 'class',
+                                attributes: ['id', 'name', 'price'],
+                                include: [
+                                    {
+                                        model: ClassType,
+                                        as: 'classType',
+                                        attributes: ['id', 'name', 'color']
+                                    }
+                                ]
+                            },
+                            {
+                                model: User,
+                                as: 'trainer',
+                                attributes: ['id', 'fullName']
+                            }
+                        ]
+                    }
+                ],
+                order: [['checkinTime', 'DESC']],
+                limit: parseInt(limit),
+                offset: offset,
+                distinct: true
+            });
+
+            return {
+                checkIns: rows,
+                pagination: {
+                    currentPage: parseInt(page),
+                    totalPages: Math.ceil(count / parseInt(limit)),
+                    totalItems: count,
+                    itemsPerPage: parseInt(limit)
+                }
+            };
+        } catch (error) {
+            console.error('Error in getMemberCheckIns:', error);
+            return {
+                checkIns: [],
+                pagination: {
+                    currentPage: parseInt(options.page || 1),
+                    totalPages: 0,
+                    totalItems: 0,
+                    itemsPerPage: parseInt(options.limit || 20)
+                },
+                error: error.message
+            };
+        }
+    }
+
+    async getMemberTodaySchedules(userId, date) {
+        try {
+            // First, find the member record for this user
+            const member = await Member.findOne({
+                where: { userId },
+                attributes: ['id']
+            });
+
+            if (!member) {
+                throw new Error('Member record not found for this user');
+            }
+
+            // Get date range for today (start and end of day)
+            const startOfDay = new Date(date + 'T00:00:00.000Z');
+            const endOfDay = new Date(date + 'T23:59:59.999Z');
+
+            // Get all enrollments for today
+            const enrollments = await ClassEnrollment.findAll({
+                where: { 
+                    memberId: member.id,
+                    status: { [Op.in]: ['enrolled', 'attended'] }
+                },
+                include: [
+                    {
+                        model: ClassSchedule,
+                        as: 'classSchedule',
+                        where: { 
+                            startTime: {
+                                [Op.between]: [startOfDay, endOfDay]
+                            }
+                        },
+                        required: true,
+                        include: [
+                            {
+                                model: Class,
+                                as: 'class',
+                                attributes: ['id', 'name', 'description', 'price'],
+                                include: [
+                                    {
+                                        model: ClassType,
+                                        as: 'classType',
+                                        attributes: ['id', 'name', 'color', 'difficulty']
+                                    }
+                                ]
+                            },
+                            {
+                                model: User,
+                                as: 'trainer',
+                                attributes: ['id', 'fullName']
+                            }
+                        ]
+                    }
+                ],
+                order: [['classSchedule', 'startTime', 'ASC']]
+            });
+
+            // Transform data to include check-in status and timing info
+            const schedules = enrollments.map(enrollment => {
+                const schedule = enrollment.classSchedule;
+                const now = new Date();
+                const startTime = new Date(schedule.startTime);
+                const endTime = new Date(schedule.endTime);
+                
+                // Check if can check in (15 minutes before to 30 minutes after start)
+                const canCheckInStart = new Date(startTime.getTime() - 15 * 60 * 1000);
+                const canCheckInEnd = new Date(startTime.getTime() + 30 * 60 * 1000);
+                const canCheckIn = now >= canCheckInStart && now <= canCheckInEnd;
+                
+                return {
+                    ...schedule.toJSON(),
+                    enrollmentId: enrollment.id,
+                    enrollmentStatus: enrollment.status,
+                    checkinTime: enrollment.checkinTime,
+                    canCheckIn,
+                    isCheckedIn: !!enrollment.checkinTime,
+                    timeToClass: startTime > now ? Math.ceil((startTime - now) / (1000 * 60)) : 0, // minutes until class
+                    scheduleCode: `SCH${schedule.id.toString().padStart(6, '0')}` // Generate check-in code
+                };
+            });
+
+            return schedules;
+        } catch (error) {
+            console.error('Error in getMemberTodaySchedules:', error);
+            return [];
+        }
+    }
+
+    async quickCheckIn(userId, options = {}) {
+        try {
+            const { scheduleCode, scheduleId } = options;
+            let targetScheduleId = scheduleId;
+
+            // If using schedule code, extract schedule ID
+            if (scheduleCode && !scheduleId) {
+                if (scheduleCode.startsWith('SCH')) {
+                    targetScheduleId = parseInt(scheduleCode.substring(3));
+                } else {
+                    // Try to parse as direct ID
+                    targetScheduleId = parseInt(scheduleCode);
+                }
+            }
+
+            if (!targetScheduleId || isNaN(targetScheduleId)) {
+                throw new Error('Mã lịch tập không hợp lệ');
+            }
+
+            // First, find the member record for this user
+            const member = await Member.findOne({
+                where: { userId },
+                attributes: ['id']
+            });
+
+            if (!member) {
+                throw new Error('Member record not found for this user');
+            }
+
+            // Check if member is enrolled in this schedule
+            const enrollment = await ClassEnrollment.findOne({
+                where: {
+                    memberId: member.id,
+                    classScheduleId: targetScheduleId,
+                    status: { [Op.in]: ['enrolled', 'attended'] }
+                },
+                include: [
+                    {
+                        model: ClassSchedule,
+                        as: 'classSchedule',
+                        required: true,
+                        include: [
+                            {
+                                model: Class,
+                                as: 'class',
+                                attributes: ['id', 'name']
+                            }
+                        ]
+                    }
+                ]
+            });
+
+            if (!enrollment) {
+                throw new Error('Bạn chưa đăng ký lớp học này hoặc đã hủy đăng ký');
+            }
+
+            // Check if already checked in
+            if (enrollment.checkinTime) {
+                return {
+                    enrollment,
+                    message: 'Bạn đã check-in lớp học này rồi',
+                    checkinTime: enrollment.checkinTime,
+                    alreadyCheckedIn: true
+                };
+            }
+
+            const schedule = enrollment.classSchedule;
+            const now = new Date();
+            const startTime = new Date(schedule.startTime);
+            
+            // Check timing - can check in 15 minutes before to 30 minutes after class starts
+            const canCheckInStart = new Date(startTime.getTime() - 15 * 60 * 1000);
+            const canCheckInEnd = new Date(startTime.getTime() + 30 * 60 * 1000);
+            
+            if (now < canCheckInStart) {
+                const minutesToOpen = Math.ceil((canCheckInStart - now) / (1000 * 60));
+                throw new Error(`Check-in sẽ mở sau ${minutesToOpen} phút (15 phút trước giờ học)`);
+            }
+            
+            if (now > canCheckInEnd) {
+                throw new Error('Đã quá thời gian check-in (30 phút sau giờ bắt đầu lớp)');
+            }
+
+            // Perform check-in
+            enrollment.checkinTime = now;
+            enrollment.status = 'attended';
+            await enrollment.save();
+
+            return {
+                enrollment: await ClassEnrollment.findByPk(enrollment.id, {
+                    include: [
+                        {
+                            model: ClassSchedule,
+                            as: 'classSchedule',
+                            include: [
+                                {
+                                    model: Class,
+                                    as: 'class',
+                                    attributes: ['id', 'name'],
+                                    include: [
+                                        {
+                                            model: ClassType,
+                                            as: 'classType',
+                                            attributes: ['name', 'color']
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }),
+                checkinTime: enrollment.checkinTime,
+                message: `Check-in thành công vào lớp ${schedule.class.name}!`,
+                alreadyCheckedIn: false
+            };
+        } catch (error) {
+            console.error('Error in quickCheckIn:', error);
+            throw error;
         }
     }
 }

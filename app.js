@@ -309,23 +309,34 @@ const startServer = async () => {
         console.log('🔄 Syncing database models...');
         
         await sequelize.sync({ 
-            force: true,  // This drops and recreates all tables
+            force: true,  // Reset database for clean sequential IDs
             logging: false
         });
         
         console.log('✅ All models synchronized successfully!');
-        console.log('🗑️  All existing data cleared, fresh start!');
+        console.log('🔄  Database reset with clean sequential IDs!');
         
-        // Create default admin
+        // Create default admin (ID: 1)
         await createDefaultAdmin(User);
         
-        // Seed data
+        // Create trainers immediately after admin for sequential IDs (ID: 2, 3, 4, 5)
+        await seedSampleTrainers();
+        
+        // Seed other data
         await seedMembershipPackages();
         await seedClassTypes();
-        await seedSampleTrainers();
         await seedSampleClasses();
         await seedSampleSchedules();
-        await seedSampleMembers();
+        
+        // Seed members but don't crash if it fails
+        try {
+            await seedSampleMembers();
+        } catch (memberError) {
+            console.error('⚠️  Member seeding failed, but continuing server startup:', memberError.message);
+        }
+        
+        // Update trainer assignments to diversify (trainers should now have sequential IDs)
+        await updateScheduleTrainerAssignments();
         
         const PORT = process.env.PORT || 3000;
         const server = app.listen(PORT, () => {
@@ -350,6 +361,33 @@ const startServer = async () => {
             console.log('');
             console.log('🚀 Class Management System Ready!');
             console.log('');
+        });
+
+        // Handle server errors
+        server.on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                console.error(`❌ Port ${PORT} is already in use`);
+                console.error('💡 Try running: npx kill-port ${PORT}');
+                console.error('⏳ Waiting 5 seconds then trying again...');
+                
+                setTimeout(() => {
+                    server.close();
+                    // Try with next available port
+                    const nextPORT = PORT + 1;
+                    console.log(`🔄 Trying port ${nextPORT}...`);
+                    
+                    app.listen(nextPORT, () => {
+                        console.log(`✅ Server started on port ${nextPORT} instead`);
+                        console.log(`🌐 Server: http://localhost:${nextPORT}`);
+                    }).on('error', (err2) => {
+                        console.error('❌ Failed to start on alternate port:', err2.message);
+                        process.exit(1);
+                    });
+                }, 5000);
+            } else {
+                console.error('❌ Server error:', err.message);
+                process.exit(1);
+            }
         });
 
         // Graceful shutdown
@@ -593,15 +631,20 @@ async function seedSampleClasses() {
             return;
         }
 
-        // Get admin user as default trainer
-        const adminTrainer = await User.findOne({ 
-            where: { role: 'admin' },
+        // Get actual trainers (not admin)
+        const trainers = await User.findAll({ 
+            where: { role: 'trainer' },
             logging: false 
         });
 
-        if (!adminTrainer) {
-            console.log('⚠️  No admin user found for trainer assignment');
-            return;
+        if (trainers.length === 0) {
+            console.log('⚠️  No trainers found, using admin as fallback');
+            const adminTrainer = await User.findOne({ 
+                where: { role: 'admin' },
+                logging: false 
+            });
+            if (!adminTrainer) return;
+            trainers.push(adminTrainer);
         }
 
         // Get class types
@@ -621,7 +664,7 @@ async function seedSampleClasses() {
                         classTypeId: classType.id,
                         name: 'Morning Yoga Flow',
                         description: 'Lớp yoga buổi sáng nhẹ nhàng, phù hợp với mọi cấp độ',
-                        trainerId: adminTrainer.id,
+                        trainerId: trainers[0].id,
                         duration: 60,
                         maxParticipants: 20,
                         price: 150000,
@@ -631,7 +674,7 @@ async function seedSampleClasses() {
                         classTypeId: classType.id,
                         name: 'Evening Yoga Relax',
                         description: 'Lớp yoga buổi tối thư giãn, giảm stress',
-                        trainerId: adminTrainer.id,
+                        trainerId: trainers[1] ? trainers[1].id : trainers[0].id,
                         duration: 60,
                         maxParticipants: 20,
                         price: 150000,
@@ -644,7 +687,7 @@ async function seedSampleClasses() {
                         classTypeId: classType.id,
                         name: 'Power HIIT',
                         description: 'Lớp HIIT cường độ cao, đốt cháy calo tối đa',
-                        trainerId: adminTrainer.id,
+                        trainerId: trainers[Math.floor(Math.random() * trainers.length)].id,
                         duration: 45,
                         maxParticipants: 15,
                         price: 200000,
@@ -657,7 +700,7 @@ async function seedSampleClasses() {
                         classTypeId: classType.id,
                         name: 'Strength Building',
                         description: 'Tập tạ cơ bản cho người mới bắt đầu',
-                        trainerId: adminTrainer.id,
+                        trainerId: trainers[Math.floor(Math.random() * trainers.length)].id,
                         duration: 90,
                         maxParticipants: 8,
                         price: 250000,
@@ -670,7 +713,7 @@ async function seedSampleClasses() {
                         classTypeId: classType.id,
                         name: 'Zumba Party',
                         description: 'Nhảy Zumba vui nhộn, năng động',
-                        trainerId: adminTrainer.id,
+                        trainerId: trainers[Math.floor(Math.random() * trainers.length)].id,
                         duration: 60,
                         maxParticipants: 25,
                         price: 180000,
@@ -683,7 +726,7 @@ async function seedSampleClasses() {
                         classTypeId: classType.id,
                         name: 'Boxing Fundamentals',
                         description: 'Học boxing cơ bản, kỹ thuật cơ bản',
-                        trainerId: adminTrainer.id,
+                        trainerId: trainers[Math.floor(Math.random() * trainers.length)].id,
                         duration: 75,
                         maxParticipants: 10,
                         price: 220000,
@@ -696,7 +739,7 @@ async function seedSampleClasses() {
                         classTypeId: classType.id,
                         name: 'Core Pilates',
                         description: 'Pilates tập trung vào cơ core và sự uyển chuyển',
-                        trainerId: adminTrainer.id,
+                        trainerId: trainers[Math.floor(Math.random() * trainers.length)].id,
                         duration: 60,
                         maxParticipants: 15,
                         price: 170000,
@@ -802,9 +845,9 @@ async function seedSampleSchedules() {
                         endTime: endTime.toISOString(),
                         trainerId: randomClass.trainerId,
                         maxParticipants: randomClass.maxParticipants,
-                        currentParticipants: Math.floor(Math.random() * Math.min(5, Math.floor(randomClass.maxParticipants / 2))), // Random enrollments
+                        currentParticipants: 0, // Will be updated when members enroll
                         room: randomClass.room,
-                        status: day === 0 ? 'scheduled' : (Math.random() > 0.1 ? 'scheduled' : 'completed'), // Most scheduled, some completed
+                        status: day < 0 ? 'completed' : 'scheduled', // Only past schedules are completed, future are scheduled
                         notes: `Lớp ${randomClass.name} - ${timeSlot}`
                     };
 
@@ -852,13 +895,13 @@ async function seedSampleTrainers() {
         
         const { User, Member } = require('./models');
         
-        // Check if sample trainer users exist
-        const existingSampleTrainer = await User.findOne({
+        // Check if trainers exist
+        const existingTrainer = await User.findOne({
             where: { email: 'trainer1@gym.com' },
             logging: false
         });
         
-        if (existingSampleTrainer) {
+        if (existingTrainer) {
             console.log('✅ Sample trainers already exist');
             return;
         }
@@ -879,6 +922,20 @@ async function seedSampleTrainers() {
                 email: 'trainer2@gym.com',
                 passwordHash: await bcrypt.hash('trainer123', 12),
                 fullName: 'Phạm Thị Mai',
+                role: 'trainer'
+            },
+            {
+                username: 'trainer3',
+                email: 'trainer3@gym.com',
+                passwordHash: await bcrypt.hash('trainer123', 12),
+                fullName: 'Lê Văn Hùng',
+                role: 'trainer'
+            },
+            {
+                username: 'trainer4',
+                email: 'trainer4@gym.com',
+                passwordHash: await bcrypt.hash('trainer123', 12),
+                fullName: 'Trần Thị Lan',
                 role: 'trainer'
             }
         ];
@@ -918,6 +975,8 @@ async function seedSampleTrainers() {
         console.log('🏋️ Sample trainer accounts:');
         console.log('   📧 trainer1@gym.com / password: trainer123 (Nguyễn Minh Tuấn)');
         console.log('   📧 trainer2@gym.com / password: trainer123 (Phạm Thị Mai)');
+        console.log('   📧 trainer3@gym.com / password: trainer123 (Lê Văn Hùng)');
+        console.log('   📧 trainer4@gym.com / password: trainer123 (Trần Thị Lan)');
 
     } catch (error) {
         console.error('⚠️  Failed to seed sample trainers:', error.message);
@@ -990,19 +1049,47 @@ async function seedSampleMembers() {
         const createdMembers = [];
         for (let index = 0; index < createdUsers.length; index++) {
             const user = createdUsers[index];
+            
+            // Check if member already exists for this user
+            const existingMember = await Member.findOne({
+                where: { userId: user.id },
+                logging: false
+            });
+            
+            if (existingMember) {
+                console.log(`👥 Member already exists for user ${user.email}: ${existingMember.memberCode}`);
+                createdMembers.push(existingMember);
+                continue;
+            }
+            
+            // Generate unique phone number with timestamp to avoid conflicts
+            const timestamp = Date.now().toString().slice(-4);
             const memberData = {
                 userId: user.id,
                 memberCode: `MEM${String(index + 1).padStart(3, '0')}`,
                 fullName: user.fullName,
-                phone: `098765432${index + 1}`,
+                phone: `0987${timestamp}${index}`,
                 email: user.email,
                 joinDate: new Date(),
                 isActive: true
             };
             
             console.log(`👥 Creating member: ${memberData.memberCode} for user ${user.email}`);
-            const member = await Member.create(memberData, { logging: false });
-            createdMembers.push(member);
+            try {
+                const member = await Member.create(memberData, { logging: false });
+                createdMembers.push(member);
+            } catch (memberError) {
+                console.error(`❌ Failed to create member for ${user.email}:`, memberError.message);
+                // Try with a different phone number
+                memberData.phone = `0988${timestamp}${index}`;
+                try {
+                    const member = await Member.create(memberData, { logging: false });
+                    createdMembers.push(member);
+                    console.log(`✅ Created member with alternate phone: ${memberData.phone}`);
+                } catch (retryError) {
+                    console.error(`❌ Failed to create member even with retry:`, retryError.message);
+                }
+            }
         }
         
         console.log(`✅ Created ${createdMembers.length} sample members`);
@@ -1013,6 +1100,138 @@ async function seedSampleMembers() {
 
     } catch (error) {
         console.error('⚠️  Failed to seed sample members:', error.message);
+        console.error('Full error:', error);
+        // Continue execution - don't crash the server
+    }
+}
+
+// Reset and recreate trainers with proper sequential IDs
+async function resetTrainersWithSequentialIDs() {
+    try {
+        console.log('🔧 Resetting trainers with sequential IDs...');
+        
+        const { User, Member, ClassSchedule } = require('./models');
+        
+        // Delete existing trainers (but keep their member records)
+        const existingTrainers = await User.findAll({
+            where: { role: 'trainer' },
+            logging: false
+        });
+        
+        console.log(`🗑️  Removing ${existingTrainers.length} existing trainers...`);
+        
+        // Update schedules to use admin temporarily
+        const adminUser = await User.findOne({ where: { role: 'admin' }, logging: false });
+        if (adminUser) {
+            await ClassSchedule.update(
+                { trainerId: adminUser.id }, 
+                { where: { trainerId: { [require('sequelize').Op.in]: existingTrainers.map(t => t.id) } }, logging: false }
+            );
+        }
+        
+        // Delete trainer users
+        for (const trainer of existingTrainers) {
+            await User.destroy({ where: { id: trainer.id }, logging: false });
+        }
+        
+        // Create new trainers with sequential IDs starting from 2
+        const bcrypt = require('bcryptjs');
+        const newTrainers = [
+            {
+                id: 2,
+                username: 'trainer1',
+                email: 'trainer1@gym.com', 
+                passwordHash: await bcrypt.hash('trainer123', 12),
+                fullName: 'Nguyễn Minh Tuấn',
+                role: 'trainer'
+            },
+            {
+                id: 3,
+                username: 'trainer2',
+                email: 'trainer2@gym.com',
+                passwordHash: await bcrypt.hash('trainer123', 12), 
+                fullName: 'Phạm Thị Mai',
+                role: 'trainer'
+            },
+            {
+                id: 4,
+                username: 'trainer3',
+                email: 'trainer3@gym.com',
+                passwordHash: await bcrypt.hash('trainer123', 12),
+                fullName: 'Lê Văn Hùng', 
+                role: 'trainer'
+            },
+            {
+                id: 5,
+                username: 'trainer4',
+                email: 'trainer4@gym.com',
+                passwordHash: await bcrypt.hash('trainer123', 12),
+                fullName: 'Trần Thị Lan',
+                role: 'trainer'
+            }
+        ];
+        
+        console.log('👤 Creating trainers with sequential IDs...');
+        for (const trainerData of newTrainers) {
+            await User.create(trainerData, { logging: false });
+            console.log(`✅ Created: ${trainerData.fullName} (ID: ${trainerData.id})`);
+        }
+        
+        console.log('✅ Trainers recreated with sequential IDs: 2, 3, 4, 5');
+        return newTrainers;
+        
+    } catch (error) {
+        console.error('⚠️  Failed to reset trainers:', error.message);
+        return [];
+    }
+}
+
+// Update trainer assignments for existing schedules
+async function updateScheduleTrainerAssignments() {
+    try {
+        console.log('🔧 Updating trainer assignments for schedules...');
+        
+        const { ClassSchedule, User } = require('./models');
+        
+        // Get only trainers (exclude admin)
+        const trainers = await User.findAll({
+            where: { 
+                role: 'trainer'
+            },
+            logging: false
+        });
+        
+        if (trainers.length === 0) {
+            console.log('⚠️  No trainers found to assign to schedules');
+            return;
+        }
+        
+        // Get some schedules to update
+        const schedules = await ClassSchedule.findAll({
+            limit: 20,
+            logging: false
+        });
+        
+        let updatedCount = 0;
+        for (let i = 0; i < schedules.length; i++) {
+            const schedule = schedules[i];
+            // Assign trainers in round-robin fashion
+            const trainerIndex = i % trainers.length;
+            const newTrainerId = trainers[trainerIndex].id;
+            
+            if (schedule.trainerId !== newTrainerId) {
+                await schedule.update({ 
+                    trainerId: newTrainerId 
+                }, { logging: false });
+                updatedCount++;
+            }
+        }
+        
+        console.log(`✅ Updated trainer assignments for ${updatedCount} schedules`);
+        console.log(`👨‍🏫 Available trainers: ${trainers.map(t => `${t.fullName} (ID: ${t.id})`).join(', ')}`);
+        
+    } catch (error) {
+        console.error('⚠️  Failed to update trainer assignments:', error.message);
     }
 }
 

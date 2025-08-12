@@ -5,7 +5,24 @@
       "Bash(curl:*)",
       "Bash(mkdir:*)",
       "Bash(mv:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm run dev:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(npm start)",
+      "Bash(timeout 10 npm start)",
+      "Bash(grep:*)",
+      "Bash(TASKKILL /F /PID 14476)",
+      "Bash(start http://localhost:3000/demo/member.html)",
+      "Bash(start http://localhost:3000/demo/trainer.html)",
+      "Bash(start http://localhost:3000/demo/trainer-new.html)",
+      "Bash(start http://localhost:3000/demo/member-new.html)",
+      "Bash(start http://localhost:3000/demo/admin-new.html)",
+      "Bash(TASKKILL /F /IM node.exe)",
+      "Bash(start http://localhost:3001/demo/admin-new.html)",
+      "Bash(start http://localhost:3001/demo/trainer-new.html)",
+      "Bash(start http://localhost:3001/demo/member-new.html)",
+      "Bash(start:*)"
     ],
     "deny": []
   }

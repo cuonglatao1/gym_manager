@@ -141,6 +141,33 @@ const memberController = {
         });
     }),
 
+    // POST /api/members/my/membership - Member tự mua gói membership
+    purchaseMyMembership: asyncHandler(async (req, res) => {
+        const { membershipId, startDate } = req.body;
+        
+        // Get member ID from authenticated user using Member model directly
+        const { Member } = require('../models');
+        const member = await Member.findOne({
+            where: { userId: req.user.userId }
+        });
+        
+        if (!member) {
+            throw new NotFoundError('Không tìm thấy thông tin member');
+        }
+
+        const membershipHistory = await memberService.purchaseMembership(
+            member.id, 
+            membershipId, 
+            startDate || new Date().toISOString().split('T')[0]
+        );
+
+        res.status(201).json({
+            success: true,
+            message: 'Đăng ký gói membership thành công! Vui lòng thanh toán tại quầy để kích hoạt.',
+            data: membershipHistory
+        });
+    }),
+
     // GET /api/members/:id/active-membership - Get active membership
     getActiveMembership: asyncHandler(async (req, res) => {
         const { id } = req.params;
@@ -240,6 +267,29 @@ const memberController = {
         res.json({
             success: true,
             data: statistics
+        });
+    }),
+
+    deleteMember: asyncHandler(async (req, res) => {
+        const { id } = req.params;
+
+        const result = await memberService.deleteMember(id);
+
+        res.json({
+            success: true,
+            message: result.message
+        });
+    }),
+
+    cancelMembership: asyncHandler(async (req, res) => {
+        const { id } = req.params;
+
+        const result = await memberService.cancelCurrentMembership(id);
+
+        res.json({
+            success: true,
+            message: result.message,
+            data: result.membership
         });
     })
 };

@@ -11,5 +11,14 @@ router.post('/logout', authController.logout);
 
 // Protected routes
 router.get('/me', authenticate, authController.getProfile);
+router.put('/update-profile', authenticate, authController.updateProfile);
+
+// Admin only routes
+router.delete('/users/:id', 
+    authenticate, 
+    require('../middleware/validation').validateId,
+    require('../middleware/auth').authorize('admin'),
+    authController.deleteUser
+);
 
 module.exports = router;

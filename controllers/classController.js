@@ -218,6 +218,34 @@ const classController = {
 
     // ===== CLASS SCHEDULE CONTROLLERS =====
 
+    // GET /api/classes/:id/schedules - Get schedules for a specific class
+    getClassSchedulesByClassId: asyncHandler(async (req, res) => {
+        const { id: classId } = req.params;
+        const { userId, role } = req.user;
+        
+        // Authorization: trainer can only see their own classes
+        if (role === 'trainer') {
+            const classInfo = await classService.getClassById(classId);
+            if (classInfo.trainerId !== userId) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Không có quyền xem lịch tập của lớp này'
+                });
+            }
+        }
+        
+        const schedules = await classService.getClassSchedules({
+            classId: classId,
+            page: 1,
+            limit: 100 // Get all schedules for this class
+        });
+        
+        res.json({
+            success: true,
+            data: schedules.schedules || []
+        });
+    }),
+
     // GET /api/classes/schedules
     getClassSchedules: asyncHandler(async (req, res) => {
         const {
@@ -383,6 +411,21 @@ const classController = {
         });
     }),
 
+    // DELETE /api/classes/enrollments/:id
+    cancelEnrollmentById: asyncHandler(async (req, res) => {
+        const { id: enrollmentId } = req.params;
+        const userId = req.user.userId;
+        const userRole = req.user.role;
+
+        const result = await classService.cancelEnrollmentById(enrollmentId, userId, userRole);
+
+        res.json({
+            success: true,
+            message: result.message,
+            data: result.enrollment
+        });
+    }),
+
     // POST /api/classes/schedules/:id/checkin
     checkInToClass: asyncHandler(async (req, res) => {
         const { id: scheduleId } = req.params;
@@ -416,6 +459,18 @@ const classController = {
         const { id: scheduleId } = req.params;
 
         const enrollments = await classService.getClassEnrollments(scheduleId);
+
+        res.json({
+            success: true,
+            data: enrollments
+        });
+    }),
+
+    // GET /api/classes/enrollments (Admin & Trainer)
+    getAllEnrollments: asyncHandler(async (req, res) => {
+        const { status = 'active', limit = 50 } = req.query;
+
+        const enrollments = await classService.getAllEnrollments({ status, limit });
 
         res.json({
             success: true,
@@ -468,11 +523,30 @@ const classController = {
         const userId = req.user.userId;
         const { limit = 10 } = req.query;
 
-        const classes = await classService.getUserUpcomingClasses(userId, limit);
+        const enrollments = await classService.getUserUpcomingClasses(userId, limit);
+        
+        // Transform enrollments to schedules format for frontend
+        const schedules = enrollments.map(enrollment => ({
+            id: enrollment.classSchedule.id,
+            classId: enrollment.classSchedule.classId,
+            date: enrollment.classSchedule.date,
+            startTime: enrollment.classSchedule.startTime,
+            endTime: enrollment.classSchedule.endTime,
+            trainerId: enrollment.classSchedule.trainerId,
+            maxParticipants: enrollment.classSchedule.maxParticipants,
+            currentParticipants: enrollment.classSchedule.currentParticipants,
+            status: enrollment.classSchedule.status,
+            room: enrollment.classSchedule.room,
+            notes: enrollment.classSchedule.notes,
+            class: enrollment.classSchedule.class,
+            trainer: enrollment.classSchedule.trainer,
+            enrollmentId: enrollment.id,
+            enrollmentStatus: enrollment.status
+        }));
 
         res.json({
             success: true,
-            data: classes
+            data: { schedules }
         });
     }),
 
@@ -511,6 +585,188 @@ const classController = {
         res.json({
             success: true,
             data: schedules
+        });
+    }),
+
+    // ===== CHECK-IN MANAGEMENT CONTROLLERS =====
+
+    // GET /api/classes/checkins
+    getAllCheckIns: asyncHandler(async (req, res) => {
+        const { 
+            page = 1, 
+            limit = 50,
+            date,
+            startDate,
+            endDate,
+            status = 'attended'
+        } = req.query;
+
+        const checkIns = await classService.getAllCheckIns({
+            page,
+            limit,
+            date,
+            startDate,
+            endDate,
+            status
+        });
+
+        res.json({
+            success: true,
+            data: checkIns
+        });
+    }),
+
+    // GET /api/classes/checkins/:date
+    getCheckInsByDate: asyncHandler(async (req, res) => {
+        const { date } = req.params;
+        const { limit = 100 } = req.query;
+
+        const checkIns = await classService.getCheckInsByDate(date, { limit });
+
+        res.json({
+            success: true,
+            data: checkIns
+        });
+    }),
+
+    // GET /api/classes/schedules/:id/checkins
+    getScheduleCheckIns: asyncHandler(async (req, res) => {
+        const { id: scheduleId } = req.params;
+
+        const checkIns = await classService.getScheduleCheckIns(scheduleId);
+
+        res.json({
+            success: true,
+            data: checkIns
+        });
+    }),
+
+    // ===== MEMBER CLASS HISTORY CONTROLLERS =====
+
+    // GET /api/classes/members/:id/history
+    getMemberClassHistory: asyncHandler(async (req, res) => {
+        const { id: memberId } = req.params;
+        const { 
+            page = 1, 
+            limit = 20,
+            startDate,
+            endDate,
+            status = 'all'
+        } = req.query;
+
+        // Check authorization - users can only view their own history unless admin/trainer
+        if (req.user.role !== 'admin' && req.user.role !== 'trainer') {
+            // Get member's userId from Member table
+            const member = await classService.getMemberByMemberId(memberId);
+            if (!member || member.userId !== req.user.userId) {
+                throw new ValidationError('Không có quyền xem lịch sử này');
+            }
+        }
+
+        const history = await classService.getMemberClassHistory(memberId, {
+            page,
+            limit,
+            startDate,
+            endDate,
+            status
+        });
+
+        res.json({
+            success: true,
+            data: history
+        });
+    }),
+
+    // GET /api/classes/members/:id/stats
+    getMemberClassStats: asyncHandler(async (req, res) => {
+        const { id: memberId } = req.params;
+        const { 
+            startDate,
+            endDate,
+            period = 'month' // month, quarter, year
+        } = req.query;
+
+        // Check authorization - users can only view their own stats unless admin/trainer
+        if (req.user.role !== 'admin' && req.user.role !== 'trainer') {
+            const member = await classService.getMemberByMemberId(memberId);
+            if (!member || member.userId !== req.user.userId) {
+                throw new ValidationError('Không có quyền xem thống kê này');
+            }
+        }
+
+        const stats = await classService.getMemberClassStats(memberId, {
+            startDate,
+            endDate,
+            period
+        });
+
+        res.json({
+            success: true,
+            data: stats
+        });
+    }),
+
+    // ===== MEMBER CHECK-IN CONTROLLERS =====
+
+    // GET /api/classes/my/checkins
+    getMyCheckIns: asyncHandler(async (req, res) => {
+        const { 
+            page = 1, 
+            limit = 20,
+            startDate,
+            endDate 
+        } = req.query;
+
+        const userId = req.user.userId;
+        
+        const checkIns = await classService.getMemberCheckIns(userId, {
+            page,
+            limit,
+            startDate,
+            endDate
+        });
+
+        res.json({
+            success: true,
+            data: checkIns
+        });
+    }),
+
+    // GET /api/classes/my/today-schedules
+    getMyTodaySchedules: asyncHandler(async (req, res) => {
+        const userId = req.user.userId;
+        const today = new Date().toISOString().split('T')[0];
+        
+        const schedules = await classService.getMemberTodaySchedules(userId, today);
+
+        res.json({
+            success: true,
+            data: schedules
+        });
+    }),
+
+    // POST /api/classes/my/quick-checkin
+    quickCheckIn: asyncHandler(async (req, res) => {
+        const { 
+            scheduleCode,  // Mã lịch tập hoặc QR code
+            scheduleId     // Hoặc trực tiếp schedule ID
+        } = req.body;
+
+        const userId = req.user.userId;
+
+        if (!scheduleCode && !scheduleId) {
+            throw new ValidationError('Vui lòng cung cấp mã lịch tập hoặc ID lịch tập');
+        }
+
+        const result = await classService.quickCheckIn(userId, {
+            scheduleCode,
+            scheduleId
+        });
+
+        res.json({
+            success: true,
+            message: 'Check-in thành công!',
+            data: result
         });
     })
 };

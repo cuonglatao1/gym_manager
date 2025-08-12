@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainer Dashboard - Gym Manager</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .role-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 10px;
+        }
+        
+        .main-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e1e5e9;
+        }
+        
+        .tab-btn {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn.active {
+            color: #f5576c;
+            border-bottom-color: #f5576c;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .section-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .item-card {
+            background: #f8f9fa;
+            border-left: 4px solid #f5576c;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 0 8px 8px 0;
+            transition: transform 0.2s;
+        }
+        
+        .item-card:hover {
+            transform: translateX(5px);
+        }
+        
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .item-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .item-meta {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+        
+        .close:hover {
+            color: #f5576c;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .checkin-card {
+            border: 2px solid #28a745;
+            background: #f8fff9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="role-header">
+            <h1>🏋️‍♂️ Trainer Dashboard</h1>
+            <p>Xin chào <span id="trainerName">Trainer</span>! Quản lý lớp tập của bạn</p>
+            <button onclick="logout()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; float: right;">Đăng xuất</button>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalClasses">-</div>
+                <div>Lớp của tôi</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todaySchedules">-</div>
+                <div>Lịch hôm nay</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="upcomingSchedules">-</div>
+                <div>Lịch sắp tới</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalStudents">-</div>
+                <div>Tổng học viên</div>
+            </div>
+        </div>
+
+        <!-- Main Navigation Tabs -->
+        <div class="main-tabs">
+            <button class="tab-btn active" onclick="switchTab('overview')">📊 Tổng quan</button>
+            <button class="tab-btn" onclick="switchTab('my-classes')">📚 Lớp của tôi</button>
+            <button class="tab-btn" onclick="switchTab('schedules')">📅 Lịch tập</button>
+            <button class="tab-btn" onclick="switchTab('attendance')">👥 Điểm danh</button>
+            <button class="tab-btn" onclick="switchTab('enrollments')">✅ Đăng ký</button>
+            <button class="tab-btn" onclick="switchTab('members')">👤 Học viên</button>
+        </div>
+
+        <!-- Tab: Overview -->
+        <div id="overview" class="tab-content active">
+            <div class="section-card">
+                <h3>📊 Tổng quan hoạt động</h3>
+                <div class="form-grid">
+                    <div>
+                        <h4>Lịch hôm nay</h4>
+                        <div id="todaySchedulesList">Đang tải...</div>
+                    </div>
+                    <div>
+                        <h4>Hoạt động gần đây</h4>
+                        <div id="recentActivity">Đang tải...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: My Classes -->
+        <div id="my-classes" class="tab-content">
+            <div class="section-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>📚 Lớp tập của tôi</h3>
+                    <button class="btn btn-primary" onclick="showCreateClassModal()">➕ Tạo lớp mới</button>
+                </div>
+                <div id="myClassesList" class="loading">Đang tải...</div>
+            </div>
+        </div>
+
+        <!-- Tab: Schedules -->
+        <div id="schedules" class="tab-content">
+            <div class="section-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>📅 Lịch tập</h3>
+                    <div>
+                        <input type="date" id="scheduleDate" onchange="loadSchedules()" style="margin-right: 10px;">
+                    </div>
+                </div>
+                <div id="schedulesList" class="loading">Đang tải...</div>
+            </div>
+        </div>
+
+        <!-- Tab: Attendance -->
+        <div id="attendance" class="tab-content">
+            <div class="section-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>👥 Điểm danh</h3>
+                    <div class="filter-bar">
+                        <input type="date" id="attendanceDate" onchange="loadAttendance()">
+                        <button class="btn btn-secondary" onclick="loadAttendance()">🔄 Tải lại</button>
+                    </div>
+                </div>
+                <div id="attendanceList" class="loading">Đang tải...</div>
+            </div>
+        </div>
+
+        <!-- Tab: Enrollments -->
+        <div id="enrollments" class="tab-content">
+            <div class="section-card">
+                <h3>✅ Đăng ký lớp học</h3>
+                <div class="filter-bar">
+                    <input type="date" id="enrollmentDate" onchange="loadEnrollments()">
+                    <select id="enrollmentClassFilter" onchange="loadEnrollments()">
+                        <option value="">Tất cả lớp</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="loadEnrollments()">🔄 Tải lại</button>
+                </div>
+                <div id="enrollmentsList" class="loading">Đang tải...</div>
+            </div>
+        </div>
+
+        <!-- Tab: Members -->
+        <div id="members" class="tab-content">
+            <div class="section-card">
+                <h3>👤 Học viên của tôi</h3>
+                <div class="filter-bar">
+                    <input type="text" id="memberSearch" placeholder="Tìm kiếm học viên..." onkeyup="searchMembers()">
+                    <select id="memberClassFilter" onchange="filterMembers()">
+                        <option value="">Tất cả lớp</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="loadMembers()">🔄 Tải lại</button>
+                </div>
+                <div id="membersList" class="loading">Đang tải...</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal -->
+    <div id="formModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Form</h3>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="modalContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Debug Panel -->
+    <div style="position: fixed; bottom: 0; left: 0; right: 0; background: #000; color: #0f0; font-family: monospace; font-size: 11px; padding: 5px; height: 80px; overflow-y: auto; z-index: 9999; border-top: 1px solid #333;">
+        <div style="font-weight: bold; color: #fff; margin-bottom: 2px;">🔍 API Response Monitor</div>
+        <div id="apiDebugLog"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000/api';
+        let currentUser = null;
+        let myClasses = [];
+        let mySchedules = [];
+
+        // API Call Function with Debug
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const token = localStorage.getItem('gym_auth_token');
+            
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { 'Authorization': `Bearer ${token}` })
+                }
+            };
+            
+            if (body && (method === 'POST' || method === 'PUT')) {
+                options.body = JSON.stringify(body);
+            }
+            
+            logApiDebug(`🚀 ${method} ${endpoint}`, 'request');
+            if (body) logApiDebug(`📤 Body: ${JSON.stringify(body)}`, 'request');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    logApiDebug(`❌ ${response.status} ${data.message || 'API call failed'}`, 'error');
+                    throw new Error(data.message || 'API call failed');
+                }
+                
+                logApiDebug(`✅ ${response.status} Success`, 'success');
+                return data;
+            } catch (error) {
+                logApiDebug(`💥 Error: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        function logApiDebug(message, type = 'info') {
+            const debugLog = document.getElementById('apiDebugLog');
+            if (!debugLog) return;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                'request': '#00bfff',
+                'response': '#00ff00', 
+                'success': '#32cd32',
+                'error': '#ff6b6b',
+                'info': '#ffffff'
+            };
+            
+            const logEntry = document.createElement('div');
+            logEntry.style.color = colors[type] || colors.info;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            debugLog.appendChild(logEntry);
+            debugLog.scrollTop = debugLog.scrollHeight;
+            
+            // Keep only last 50 entries
+            while (debugLog.children.length > 50) {
+                debugLog.removeChild(debugLog.firstChild);
+            }
+        }
+
+        // Tab Management
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            // Load data for the selected tab
+            switch(tabName) {
+                case 'overview':
+                    loadOverview();
+                    break;
+                case 'my-classes':
+                    loadMyClasses();
+                    break;
+                case 'schedules':
+                    loadSchedules();
+                    break;
+                case 'attendance':
+                    loadAttendance();
+                    break;
+                case 'enrollments':
+                    loadEnrollments();
+                    break;
+                case 'members':
+                    loadMembers();
+                    break;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            if (checkAuth()) {
+                initDashboard();
+            }
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('gym_auth_token');
+            const userInfo = localStorage.getItem('gym_user_info');
+            
+            if (!token || !userInfo) {
+                window.location.href = 'index.html';
+                return false;
+            }
+            
+            currentUser = JSON.parse(userInfo);
+            if (currentUser.role !== 'trainer') {
+                window.location.href = 'index.html';
+                return false;
+            }
+            
+            document.getElementById('trainerName').textContent = currentUser.fullName || currentUser.username || 'Trainer';
+            return true;
+        }
+
+        async function initDashboard() {
+            try {
+                await Promise.all([
+                    loadStats(),
+                    loadOverview(),
+                    loadClassTypes()
+                ]);
+                updateClassSelects();
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+            }
+        }
+
+        // Load Statistics
+        async function loadStats() {
+            try {
+                // Load my classes count
+                const classesResponse = await apiCall(`/classes?trainerId=${currentUser.id}`);
+                const totalClasses = classesResponse.data?.classes?.length || 0;
+                
+                // Load today's schedules
+                const today = new Date().toISOString().split('T')[0];
+                const schedulesResponse = await apiCall(`/classes/trainer/schedules?startDate=${today}&endDate=${today}`);
+                const todaySchedules = schedulesResponse.data?.schedules?.length || 0;
+                
+                // Load upcoming schedules (next 7 days)
+                const nextWeek = new Date();
+                nextWeek.setDate(nextWeek.getDate() + 7);
+                const upcomingResponse = await apiCall(`/classes/trainer/schedules?startDate=${today}&endDate=${nextWeek.toISOString().split('T')[0]}`);
+                const upcomingSchedules = upcomingResponse.data?.schedules?.length || 0;
+                
+                // Load enrollments to count students
+                const enrollmentsResponse = await apiCall('/classes/enrollments');
+                const allEnrollments = enrollmentsResponse.data || [];
+                const myEnrollments = allEnrollments.filter(e => 
+                    e.classSchedule?.class?.trainerId === currentUser.id || 
+                    e.classSchedule?.class?.trainer?.id === currentUser.id
+                );
+                const uniqueStudents = new Set(myEnrollments.map(e => e.memberId)).size;
+                
+                document.getElementById('totalClasses').textContent = totalClasses;
+                document.getElementById('todaySchedules').textContent = todaySchedules;
+                document.getElementById('upcomingSchedules').textContent = upcomingSchedules;
+                document.getElementById('totalStudents').textContent = uniqueStudents;
+                
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Load Overview
+        async function loadOverview() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const todaySchedules = await apiCall(`/classes/trainer/schedules?startDate=${today}&endDate=${today}`);
+                const schedules = todaySchedules.data?.schedules || [];
+                
+                const todayContainer = document.getElementById('todaySchedulesList');
+                if (schedules.length === 0) {
+                    todayContainer.innerHTML = '<p>Không có lịch tập nào hôm nay.</p>';
+                } else {
+                    let html = '';
+                    schedules.forEach(schedule => {
+                        const startTime = new Date(schedule.startTime);
+                        const now = new Date();
+                        const canCheckin = now >= startTime;
+                        
+                        html += `
+                            <div class="item-card ${canCheckin ? 'checkin-card' : ''}">
+                                <div class="item-title">${schedule.class?.name || 'N/A'}</div>
+                                <div class="item-meta">
+                                    ${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} 
+                                    • ${schedule.room || 'Chưa có phòng'}
+                                    • ${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0} người
+                                </div>
+                                ${canCheckin ? '<small style="color: #28a745; font-weight: bold;">✅ Có thể điểm danh</small>' : ''}
+                            </div>
+                        `;
+                    });
+                    todayContainer.innerHTML = html;
+                }
+                
+                // Load recent activity
+                const checkIns = await apiCall('/classes/checkins');
+                const recentCheckIns = checkIns.data?.checkIns?.slice(0, 5) || [];
+                
+                const activityContainer = document.getElementById('recentActivity');
+                if (recentCheckIns.length === 0) {
+                    activityContainer.innerHTML = '<p>Không có hoạt động gần đây.</p>';
+                } else {
+                    let html = '<ul>';
+                    recentCheckIns.forEach(checkIn => {
+                        html += `<li>${checkIn.member?.fullName} - ${checkIn.classSchedule?.class?.name} 
+                                (${new Date(checkIn.checkinTime).toLocaleString('vi-VN')})</li>`;
+                    });
+                    html += '</ul>';
+                    activityContainer.innerHTML = html;
+                }
+                
+            } catch (error) {
+                console.error('Error loading overview:', error);
+            }
+        }
+
+        // Load My Classes
+        async function loadMyClasses() {
+            const container = document.getElementById('myClassesList');
+            container.innerHTML = '<div class="loading">Đang tải...</div>';
+            
+            try {
+                const response = await apiCall(`/classes?trainerId=${currentUser.id}`);
+                myClasses = response.data?.classes || [];
+                
+                if (myClasses.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="icon" style="font-size: 64px; opacity: 0.5; margin-bottom: 16px;">📚</div>
+                            <h3>Chưa có lớp tập nào</h3>
+                            <p>Hãy tạo lớp tập đầu tiên của bạn!</p>
+                            <button class="btn btn-primary" onclick="showCreateClassModal()">➕ Tạo lớp ngay</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                myClasses.forEach(cls => {
+                    const classType = cls.classType || {};
+                    html += `
+                        <div class="item-card">
+                            <div class="item-header">
+                                <div>
+                                    <div class="item-title">${cls.name}</div>
+                                    <div class="item-meta">
+                                        <span style="color: ${classType.color || '#666'}; font-weight: bold;">${classType.name || 'N/A'}</span>
+                                        • ${cls.duration || 60} phút
+                                        • ${cls.price ? parseInt(cls.price).toLocaleString('vi-VN') + 'đ' : 'Miễn phí'}
+                                    </div>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-primary" onclick="createScheduleForClass(${cls.id})">📅 Tạo lịch</button>
+                                    <button class="btn btn-sm btn-info" onclick="viewClassSchedules(${cls.id})">👁️ Xem lịch</button>
+                                    <button class="btn btn-sm btn-success" onclick="viewClassEnrollments(${cls.id})">👥 Học viên</button>
+                                    <button class="btn btn-sm btn-warning" onclick="editClass(${cls.id})">✏️ Sửa</button>
+                                </div>
+                            </div>
+                            ${cls.description ? `<div style="margin-top: 10px; color: #666;">${cls.description}</div>` : ''}
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+                updateClassSelects();
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Load Schedules
+        async function loadSchedules() {
+            const container = document.getElementById('schedulesList');
+            container.innerHTML = '<div class="loading">Đang tải...</div>';
+            
+            try {
+                const dateInput = document.getElementById('scheduleDate');
+                const selectedDate = dateInput.value || new Date().toISOString().split('T')[0];
+                dateInput.value = selectedDate;
+                
+                const response = await apiCall(`/classes/trainer/schedules?startDate=${selectedDate}&endDate=${selectedDate}`);
+                mySchedules = response.data?.schedules || [];
+                
+                if (mySchedules.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="icon" style="font-size: 64px; opacity: 0.5; margin-bottom: 16px;">📅</div>
+                            <h3>Không có lịch tập nào</h3>
+                            <p>Hãy tạo lịch tập cho ngày này!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                mySchedules.forEach(schedule => {
+                    const cls = schedule.class || {};
+                    const classType = cls.classType || {};
+                    const startTime = new Date(schedule.startTime);
+                    const endTime = new Date(schedule.endTime);
+                    const now = new Date();
+                    const canCheckin = now >= startTime;
+                    
+                    html += `
+                        <div class="item-card ${canCheckin ? 'checkin-card' : ''}">
+                            <div class="item-header">
+                                <div>
+                                    <div class="item-title">${cls.name}</div>
+                                    <div class="item-meta">
+                                        ${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - 
+                                        ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}
+                                        • <span style="color: ${classType.color}">${classType.name}</span>
+                                        • ${schedule.room || 'Chưa có phòng'}
+                                        • ${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0} người
+                                    </div>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-success" onclick="viewAttendance(${schedule.id})" ${!canCheckin ? 'disabled' : ''}>
+                                        👥 ${canCheckin ? 'Điểm danh' : 'Chưa đến giờ'}
+                                    </button>
+                                    <button class="btn btn-sm btn-info" onclick="viewScheduleEnrollments(${schedule.id})">📋 Đăng ký</button>
+                                    <button class="btn btn-sm btn-warning" onclick="editSchedule(${schedule.id})">✏️ Sửa</button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${schedule.id})">🗑️ Xóa</button>
+                                </div>
+                            </div>
+                            ${schedule.notes ? `<div style="margin-top: 10px; color: #666;">${schedule.notes}</div>` : ''}
+                            ${canCheckin ? '<div style="margin-top: 10px; color: #28a745; font-weight: bold;">✅ Có thể điểm danh ngay</div>' : ''}
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Load Attendance
+        async function loadAttendance() {
+            const container = document.getElementById('attendanceList');
+            container.innerHTML = '<div class="loading">Đang tải...</div>';
+            
+            const dateInput = document.getElementById('attendanceDate');
+            if (!dateInput.value) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+            
+            try {
+                const date = dateInput.value;
+                const response = await apiCall(`/classes/checkins/${date}`);
+                const checkIns = response.data?.checkIns || [];
+                
+                // Filter to only my schedules
+                const myCheckIns = checkIns.filter(checkIn => 
+                    checkIn.classSchedule?.class?.trainerId === currentUser.id ||
+                    checkIn.classSchedule?.class?.trainer?.id === currentUser.id
+                );
+                
+                if (myCheckIns.length === 0) {
+                    container.innerHTML = '<p>Không có check-in nào trong ngày này.</p>';
+                    return;
+                }
+                
+                let html = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Học viên</th>
+                                <th>Lớp học</th>
+                                <th>Check-in</th>
+                                <th>Check-out</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                myCheckIns.forEach(checkIn => {
+                    html += `
+                        <tr>
+                            <td>${checkIn.member?.fullName || 'N/A'}</td>
+                            <td>${checkIn.classSchedule?.class?.name || 'N/A'}</td>
+                            <td>${new Date(checkIn.checkinTime).toLocaleString('vi-VN')}</td>
+                            <td>${checkIn.checkoutTime ? new Date(checkIn.checkoutTime).toLocaleString('vi-VN') : 'Chưa check-out'}</td>
+                            <td>${checkIn.checkoutTime ? '✅ Hoàn thành' : '🔄 Đang tham gia'}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Load Enrollments
+        async function loadEnrollments() {
+            const container = document.getElementById('enrollmentsList');
+            container.innerHTML = '<div class="loading">Đang tải...</div>';
+            
+            try {
+                const response = await apiCall('/classes/enrollments');
+                const allEnrollments = response.data || [];
+                
+                // Filter to only my classes
+                const myEnrollments = allEnrollments.filter(enrollment => {
+                    if (!enrollment.classSchedule) return false;
+                    
+                    // Check if enrollment's class trainer matches current user
+                    const schedule = enrollment.classSchedule;
+                    const classTrainerId = schedule.class?.trainerId || schedule.class?.trainer?.id || schedule.trainerId;
+                    
+                    return classTrainerId === currentUser.id;
+                });
+                
+                if (myEnrollments.length === 0) {
+                    container.innerHTML = '<p>Không có đăng ký nào cho lớp của bạn.</p>';
+                    return;
+                }
+                
+                let html = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Học viên</th>
+                                <th>Lớp học</th>
+                                <th>Thời gian</th>
+                                <th>Trạng thái</th>
+                                <th>Đăng ký lúc</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                myEnrollments.forEach(enrollment => {
+                    const schedule = enrollment.classSchedule;
+                    const startTime = schedule ? new Date(schedule.startTime) : null;
+                    
+                    html += `
+                        <tr>
+                            <td>${enrollment.member?.fullName || 'N/A'} (${enrollment.member?.memberCode || 'N/A'})</td>
+                            <td>${schedule?.class?.name || 'N/A'}</td>
+                            <td>${startTime ? `${startTime.toLocaleDateString('vi-VN')} ${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}` : 'N/A'}</td>
+                            <td>${enrollment.checkinTime ? '✅ Đã tham gia' : '⏳ Chưa tham gia'}</td>
+                            <td>${new Date(enrollment.createdAt).toLocaleString('vi-VN')}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Global variable to store all members data for filtering
+        let allMembersData = [];
+        let allEnrollmentsData = [];
+
+        // Load Members
+        async function loadMembers() {
+            const container = document.getElementById('membersList');
+            container.innerHTML = '<div class="loading">Đang tải...</div>';
+            
+            try {
+                // Get all enrollments for my classes
+                const enrollmentsResponse = await apiCall('/classes/enrollments');
+                allEnrollmentsData = enrollmentsResponse.data || [];
+                
+                const myEnrollments = allEnrollmentsData.filter(enrollment => 
+                    enrollment.classSchedule?.class?.trainerId === currentUser.id ||
+                    enrollment.classSchedule?.class?.trainer?.id === currentUser.id
+                );
+                
+                // Get unique members with their enrollment data
+                const memberMap = new Map();
+                myEnrollments.forEach(enrollment => {
+                    const member = enrollment.member;
+                    if (member && !memberMap.has(member.id)) {
+                        memberMap.set(member.id, {
+                            ...member,
+                            enrollments: myEnrollments.filter(e => e.memberId === member.id)
+                        });
+                    }
+                });
+                
+                allMembersData = Array.from(memberMap.values());
+                
+                // Apply current filters
+                displayMembers();
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Display members with current filters applied
+        function displayMembers() {
+            const container = document.getElementById('membersList');
+            const searchTerm = document.getElementById('memberSearch').value.toLowerCase().trim();
+            const selectedClassId = document.getElementById('memberClassFilter').value;
+            
+            // Filter members based on search and class filter
+            let filteredMembers = allMembersData;
+            
+            // Apply name search filter
+            if (searchTerm) {
+                filteredMembers = filteredMembers.filter(member => 
+                    (member.fullName || '').toLowerCase().includes(searchTerm) ||
+                    (member.memberCode || '').toLowerCase().includes(searchTerm) ||
+                    (member.email || '').toLowerCase().includes(searchTerm) ||
+                    (member.phone || '').toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            // Apply class filter
+            if (selectedClassId) {
+                filteredMembers = filteredMembers.filter(member => 
+                    member.enrollments.some(enrollment => 
+                        enrollment.classSchedule?.class?.id == selectedClassId
+                    )
+                );
+            }
+            
+            if (filteredMembers.length === 0) {
+                container.innerHTML = '<p>Không tìm thấy học viên nào phù hợp với điều kiện lọc.</p>';
+                return;
+            }
+            
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Mã TV</th>
+                            <th>Họ tên</th>
+                            <th>Email</th>
+                            <th>Điện thoại</th>
+                            <th>Lớp đã đăng ký</th>
+                            <th>Số lớp đã tham gia</th>
+                            <th>Lần cuối tham gia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            filteredMembers.forEach(member => {
+                const memberEnrollments = member.enrollments;
+                const attendedClasses = memberEnrollments.filter(e => e.checkinTime).length;
+                const lastAttended = memberEnrollments
+                    .filter(e => e.checkinTime)
+                    .sort((a, b) => new Date(b.checkinTime) - new Date(a.checkinTime))[0];
+                
+                // Get unique classes this member is enrolled in
+                const enrolledClasses = [...new Set(memberEnrollments.map(e => e.classSchedule?.class?.name))].filter(Boolean);
+                
+                html += `
+                    <tr>
+                        <td>${member.memberCode || 'N/A'}</td>
+                        <td>${member.fullName || 'N/A'}</td>
+                        <td>${member.email || 'N/A'}</td>
+                        <td>${member.phone || 'N/A'}</td>
+                        <td><small>${enrolledClasses.join(', ')}</small></td>
+                        <td>${attendedClasses}</td>
+                        <td>${lastAttended ? new Date(lastAttended.checkinTime).toLocaleDateString('vi-VN') : 'Chưa từng'}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Load Class Types
+        async function loadClassTypes() {
+            try {
+                const response = await apiCall('/classes/types');
+                const types = response.data || [];
+                
+                const select = document.getElementById('classTypeSelect');
+                select.innerHTML = '<option value="">Chọn loại lớp</option>';
+                
+                types.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type.id;
+                    option.textContent = type.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading class types:', error);
+            }
+        }
+
+        // Update Class Selects
+        function updateClassSelects() {
+            const selects = ['quickClassSelect', 'enrollmentClassFilter'];
+            
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (!select) return;
+                
+                select.innerHTML = '<option value="">Chọn lớp tập</option>';
+                myClasses.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.id;
+                    option.textContent = `${cls.name} (${cls.classType?.name || 'N/A'})`;
+                    select.appendChild(option);
+                });
+            });
+
+            // Update member class filter with proper labels
+            const memberClassFilter = document.getElementById('memberClassFilter');
+            if (memberClassFilter) {
+                memberClassFilter.innerHTML = '<option value="">Tất cả lớp</option>';
+                myClasses.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.id;
+                    option.textContent = `${cls.name} (${cls.classType?.name || 'N/A'})`;
+                    memberClassFilter.appendChild(option);
+                });
+            }
+        }
+
+        // Form Handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create Class Form Handler
+            const createClassForm = document.getElementById('createClassForm');
+            if (createClassForm) {
+                createClassForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(e.target);
+                    const data = {
+                        name: formData.get('name'),
+                        classTypeId: parseInt(formData.get('classTypeId')),
+                        description: formData.get('description'),
+                        duration: formData.get('duration') ? parseInt(formData.get('duration')) : null,
+                        price: formData.get('price') ? parseFloat(formData.get('price')) : null,
+                        requirements: formData.get('requirements')
+                    };
+                    
+                    try {
+                        const response = await apiCall('/classes', 'POST', data);
+                        if (response.success) {
+                            document.getElementById('createClassResult').innerHTML = '<div class="success">✅ Tạo lớp thành công!</div>';
+                            e.target.reset();
+                            setTimeout(() => {
+                                loadMyClasses();
+                                document.getElementById('createClassResult').innerHTML = '';
+                            }, 2000);
+                        }
+                    } catch (error) {
+                        document.getElementById('createClassResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+                    }
+                });
+            }
+
+            // Quick Schedule Form Handler
+            const quickScheduleForm = document.getElementById('quickScheduleForm');
+            if (quickScheduleForm) {
+                quickScheduleForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(e.target);
+                    const classId = formData.get('classId');
+                    const date = formData.get('date');
+                    const startTime = formData.get('startTime');
+                    const duration = parseInt(formData.get('duration')) || 60;
+                    
+                    // Calculate end time
+                    const startDateTime = new Date(`${date}T${startTime}`);
+                    const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+                    
+                    const data = {
+                        date: date,
+                        startTime: startTime,
+                        endTime: endDateTime.toTimeString().slice(0, 5),
+                        room: formData.get('room'),
+                        notes: formData.get('notes')
+                    };
+                    
+                    try {
+                        const response = await apiCall(`/classes/${classId}/schedules`, 'POST', data);
+                        if (response.success) {
+                            document.getElementById('quickScheduleResult').innerHTML = '<div class="success">✅ Tạo lịch thành công!</div>';
+                            e.target.reset();
+                            setTimeout(() => {
+                                loadSchedules();
+                                loadStats();
+                                document.getElementById('quickScheduleResult').innerHTML = '';
+                            }, 2000);
+                        }
+                    } catch (error) {
+                        document.getElementById('quickScheduleResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+                    }
+                });
+            }
+        });
+
+        // Attendance Modal Functions
+        async function viewAttendance(scheduleId) {
+            try {
+                const response = await apiCall(`/classes/schedules/${scheduleId}/enrollments`);
+                if (response.success) {
+                    const enrollments = response.data || [];
+                    showAttendanceModal(enrollments, scheduleId);
+                }
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        function showAttendanceModal(enrollments, scheduleId) {
+            let content = '<div class="section-card"><h4>👥 Danh sách điểm danh</h4>';
+            
+            if (enrollments.length === 0) {
+                content += '<p>Chưa có ai đăng ký lớp này.</p>';
+            } else {
+                content += `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Học viên</th>
+                                <th>Mã TV</th>
+                                <th>Điện thoại</th>
+                                <th>Trạng thái</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                enrollments.forEach(enrollment => {
+                    const member = enrollment.member || {};
+                    const isCheckedIn = !!enrollment.checkinTime;
+                    
+                    content += `
+                        <tr>
+                            <td>${member.fullName || 'N/A'}</td>
+                            <td>${member.memberCode || 'N/A'}</td>
+                            <td>${member.phone || 'N/A'}</td>
+                            <td>${isCheckedIn ? 
+                                `<span style="color: #28a745; font-weight: bold;">✅ Đã tham gia<br><small>${new Date(enrollment.checkinTime).toLocaleString('vi-VN')}</small></span>` :
+                                '<span style="color: #ffc107; font-weight: bold;">⏳ Chưa tham gia</span>'
+                            }</td>
+                            <td>
+                                ${isCheckedIn ? 
+                                    '<span class="badge badge-success">Đã điểm danh</span>' :
+                                    `<button class="btn btn-sm btn-success" onclick="checkInMember(${scheduleId}, ${member.id}, this)">✓ Điểm danh</button>`
+                                }
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                content += '</tbody></table>';
+            }
+            
+            content += '</div>';
+            showModal('Điểm danh lớp học', content);
+        }
+
+        async function checkInMember(scheduleId, memberId, button) {
+            try {
+                const response = await apiCall(`/classes/schedules/${scheduleId}/checkin`, 'POST', {
+                    memberId: memberId
+                });
+                
+                if (response.success) {
+                    button.parentElement.innerHTML = '<span class="badge badge-success">Đã điểm danh</span>';
+                    // Update stats
+                    loadStats();
+                }
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        // Modal Functions
+        function showModal(title, content) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('formModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('formModal').style.display = 'none';
+        }
+
+        // Create Schedule Modal for specific class
+        function showCreateScheduleModal(classId = null) {
+            // Find the selected class info
+            const selectedClass = classId ? myClasses.find(c => c.id === classId) : null;
+            const classInfo = selectedClass ? `${selectedClass.name} (${selectedClass.classType?.name || 'N/A'})` : 'Chọn lớp trong danh sách';
+            
+            let content = `
+                <div class="section-card">
+                    <h4>📅 Tạo lịch tập mới</h4>
+                    ${classId ? `<p><strong>Lớp:</strong> ${classInfo}</p>` : '<p class="error">⚠️ Vui lòng chọn lớp từ danh sách "Lớp của tôi"</p>'}
+                    <form id="modalScheduleForm" ${!classId ? 'style="opacity: 0.5; pointer-events: none;"' : ''}>
+                        <input type="hidden" name="classId" value="${classId || ''}" required>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Ngày *</label>
+                                <input type="date" name="date" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Giờ bắt đầu *</label>
+                                <input type="time" name="startTime" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Thời lượng (phút)</label>
+                                <input type="number" name="duration" value="${selectedClass?.duration || 60}" min="15" max="300">
+                            </div>
+                            <div class="form-group">
+                                <label>Phòng</label>
+                                <input type="text" name="room" value="${selectedClass?.room || ''}">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Ghi chú</label>
+                            <input type="text" name="notes" placeholder="Ghi chú cho buổi học này">
+                        </div>
+                        <div style="text-align: right; margin-top: 20px;">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal()">Hủy</button>
+                            <button type="submit" class="btn btn-success">📅 Tạo lịch</button>
+                        </div>
+                    </form>
+                    <div id="modalScheduleResult"></div>
+                </div>
+            `;
+            
+            showModal('Tạo lịch tập mới', content);
+            
+            // Add form handler
+            document.getElementById('modalScheduleForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const classId = formData.get('classId');
+                const date = formData.get('date');
+                const startTime = formData.get('startTime');
+                const duration = parseInt(formData.get('duration')) || 60;
+                
+                // Calculate end time
+                const startDateTime = new Date(`${date}T${startTime}`);
+                const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+                
+                const data = {
+                    date: date,
+                    startTime: startTime,
+                    endTime: endDateTime.toTimeString().slice(0, 5),
+                    room: formData.get('room'),
+                    notes: formData.get('notes')
+                };
+                
+                try {
+                    const response = await apiCall(`/classes/${classId}/schedules`, 'POST', data);
+                    if (response.success) {
+                        document.getElementById('modalScheduleResult').innerHTML = '<div class="success">✅ Tạo lịch thành công!</div>';
+                        setTimeout(() => {
+                            loadSchedules();
+                            loadStats();
+                            closeModal();
+                        }, 1500);
+                    }
+                } catch (error) {
+                    document.getElementById('modalScheduleResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+                }
+            });
+        }
+
+        // Create Class Modal
+        function showCreateClassModal() {
+            let content = `
+                <div class="section-card">
+                    <h4>➕ Tạo lớp mới</h4>
+                    <form id="modalClassForm">
+                        <div class="form-group">
+                            <label>Tên lớp *</label>
+                            <input type="text" name="name" required placeholder="VD: Yoga buổi sáng">
+                        </div>
+                        <div class="form-group">
+                            <label>Loại lớp *</label>
+                            <select name="classTypeId" required>
+                                <option value="">Chọn loại lớp</option>
+            `;
+            
+            // Add class types - this would be loaded from API
+            // For now, adding some basic options
+            content += `
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Thời lượng (phút)</label>
+                                <input type="number" name="duration" placeholder="60" min="15" max="300">
+                            </div>
+                            <div class="form-group">
+                                <label>Giá (VND)</label>
+                                <input type="number" name="price" placeholder="100000" min="0">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Số lượng học viên tối đa</label>
+                                <input type="number" name="maxParticipants" placeholder="20" min="1" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label>Phòng tập</label>
+                                <input type="text" name="room" placeholder="VD: Studio A">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Mô tả</label>
+                            <textarea name="description" rows="3" placeholder="Mô tả về lớp tập..."></textarea>
+                        </div>
+                        <div style="text-align: right; margin-top: 20px;">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal()">Hủy</button>
+                            <button type="submit" class="btn btn-success">💾 Tạo lớp</button>
+                        </div>
+                    </form>
+                    <div id="modalClassResult"></div>
+                </div>
+            `;
+            
+            showModal('Tạo lớp mới', content);
+            
+            // Load class types and setup form after DOM is ready
+            setTimeout(() => {
+                loadClassTypesForModal();
+                
+                // Handle form submission
+                document.getElementById('modalClassForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const data = {
+                    name: formData.get('name'),
+                    classTypeId: parseInt(formData.get('classTypeId')),
+                    duration: formData.get('duration') ? parseInt(formData.get('duration')) : null,
+                    price: formData.get('price') ? parseFloat(formData.get('price')) : null,
+                    maxParticipants: formData.get('maxParticipants') ? parseInt(formData.get('maxParticipants')) : null,
+                    room: formData.get('room'),
+                    description: formData.get('description')
+                };
+                
+                console.log('Sending class data:', data);
+                
+                try {
+                    const response = await apiCall('/classes', 'POST', data);
+                    document.getElementById('modalClassResult').innerHTML = '<div class="success">✅ Tạo lớp thành công!</div>';
+                    
+                    // Reload classes and close modal
+                    setTimeout(() => {
+                        loadMyClasses();
+                        closeModal();
+                    }, 1500);
+                } catch (error) {
+                    document.getElementById('modalClassResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+                }
+                });
+            }, 100);
+        }
+
+        async function loadClassTypesForModal() {
+            try {
+                const response = await apiCall('/classes/types');
+                const select = document.querySelector('#modalClassForm select[name="classTypeId"]');
+                
+                response.data.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type.id;
+                    option.textContent = `${type.name} (${type.difficulty})`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load class types:', error);
+            }
+        }
+
+        // Placeholder functions
+        function createScheduleForClass(classId) {
+            showCreateScheduleModal(classId);
+        }
+
+        async function viewClassSchedules(classId) {
+            // Find the class name
+            const selectedClass = myClasses.find(c => c.id === classId);
+            const className = selectedClass ? selectedClass.name : `lớp ID ${classId}`;
+            
+            try {
+                const response = await apiCall(`/classes/${classId}/schedules`);
+                const schedules = response.data || [];
+                
+                let content = `<div class="section-card"><h4>📅 Lịch tập: ${className}</h4>`;
+                
+                if (schedules.length === 0) {
+                    content += '<p>Chưa có lịch tập nào cho lớp này.</p>';
+                } else {
+                    content += `
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Ngày</th>
+                                    <th>Giờ</th>
+                                    <th>Phòng</th>
+                                    <th>Học viên</th>
+                                    <th>Trạng thái</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    schedules.forEach(schedule => {
+                        const startTime = new Date(schedule.startTime);
+                        const endTime = new Date(schedule.endTime);
+                        const now = new Date();
+                        const canCheckin = now >= startTime;
+                        
+                        content += `
+                            <tr>
+                                <td>${startTime.toLocaleDateString('vi-VN')}</td>
+                                <td>${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - 
+                                    ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}</td>
+                                <td>${schedule.room || 'Chưa có'}</td>
+                                <td>${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0}</td>
+                                <td>${schedule.status === 'completed' ? '✅ Hoàn thành' : 
+                                      canCheckin ? '🟢 Có thể điểm danh' : '⏰ Chưa đến giờ'}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-info" onclick="viewScheduleEnrollments(${schedule.id})">👥 ĐK</button>
+                                    ${canCheckin ? `<button class="btn btn-sm btn-success" onclick="viewAttendance(${schedule.id})">✓ Điểm danh</button>` : ''}
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    content += '</tbody></table>';
+                }
+                
+                content += '</div>';
+                showModal(`Lịch tập - ${className}`, content);
+                
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        function viewClassEnrollments(classId) {
+            switchTab('enrollments');
+            document.getElementById('enrollmentClassFilter').value = classId;
+            loadEnrollments();
+        }
+
+        function viewScheduleEnrollments(scheduleId) {
+            viewAttendance(scheduleId);
+        }
+
+        async function editClass(classId) {
+            try {
+                const selectedClass = myClasses.find(c => c.id === classId);
+                if (!selectedClass) {
+                    alert('Không tìm thấy lớp');
+                    return;
+                }
+                
+                let content = `
+                    <div class="section-card">
+                        <h4>✏️ Sửa lớp: ${selectedClass.name}</h4>
+                        <form id="editClassForm">
+                            <input type="hidden" name="classId" value="${classId}">
+                            <div class="form-group">
+                                <label>Tên lớp *</label>
+                                <input type="text" name="name" required value="${selectedClass.name || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>Loại lớp *</label>
+                                <select name="classTypeId" required>
+                                    <option value="">Chọn loại lớp</option>
+                `;
+                
+                // Load class types for dropdown
+                const typesResponse = await apiCall('/classes/types');
+                const types = typesResponse.data || [];
+                types.forEach(type => {
+                    const selected = type.id === selectedClass.classTypeId ? 'selected' : '';
+                    content += `<option value="${type.id}" ${selected}>${type.name}</option>`;
+                });
+                
+                content += `
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Thời lượng (phút)</label>
+                                    <input type="number" name="duration" value="${selectedClass.duration || 60}" min="15" max="300">
+                                </div>
+                                <div class="form-group">
+                                    <label>Giá (đ)</label>
+                                    <input type="number" name="price" value="${selectedClass.price || 0}" min="0">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Mô tả</label>
+                                <textarea name="description" rows="3">${selectedClass.description || ''}</textarea>
+                            </div>
+                            <div style="text-align: right; margin-top: 20px;">
+                                <button type="button" class="btn btn-secondary" onclick="closeModal()">Hủy</button>
+                                <button type="submit" class="btn btn-success">💾 Lưu thay đổi</button>
+                            </div>
+                        </form>
+                        <div id="editClassResult"></div>
+                    </div>
+                `;
+                
+                showModal('Sửa lớp tập', content);
+                
+                // Add form handler
+                document.getElementById('editClassForm').addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(e.target);
+                    const data = {
+                        name: formData.get('name'),
+                        classTypeId: parseInt(formData.get('classTypeId')),
+                        description: formData.get('description'),
+                        duration: formData.get('duration') ? parseInt(formData.get('duration')) : null,
+                        price: formData.get('price') ? parseFloat(formData.get('price')) : null
+                    };
+                    
+                    try {
+                        const response = await apiCall(`/classes/${classId}`, 'PUT', data);
+                        if (response.success) {
+                            document.getElementById('editClassResult').innerHTML = '<div class="success">✅ Cập nhật thành công!</div>';
+                            setTimeout(() => {
+                                loadMyClasses();
+                                closeModal();
+                            }, 1500);
+                        }
+                    } catch (error) {
+                        document.getElementById('editClassResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+                    }
+                });
+                
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+        function editSchedule(id) { alert('Chức năng sửa lịch sẽ được phát triển'); }
+        function deleteSchedule(id) { if(confirm('Xóa lịch này?')) alert('Chức năng xóa sẽ được phát triển'); }
+        function searchMembers() { 
+            if (allMembersData.length > 0) {
+                displayMembers(); 
+            } else {
+                loadMembers();
+            }
+        }
+        
+        function filterMembers() { 
+            if (allMembersData.length > 0) {
+                displayMembers(); 
+            } else {
+                loadMembers();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('gym_auth_token');
+            localStorage.removeItem('gym_user_info');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

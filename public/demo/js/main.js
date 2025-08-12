@@ -4,6 +4,22 @@
 // Authentication token for UI state management
 let authToken = null;
 
+// Initialize authentication from localStorage on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeAuth();
+});
+
+/**
+ * Initialize authentication from stored tokens
+ */
+function initializeAuth() {
+    const storedToken = localStorage.getItem('authToken');
+    if (storedToken) {
+        authToken = storedToken;
+        console.log('🔑 Auth token restored from localStorage');
+    }
+}
+
 /**
  * Tab functionality - Show specific tab and hide others
  * @param {string} tabName - Name of the tab to show
@@ -82,7 +98,7 @@ async function loadSchedules() {
 
         // Check if server is responding at all
         if (!response) {
-            throw new Error('Không thể kết nối đến server. Kiểm tra server có chạy trên localhost:3000 không?');
+            throw new Error('Không thể kết nối đến server. Kiểm tra server có chạy trên localhost:30001 không?');
         }
 
         const contentType = response.headers.get('content-type');
@@ -180,12 +196,12 @@ async function loadSchedules() {
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Lớp Tập</th>
+                            <th>Lớp Tập & Loại</th>
                             <th>Ngày</th>
                             <th>Thời Gian</th>
-                            <th>Phòng</th>
-                            <th>Học Viên</th>
-                            <th>Trạng Thái</th>
+                            <th>HLV & Phòng</th>
+                            <th>Chỗ</th>
+                            <th>Trạng Thái & Giá</th>
                             <th>Hành Động</th>
                         </tr>
                     </thead>
@@ -210,22 +226,31 @@ async function loadSchedules() {
                                 console.log('⚠️ Time parsing error:', e);
                             }
                             
-                            // Get class and trainer names safely
+                            // Get class and trainer names safely with more details
                             const className = schedule.Class?.name || schedule.class?.name || 'N/A';
+                            const classType = schedule.Class?.classType?.name || schedule.class?.classType?.name || '';
+                            const classTypeColor = schedule.Class?.classType?.color || schedule.class?.classType?.color || '#6c757d';
                             const trainerName = schedule.Trainer?.fullName || schedule.trainer?.fullName || 'N/A';
+                            const price = schedule.Class?.price || schedule.class?.price || 0;
+                            
+                            // Create enhanced class name display
+                            const enhancedClassName = classType ? 
+                                `<div><strong>${className}</strong><br><small style="color: ${classTypeColor}; font-weight: bold;">${classType}</small></div>` :
+                                `<strong>${className}</strong>`;
                             
                             return `
                                 <tr>
                                     <td><strong>#${schedule.id || 'N/A'}</strong></td>
-                                    <td><strong>${className}</strong></td>
+                                    <td>${enhancedClassName}</td>
                                     <td>${schedule.date || 'N/A'}</td>
                                     <td>${startTime} - ${endTime}</td>
-                                    <td>${schedule.room || 'N/A'}</td>
+                                    <td>${trainerName}<br><small style="color: #666;">${schedule.room || 'N/A'}</small></td>
                                     <td>${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0}</td>
-                                    <td><span class="badge badge-${schedule.status === 'scheduled' ? 'primary' : schedule.status === 'completed' ? 'success' : 'warning'}">${schedule.status || 'N/A'}</span></td>
+                                    <td><span class="badge badge-${schedule.status === 'scheduled' ? 'primary' : schedule.status === 'completed' ? 'success' : 'warning'}">${schedule.status || 'N/A'}</span><br><small>${price ? price.toLocaleString('vi-VN') + ' VND' : 'Miễn phí'}</small></td>
                                     <td>
-                                        <button class="btn" style="font-size: 12px; padding: 5px 10px;" onclick="viewScheduleDetail(${schedule.id})">Chi tiết</button>
-                                        ${schedule.status === 'scheduled' ? `<button class="btn btn-success" style="font-size: 12px; padding: 5px 10px;" onclick="enrollInSchedule(${schedule.id})">Đăng ký</button>` : ''}
+                                        <button class="btn" style="font-size: 11px; padding: 3px 6px; margin: 1px;" onclick="viewScheduleDetail(${schedule.id})">👁️</button>
+                                        ${schedule.status === 'scheduled' ? `<button class="btn btn-success" style="font-size: 11px; padding: 3px 6px; margin: 1px;" onclick="enrollInSchedule(${schedule.id})">✅</button>` : ''}
+                                        ${authToken ? `<button class="btn btn-danger" style="font-size: 11px; padding: 3px 6px; margin: 1px;" onclick="deleteSchedule(${schedule.id}, '${className}')">🗑️</button>` : ''}
                                     </td>
                                 </tr>
                             `;
@@ -267,7 +292,7 @@ async function loadSchedules() {
         if (error.message.includes('fetch')) {
             errorMessage = 'Không thể kết nối đến server';
             suggestions = [
-                'Kiểm tra server có chạy trên localhost:3000',
+                'Kiểm tra server có chạy trên localhost:30001',
                 'Chạy lệnh: npm start hoặc node app.js',
                 'Kiểm tra firewall hoặc antivirus'
             ];
@@ -2244,6 +2269,59 @@ async function viewClassSchedules(classId) {
     );
 }
 
+async function loadClasses() {
+    showLoading('classesContainer');
+    try {
+        const response = await apiCall('/classes');
+        
+        if (response.success) {
+            let classes = response.data;
+            if (response.data && response.data.classes) {
+                classes = response.data.classes;
+            }
+            
+            if (!Array.isArray(classes)) {
+                classes = [];
+            }
+            
+            if (classes.length === 0) {
+                document.getElementById('classesContainer').innerHTML = `
+                    <div class="info">📋 No classes found</div>
+                `;
+                return;
+            }
+
+            const html = `
+                <div class="info" style="margin-bottom: 20px;">📋 Found ${classes.length} classes</div>
+                <div class="grid">
+                    ${classes.map(classItem => `
+                        <div class="card">
+                            <h4>🏃 ${classItem.name}</h4>
+                            <p><strong>Type:</strong> ${classItem.classType?.name || 'N/A'}</p>
+                            <p><strong>Trainer:</strong> ${classItem.trainer?.fullName || 'N/A'}</p>
+                            <p><strong>Duration:</strong> ${classItem.duration} minutes</p>
+                            <p><strong>Max Participants:</strong> ${classItem.maxParticipants}</p>
+                            <p><strong>Price:</strong> ${parseInt(classItem.price).toLocaleString('vi-VN')}đ</p>
+                            <p><strong>Room:</strong> ${classItem.room || 'N/A'}</p>
+                            <p><strong>Description:</strong> ${classItem.description || 'No description'}</p>
+                            <div class="actions">
+                                <button class="btn btn-small" onclick="viewClassDetail(${classItem.id})">👁️ View Detail</button>
+                                <button class="btn btn-small btn-danger" onclick="deleteClass(${classItem.id}, '${classItem.name}')">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            document.getElementById('classesContainer').innerHTML = html;
+        } else {
+            showError('classesContainer', response.message || 'Could not load classes');
+        }
+    } catch (error) {
+        showError('classesContainer', 'Error: ' + error.message);
+    }
+}
+
 /**
  * Schedule Management CRUD Functions
  */
@@ -2306,14 +2384,10 @@ async function createSchedule() {
             return;
         }
 
-        // Combine date and time to create datetime strings
-        const startDateTime = new Date(`${date}T${startTime}:00`);
-        const endDateTime = new Date(`${date}T${endTime}:00`);
-
         const scheduleData = {
             date,
-            startTime: startDateTime.toISOString(),
-            endTime: endDateTime.toISOString(),
+            startTime: startTime, // Keep as HH:MM format
+            endTime: endTime,     // Keep as HH:MM format
             trainerId: parseInt(trainerId),
             maxParticipants: maxParticipants ? parseInt(maxParticipants) : undefined,
             room: room || undefined,
@@ -2523,10 +2597,10 @@ async function testApiConnection() {
     showLoading('schedulesContainer');
     
     const tests = [
-        { name: 'Server Health Check', url: 'http://localhost:3000/api/health' },
-        { name: 'API Root', url: 'http://localhost:3000/api' },
-        { name: 'Class Types', url: 'http://localhost:3000/api/classes/types' },
-        { name: 'Class Schedules', url: 'http://localhost:3000/api/classes/schedules' }
+        { name: 'Server Health Check', url: 'http://localhost:30001/api/health' },
+        { name: 'API Root', url: 'http://localhost:30001/api' },
+        { name: 'Class Types', url: 'http://localhost:30001/api/classes/types' },
+        { name: 'Class Schedules', url: 'http://localhost:30001/api/classes/schedules' }
     ];
     
     let results = [];
@@ -2607,7 +2681,7 @@ async function testApiConnection() {
                     '<li>⚠️ Server trả về HTML thay vì JSON - có thể server chưa chạy</li>' : ''
                 }
                 ${results.some(r => r.error && r.error.includes('fetch')) ? 
-                    '<li>🔌 Lỗi kết nối - kiểm tra server có chạy trên localhost:3000</li>' : ''
+                    '<li>🔌 Lỗi kết nối - kiểm tra server có chạy trên localhost:30001</li>' : ''
                 }
             </ul>
         </div>
@@ -2809,20 +2883,66 @@ async function loadAllEnrollments() {
 async function showEnrollmentForm() {
     // Load available schedules
     try {
-        const response = await apiCall('/classes/schedules');
+        const response = await apiCall('/classes/schedules?limit=50&status=scheduled');
         if (response.success) {
-            const schedules = response.data.schedules || response.data || [];
+            const schedules = response.data.schedules || [];
             
             const scheduleSelect = document.getElementById('enrollScheduleId');
             scheduleSelect.innerHTML = '<option value="">-- Chọn lịch tập --</option>';
-            schedules.forEach(schedule => {
-                const date = new Date(schedule.date).toLocaleDateString('vi-VN');
-                const time = new Date(schedule.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'});
-                scheduleSelect.innerHTML += `<option value="${schedule.id}">${schedule.Class?.name || 'N/A'} - ${date} ${time}</option>`;
-            });
+            
+            if (schedules.length === 0) {
+                scheduleSelect.innerHTML += '<option value="" disabled>Không có lịch tập nào</option>';
+            } else {
+                // Group schedules by date for better organization
+                const schedulesByDate = {};
+                schedules.forEach(schedule => {
+                    const date = schedule.date;
+                    if (!schedulesByDate[date]) {
+                        schedulesByDate[date] = [];
+                    }
+                    schedulesByDate[date].push(schedule);
+                });
+
+                // Add schedules grouped by date
+                Object.keys(schedulesByDate).sort().forEach(date => {
+                    // Add date separator
+                    const dateGroup = document.createElement('optgroup');
+                    dateGroup.label = `📅 ${new Date(date).toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+                    scheduleSelect.appendChild(dateGroup);
+                    
+                    schedulesByDate[date].forEach(schedule => {
+                        const className = schedule.class?.name || schedule.Class?.name || 'N/A';
+                        const classType = schedule.class?.classType?.name || schedule.Class?.classType?.name || '';
+                        const trainer = schedule.trainer?.fullName || schedule.Trainer?.fullName || 'N/A';
+                        const startTime = new Date(schedule.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'});
+                        const endTime = new Date(schedule.endTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'});
+                        const slots = `${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0}`;
+                        const price = schedule.class?.price || schedule.Class?.price || 0;
+                        const priceText = price > 0 ? ` - ${price.toLocaleString('vi-VN')}đ` : ' - Miễn phí';
+                        
+                        // Check if schedule is available
+                        const isAvailable = (schedule.currentParticipants || 0) < (schedule.maxParticipants || 0);
+                        const availabilityIcon = isAvailable ? '✅' : '❌';
+                        
+                        const option = document.createElement('option');
+                        option.value = schedule.id;
+                        option.disabled = !isAvailable;
+                        
+                        // Enhanced option text with class type and trainer info
+                        let optionText = `${availabilityIcon} ${className}`;
+                        if (classType) optionText += ` (${classType})`;
+                        optionText += ` - ${startTime}-${endTime} - HLV: ${trainer} - Chỗ: ${slots}${priceText}`;
+                        
+                        option.textContent = optionText;
+                        dateGroup.appendChild(option);
+                    });
+                });
+            }
         }
     } catch (error) {
         console.error('Error loading schedules:', error);
+        const scheduleSelect = document.getElementById('enrollScheduleId');
+        scheduleSelect.innerHTML = '<option value="" disabled>Lỗi tải lịch tập</option>';
     }
     
     document.getElementById('enrollmentFormCard').style.display = 'block';
@@ -2893,19 +3013,28 @@ async function showCheckinForm() {
     // Load available schedules for today
     try {
         const today = new Date().toISOString().split('T')[0];
-        const response = await apiCall(`/classes/schedules?date=${today}`);
+        const response = await apiCall(`/classes/schedules?date=${today}&status=scheduled`);
         if (response.success) {
-            const schedules = response.data.schedules || response.data || [];
+            const schedules = response.data.schedules || [];
             
             const scheduleSelect = document.getElementById('checkinScheduleId');
             scheduleSelect.innerHTML = '<option value="">-- Chọn lịch tập --</option>';
-            schedules.forEach(schedule => {
-                const time = new Date(schedule.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'});
-                scheduleSelect.innerHTML += `<option value="${schedule.id}">${schedule.Class?.name || 'N/A'} - ${time}</option>`;
-            });
+            
+            if (schedules.length === 0) {
+                scheduleSelect.innerHTML += '<option value="" disabled>Không có lịch tập hôm nay</option>';
+            } else {
+                schedules.forEach(schedule => {
+                    const startTime = schedule.startTime;
+                    const endTime = schedule.endTime;
+                    const className = schedule.class?.name || 'N/A';
+                    scheduleSelect.innerHTML += `<option value="${schedule.id}">${className} - ${startTime}-${endTime}</option>`;
+                });
+            }
         }
     } catch (error) {
         console.error('Error loading schedules:', error);
+        const scheduleSelect = document.getElementById('checkinScheduleId');
+        scheduleSelect.innerHTML = '<option value="" disabled>Lỗi tải lịch tập</option>';
     }
     
     document.getElementById('checkinFormCard').style.display = 'block';
@@ -3168,6 +3297,258 @@ function cancelEnrollmentDemo() {
     showSuccess('enrollmentContainer', 
         `📋 Cancel enrollment demo: Chọn một enrollment từ danh sách và click nút "Cancel" để hủy đăng ký.`
     );
+}
+
+/**
+ * Load all schedules for management (edit/delete)
+ */
+async function loadAllSchedulesForManagement() {
+    showLoading('schedulesContainer');
+    try {
+        if (!authToken) {
+            throw new Error('Please login first (go to API Demo tab)');
+        }
+
+        const response = await apiCall('/classes/schedules?limit=100');
+        
+        if (response.success) {
+            const schedules = response.data.schedules || response.data || [];
+            
+            if (schedules.length === 0) {
+                document.getElementById('schedulesContainer').innerHTML = `
+                    <div class="info">📅 Không có schedule nào. <button class="btn btn-success" onclick="showCreateScheduleForm()">Tạo Schedule Mới</button></div>
+                `;
+                return;
+            }
+
+            // Group schedules by status for better organization
+            const schedulesByStatus = {
+                scheduled: schedules.filter(s => s.status === 'scheduled'),
+                completed: schedules.filter(s => s.status === 'completed'),
+                cancelled: schedules.filter(s => s.status === 'cancelled')
+            };
+
+            const html = `
+                <div class="info" style="margin-bottom: 20px;">
+                    🗂️ <strong>Quản Lý Schedules</strong> - Tổng cộng ${schedules.length} schedules
+                    <div style="margin-top: 10px;">
+                        <span class="badge badge-primary">${schedulesByStatus.scheduled.length} Đang hoạt động</span>
+                        <span class="badge badge-success">${schedulesByStatus.completed.length} Đã hoàn thành</span>
+                        <span class="badge badge-danger">${schedulesByStatus.cancelled.length} Đã hủy</span>
+                    </div>
+                </div>
+                
+                ${Object.keys(schedulesByStatus).map(status => {
+                    const statusSchedules = schedulesByStatus[status];
+                    if (statusSchedules.length === 0) return '';
+                    
+                    const statusNames = {
+                        scheduled: '📅 Schedules Đang Hoạt Động',
+                        completed: '✅ Schedules Đã Hoàn Thành', 
+                        cancelled: '❌ Schedules Đã Hủy'
+                    };
+                    
+                    return `
+                        <div class="card" style="margin-bottom: 20px;">
+                            <h4 style="color: ${status === 'scheduled' ? '#007bff' : status === 'completed' ? '#28a745' : '#dc3545'}; margin-bottom: 15px;">
+                                ${statusNames[status]} (${statusSchedules.length})
+                            </h4>
+                            <div style="overflow-x: auto;">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Class & Type</th>
+                                            <th>Ngày & Thời gian</th>
+                                            <th>Trainer & Phòng</th>
+                                            <th>Học viên</th>
+                                            <th>Status & Price</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${statusSchedules.map(schedule => {
+                                            // Enhanced schedule info display
+                                            const className = schedule.class?.name || schedule.Class?.name || 'N/A';
+                                            const classType = schedule.class?.classType?.name || schedule.Class?.classType?.name || '';
+                                            const classTypeColor = schedule.class?.classType?.color || schedule.Class?.classType?.color || '#6c757d';
+                                            const trainerName = schedule.trainer?.fullName || schedule.Trainer?.fullName || 'N/A';
+                                            const price = schedule.class?.price || schedule.Class?.price || 0;
+                                            const priceText = price > 0 ? price.toLocaleString('vi-VN') + 'đ' : 'Miễn phí';
+                                            
+                                            // Time formatting
+                                            let startTime = 'N/A', endTime = 'N/A';
+                                            try {
+                                                if (schedule.startTime) {
+                                                    const start = new Date(schedule.startTime);
+                                                    if (!isNaN(start.getTime())) {
+                                                        startTime = start.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                                                    }
+                                                }
+                                                if (schedule.endTime) {
+                                                    const end = new Date(schedule.endTime);
+                                                    if (!isNaN(end.getTime())) {
+                                                        endTime = end.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                                                    }
+                                                }
+                                            } catch (e) {
+                                                console.log('⚠️ Time parsing error:', e);
+                                            }
+                                            
+                                            // Enhanced class name display
+                                            const enhancedClassName = classType ? 
+                                                `<div><strong>${className}</strong><br><small style="color: ${classTypeColor}; font-weight: bold;">${classType}</small></div>` :
+                                                `<strong>${className}</strong>`;
+                                            
+                                            const dateFormatted = new Date(schedule.date).toLocaleDateString('vi-VN', { 
+                                                weekday: 'short', 
+                                                year: 'numeric', 
+                                                month: 'short', 
+                                                day: 'numeric' 
+                                            });
+                                            
+                                            return `
+                                                <tr style="${schedule.status === 'cancelled' ? 'opacity: 0.6;' : ''}">
+                                                    <td><strong>#${schedule.id}</strong></td>
+                                                    <td>${enhancedClassName}</td>
+                                                    <td>${dateFormatted}<br><strong>${startTime} - ${endTime}</strong></td>
+                                                    <td>${trainerName}<br><small style="color: #666;">📍 ${schedule.room || 'N/A'}</small></td>
+                                                    <td><strong>${schedule.currentParticipants || 0}</strong>/${schedule.maxParticipants || 0}</td>
+                                                    <td>
+                                                        <span class="badge badge-${schedule.status === 'scheduled' ? 'primary' : schedule.status === 'completed' ? 'success' : 'danger'}">${schedule.status}</span>
+                                                        <br><small>${priceText}</small>
+                                                    </td>
+                                                    <td>
+                                                        <div style="display: flex; flex-direction: column; gap: 3px;">
+                                                            <button class="btn" style="font-size: 10px; padding: 2px 4px;" onclick="viewScheduleDetail(${schedule.id})" title="Xem chi tiết">👁️ Chi tiết</button>
+                                                            ${schedule.status === 'scheduled' ? `
+                                                                <button class="btn btn-warning" style="font-size: 10px; padding: 2px 4px;" onclick="editSchedule(${schedule.id})" title="Chỉnh sửa">✏️ Sửa</button>
+                                                                <button class="btn btn-danger" style="font-size: 10px; padding: 2px 4px;" onclick="deleteSchedule(${schedule.id}, '${className.replace(/'/g, "\\'")}');" title="Xóa schedule">🗑️ Xóa</button>
+                                                            ` : schedule.status === 'cancelled' ? '' : `
+                                                                <button class="btn btn-secondary" style="font-size: 10px; padding: 2px 4px;" onclick="viewScheduleEnrollments(${schedule.id})" title="Xem đăng ký">👥 Đăng ký</button>
+                                                            `}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="btn btn-success" onclick="showCreateScheduleForm()">➕ Tạo Schedule Mới</button>
+                    <button class="btn btn-secondary" onclick="loadTodaySchedules()">📅 Lịch Hôm Nay</button>
+                    <button class="btn btn-info" onclick="loadUpcomingSchedules()">⏰ Lịch Sắp Tới</button>
+                </div>
+            `;
+            
+            document.getElementById('schedulesContainer').innerHTML = html;
+        }
+    } catch (error) {
+        showError('schedulesContainer', error.message);
+    }
+}
+
+/**
+ * Edit schedule function
+ */
+async function editSchedule(scheduleId) {
+    try {
+        if (!authToken) {
+            alert('Vui lòng đăng nhập trước (vào tab API Demo)');
+            return;
+        }
+        
+        // Get schedule details first
+        const response = await apiCall(`/classes/schedules/${scheduleId}`);
+        if (!response.success) {
+            throw new Error(response.message || 'Không thể tải thông tin schedule');
+        }
+        
+        const schedule = response.data;
+        const startTime = new Date(schedule.startTime);
+        const endTime = new Date(schedule.endTime);
+        
+        const newDate = prompt('Ngày mới (YYYY-MM-DD):', schedule.date);
+        if (!newDate) return;
+        
+        const newStartTime = prompt('Giờ bắt đầu (HH:MM):', 
+            startTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+        );
+        if (!newStartTime) return;
+        
+        const newEndTime = prompt('Giờ kết thúc (HH:MM):', 
+            endTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+        );
+        if (!newEndTime) return;
+        
+        const newRoom = prompt('Phòng:', schedule.room || '');
+        const newNotes = prompt('Ghi chú:', schedule.notes || '');
+        
+        const updateData = {
+            date: newDate,
+            startTime: newStartTime,
+            endTime: newEndTime,
+            room: newRoom || schedule.room,
+            notes: newNotes || schedule.notes
+        };
+        
+        const updateResponse = await apiCall(`/classes/schedules/${scheduleId}`, {
+            method: 'PUT',
+            body: JSON.stringify(updateData)
+        });
+        
+        if (updateResponse.success) {
+            alert('✅ Cập nhật schedule thành công!');
+            loadAllSchedulesForManagement(); // Reload the management view
+        } else {
+            alert('❌ Cập nhật thất bại: ' + (updateResponse.message || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('❌ Lỗi cập nhật: ' + error.message);
+    }
+}
+
+/**
+ * View schedule enrollments
+ */
+async function viewScheduleEnrollments(scheduleId) {
+    try {
+        if (!authToken) {
+            alert('Vui lòng đăng nhập trước (vào tab API Demo)');
+            return;
+        }
+        
+        const response = await apiCall(`/classes/schedules/${scheduleId}/enrollments`);
+        if (response.success) {
+            const enrollments = response.data || [];
+            
+            if (enrollments.length === 0) {
+                alert('📝 Schedule này chưa có ai đăng ký');
+                return;
+            }
+            
+            let message = `📋 Danh sách đăng ký cho Schedule #${scheduleId}:\n\n`;
+            enrollments.forEach((enrollment, index) => {
+                message += `${index + 1}. ${enrollment.member?.fullName || 'N/A'} (${enrollment.member?.memberCode || 'N/A'})\n`;
+                message += `   - Trạng thái: ${enrollment.status}\n`;
+                if (enrollment.checkinTime) {
+                    message += `   - Check-in: ${new Date(enrollment.checkinTime).toLocaleString('vi-VN')}\n`;
+                }
+                message += '\n';
+            });
+            
+            alert(message);
+        } else {
+            alert('❌ Không thể tải danh sách đăng ký: ' + (response.message || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('❌ Lỗi: ' + error.message);
+    }
 }
 
 /**

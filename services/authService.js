@@ -69,7 +69,7 @@ class AuthService {
 
     // Tạo token pair
     async generateTokens(user) {
-        // Access token (15 phút)
+        // Access token (2 phút for testing)
         const accessToken = jwt.sign(
             {
                 userId: user.id,
@@ -78,7 +78,7 @@ class AuthService {
                 type: 'access'
             },
             process.env.JWT_ACCESS_SECRET || 'access-secret',
-            { expiresIn: '15m' }
+            { expiresIn: '2m' }
         );
 
         // Refresh token (7 ngày)
@@ -95,7 +95,7 @@ class AuthService {
         return {
             accessToken,
             refreshToken,
-            expiresIn: 900 // 15 phút
+            expiresIn: 120 // 2 phút for testing
         };
     }
 
@@ -133,13 +133,13 @@ class AuthService {
                 type: 'access'
             },
             process.env.JWT_ACCESS_SECRET || 'access-secret',
-            { expiresIn: '15m' }
+            { expiresIn: '2m' }
         );
 
         return {
             accessToken,
             refreshToken, // Giữ nguyên refresh token
-            expiresIn: 900
+            expiresIn: 120 // 2 phút for testing
         };
     }
 
@@ -172,6 +172,90 @@ class AuthService {
         } catch (error) {
             throw new Error('Token không hợp lệ hoặc đã hết hạn');
         }
+    }
+
+    async deleteUser(userId) {
+        // Check if user exists
+        const user = await User.findByPk(userId);
+        if (!user) {
+            throw new Error('Không tìm thấy người dùng');
+        }
+
+        // Prevent deleting admin user
+        if (user.role === 'admin') {
+            throw new Error('Không thể xóa tài khoản quản trị viên');
+        }
+
+        // Check if user has associated member record
+        const { Member } = require('../models');
+        const member = await Member.findOne({ where: { userId: userId } });
+        
+        if (member) {
+            // If user has member record, soft delete both
+            await member.update({ 
+                isActive: false,
+                email: `deleted_${member.id}_${member.email}`,
+                memberCode: `DELETED_${member.memberCode}`
+            });
+        }
+
+        // Soft delete user account
+        await user.update({ 
+            isActive: false,
+            email: `deleted_${user.id}_${user.email}`,
+            username: `deleted_${user.id}_${user.username}`
+        });
+
+        // Remove refresh tokens
+        await RefreshToken.destroy({
+            where: { userId: userId }
+        });
+
+        return {
+            message: 'Xóa người dùng thành công'
+        };
+    }
+
+    // Update user profile
+    async updateProfile(userId, profileData) {
+        const { fullName, email } = profileData;
+
+        // Check if user exists
+        const user = await User.findByPk(userId);
+        if (!user) {
+            throw new Error('Không tìm thấy người dùng');
+        }
+
+        // Check if email already exists for another user
+        if (email && email !== user.email) {
+            const existingUser = await User.findOne({
+                where: {
+                    email: email.toLowerCase(),
+                    id: { [require('sequelize').Op.ne]: userId } // Exclude current user
+                }
+            });
+
+            if (existingUser) {
+                throw new Error('Email đã tồn tại trong hệ thống');
+            }
+        }
+
+        // Update user profile
+        const updatedUser = await user.update({
+            fullName: fullName || user.fullName,
+            email: email ? email.toLowerCase() : user.email
+        });
+
+        // Return updated user without sensitive data
+        return {
+            id: updatedUser.id,
+            username: updatedUser.username,
+            email: updatedUser.email,
+            fullName: updatedUser.fullName,
+            phone: updatedUser.phone,
+            role: updatedUser.role,
+            isActive: updatedUser.isActive
+        };
     }
 }
 

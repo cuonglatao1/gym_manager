@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gym Manager Demo - Trang Chủ</title>
+    <title>Đăng nhập - Gym Manager</title>
     <style>
-        * { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0; 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -21,153 +21,342 @@
             padding: 20px;
         }
 
-        .container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            overflow: hidden;
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 400px;
             width: 100%;
-            max-width: 500px;
+            backdrop-filter: blur(10px);
             text-align: center;
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px 30px;
+            margin-bottom: 40px;
         }
 
-        .header h1 { 
-            font-size: 28px; 
-            margin-bottom: 15px; 
+        .header h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
         }
 
-        .header p { 
-            opacity: 0.9; 
-            font-size: 16px; 
+        .header p {
+            color: #666;
+            font-size: 16px;
         }
 
-        .content {
-            padding: 40px 30px;
-        }
-
-        .demo-options {
-            display: grid;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .demo-card {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 25px;
-            border-left: 4px solid #667eea;
+        .form-group {
+            margin-bottom: 20px;
             text-align: left;
         }
 
-        .demo-card h3 {
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
             color: #333;
-            margin-bottom: 10px;
-            font-size: 18px;
+            font-weight: 600;
         }
 
-        .demo-card p {
-            color: #666;
-            margin-bottom: 15px;
-            font-size: 14px;
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
         }
 
         .btn {
+            width: 100%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            padding: 15px;
             border: none;
-            padding: 12px 24px;
             border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: transform 0.2s;
-            text-decoration: none;
-            display: inline-block;
-            width: 100%;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
         }
 
         .btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .features {
-            text-align: left;
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .demo-accounts {
             margin-top: 30px;
-            padding-top: 30px;
+            padding-top: 20px;
             border-top: 1px solid #eee;
         }
 
-        .features h4 {
+        .demo-accounts h4 {
             color: #333;
             margin-bottom: 15px;
+            font-size: 16px;
         }
 
-        .features ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .features li {
-            padding: 5px 0;
+        .account-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 14px;
             color: #666;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .account-item:hover {
+            background: #e9ecef;
+        }
+
+        .account-role {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .extra-links {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
             font-size: 14px;
         }
 
-        .features li::before {
-            content: "✅ ";
-            margin-right: 8px;
+        .extra-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .extra-links a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="login-container">
         <div class="header">
-            <h1>🏋️ Gym Manager Demo</h1>
-            <p>Hệ thống quản lý phòng gym hoàn chỉnh</p>
+            <h1>🏋️ Gym Manager</h1>
+            <p>Đăng nhập để truy cập hệ thống</p>
         </div>
 
-        <div class="content">
-            <div class="demo-options">
-                <div class="demo-card">
-                    <h3>🔐 Đăng nhập / Đăng ký</h3>
-                    <p>Truy cập hệ thống với tài khoản Admin, Trainer hoặc Member</p>
-                    <a href="auth.html" class="btn">Vào trang Authentication</a>
-                </div>
+        <div id="messageContainer"></div>
 
-                <div class="demo-card">
-                    <h3>📊 Dashboard Demo</h3>
-                    <p>Xem trực tiếp dashboard quản lý lớp học và thành viên</p>
-                    <a href="dashboard.html" class="btn">Vào Dashboard</a>
-                </div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="Nhập email đăng nhập" required>
             </div>
+            
+            <div class="form-group">
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" placeholder="Nhập mật khẩu" required>
+            </div>
+            
+            <button type="submit" class="btn" id="loginBtn">Đăng nhập</button>
+        </form>
 
-            <div class="features">
-                <h4>🚀 Tính năng hệ thống:</h4>
-                <ul>
-                    <li>Authentication với JWT & Role-based access</li>
-                    <li>Quản lý thành viên & gói membership</li>
-                    <li>Quản lý lớp học & lịch tập</li>
-                    <li>Đăng ký lớp học & check-in/check-out</li>
-                    <li>Analytics & reports</li>
-                    <li>API demo với tất cả endpoints</li>
-                </ul>
+        <div class="demo-accounts">
+            <h4>🎯 Tài khoản demo - Click để điền:</h4>
+            <div class="account-item" onclick="fillAccount('admin@gym.com', 'admin123')">
+                <span class="account-role">⚙️ Admin:</span> admin@gym.com / admin123
             </div>
+            <div class="account-item" onclick="fillAccount('trainer1@gym.com', 'trainer123')">
+                <span class="account-role">🏋️‍♂️ Trainer:</span> trainer1@gym.com / trainer123
+            </div>
+            <div class="account-item" onclick="fillAccount('member1@gmail.com', 'member123')">
+                <span class="account-role">👤 Member:</span> member1@gmail.com / member123
+            </div>
+        </div>
 
-            <div class="features" style="border-top: none; padding-top: 20px; margin-top: 20px;">
-                <h4>👤 Tài khoản demo:</h4>
-                <ul style="font-size: 13px;">
-                    <li><strong>Admin:</strong> admin@gym.com / admin123</li>
-                    <li><strong>Member:</strong> Đăng ký mới hoặc dùng API demo</li>
-                    <li><strong>Trainer:</strong> Đăng ký với role trainer</li>
-                </ul>
-            </div>
+        <div class="extra-links">
+            <span style="color: #666;">Hệ thống Gym Management v2.0</span>
         </div>
     </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000/api';
+
+        // Kiểm tra đã đăng nhập chưa
+        document.addEventListener('DOMContentLoaded', function() {
+            checkExistingAuth();
+        });
+
+        function checkExistingAuth() {
+            const token = localStorage.getItem('gym_auth_token');
+            const userInfo = localStorage.getItem('gym_user_info');
+            
+            if (token && userInfo) {
+                const user = JSON.parse(userInfo);
+                showMessage('success', `Chào mừng trở lại, ${user.fullName || user.username}! Đang chuyển hướng...`);
+                setTimeout(() => {
+                    redirectByRole(user.role);
+                }, 1000);
+            }
+        }
+
+        // Điền tài khoản demo
+        function fillAccount(email, password) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = password;
+            
+            // Nhấp nháy để thu hút sự chú ý
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.style.animation = 'pulse 2s infinite';
+            setTimeout(() => {
+                loginBtn.style.animation = '';
+            }, 4000);
+        }
+
+        // Xử lý đăng nhập
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await handleLogin();
+        });
+
+        async function handleLogin() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!email || !password) {
+                showMessage('error', 'Vui lòng nhập đầy đủ email và mật khẩu');
+                return;
+            }
+
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Đang đăng nhập...';
+            
+            showMessage('loading', 'Đang xác thực...');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Lưu token và thông tin user
+                    localStorage.setItem('gym_auth_token', data.data.accessToken);
+                    localStorage.setItem('gym_user_info', JSON.stringify(data.data.user));
+                    
+                    const user = data.data.user;
+                    const roleText = getRoleText(user.role);
+                    
+                    showMessage('success', `Đăng nhập thành công! Chào mừng ${user.fullName || user.username} (${roleText}). Đang chuyển hướng...`);
+                    
+                    // Chuyển hướng ngay lập tức
+                    setTimeout(() => {
+                        redirectByRole(user.role);
+                    }, 1500);
+
+                } else {
+                    showMessage('error', data.message || 'Đăng nhập thất bại');
+                }
+
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage('error', 'Lỗi kết nối. Vui lòng kiểm tra server và thử lại.');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Đăng nhập';
+            }
+        }
+
+        function redirectByRole(role) {
+            switch(role) {
+                case 'admin':
+                    window.location.href = 'admin-complete.html';
+                    break;
+                case 'trainer':
+                    window.location.href = 'trainer-complete.html';
+                    break;
+                case 'member':
+                    window.location.href = 'member-complete.html';
+                    break;
+                default:
+                    showMessage('error', 'Vai trò không hợp lệ');
+            }
+        }
+
+        function getRoleText(role) {
+            const roleMap = {
+                'admin': 'Quản trị viên',
+                'trainer': 'Huấn luyện viên', 
+                'member': 'Hội viên'
+            };
+            return roleMap[role] || role;
+        }
+
+        function showMessage(type, message) {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="message ${type}">${message}</div>`;
+            
+            // Auto hide sau 5 giây (trừ loading)
+            if (type !== 'loading') {
+                setTimeout(() => {
+                    container.innerHTML = '';
+                }, 5000);
+            }
+        }
+
+        // Thêm CSS animation cho pulse effect
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
 </body>
 </html>
