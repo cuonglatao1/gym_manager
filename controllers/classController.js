@@ -139,7 +139,7 @@ const classController = {
         });
     }),
 
-    // POST /api/classes (Admin & Trainer)
+    // POST /api/classes (Admin only)
     createClass: asyncHandler(async (req, res) => {
         const {
             classTypeId,
@@ -154,19 +154,11 @@ const classController = {
             recurringPattern
         } = req.body;
 
-        // If user is trainer, they can only create classes for themselves
-        if (req.user.role === 'trainer' && trainerId && trainerId !== req.user.userId) {
-            throw new ValidationError('Trainer chỉ có thể tạo lớp cho chính mình');
-        }
-
-        // If trainer creates class without specifying trainerId, use their own ID
-        const finalTrainerId = req.user.role === 'trainer' ? req.user.userId : trainerId;
-
         const classInfo = await classService.createClass({
             classTypeId,
             name,
             description,
-            trainerId: finalTrainerId,
+            trainerId,
             duration,
             maxParticipants,
             price,

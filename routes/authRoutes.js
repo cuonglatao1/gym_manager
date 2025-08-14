@@ -12,6 +12,7 @@ router.post('/logout', authController.logout);
 // Protected routes
 router.get('/me', authenticate, authController.getProfile);
 router.put('/update-profile', authenticate, authController.updateProfile);
+router.put('/change-password', authenticate, authController.changePassword);
 
 // Admin only routes
 router.delete('/users/:id', 

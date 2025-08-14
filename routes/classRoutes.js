@@ -85,10 +85,10 @@ router.delete('/types/:id',
     classController.deleteClassType
 );
 
-// POST /api/classes - Create new class (Admin & Trainer)
+// POST /api/classes - Create new class (Admin only)
 router.post('/', 
     authenticate, 
-    authorize('admin', 'trainer'),
+    authorize('admin'),
     validate(classSchemas.create),
     classController.createClass
 );

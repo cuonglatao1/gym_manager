@@ -5,8 +5,10 @@
   "main": "app.js",
   "scripts": {
     "seed:membership": "node seeders/membershipSeeder.js",
-    "start": "node app.js",
-    "dev": "nodemon app.js",
+    "start": "npx kill-port 3000 && node app.js",
+    "dev": "npx kill-port 3000 && nodemon app.js",
+    "clean-start": "npx kill-port 3000 30001 && node app.js",
+    "force-start": "taskkill /f /im node.exe >nul 2>&1 && node app.js",
     "test": "echo \"No tests yet\" && exit 0"
   },
   "keywords": [

@@ -208,6 +208,55 @@
             color: #666;
         }
         
+        .profile-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e1e5e9;
+        }
+        
+        .profile-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .profile-item:last-child {
+            border-bottom: none;
+        }
+        
+        .profile-item strong {
+            color: #333;
+            min-width: 140px;
+        }
+        
+        .profile-item span {
+            flex: 1;
+            text-align: right;
+            color: #666;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .badge-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .badge-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
         .error {
             background: #f8d7da;
             color: #721c24;
@@ -446,7 +495,7 @@
                     <select id="classTypeFilter" onchange="loadUpcomingSchedules()">
                         <option value="">Tất cả loại</option>
                     </select>
-                    <button class="btn btn-secondary" onclick="loadUpcomingSchedules()">🔄 Tải lại</button>
+                    <bcoutton class="btn btn-secondary" onclick="loadUpcomingSchedules()">🔄 Tải lại</bcoutton>
                 </div>
                 <div id="upcomingSchedules" class="loading">Đang tải...</div>
             </div>
@@ -457,8 +506,9 @@
             <div class="section-card">
                 <h3>📊 Lịch sử tập luyện</h3>
                 <div class="filter-bar">
-                    <input type="month" id="historyMonth" onchange="loadHistory()">
-                    <select id="historyClassFilter" onchange="loadHistory()">
+                    <input type="text" id="historySearch" placeholder="🔍 Tìm theo tên lớp..." onkeyup="filterHistory()">
+                    <input type="month" id="historyMonth" onchange="filterHistory()">
+                    <select id="historyClassFilter" onchange="filterHistory()">
                         <option value="">Tất cả lớp</option>
                     </select>
                     <button class="btn btn-secondary" onclick="loadHistory()">🔄 Tải lại</button>
@@ -504,22 +554,27 @@
 
         <!-- Tab: Profile -->
         <div id="profile" class="tab-content">
-            <div class="form-grid">
-                <div class="section-card">
-                    <h3>👤 Thông tin cá nhân</h3>
-                    <div id="memberProfile" class="loading">Đang tải...</div>
+            <div class="section-card">
+                <h3>👤 Thông tin hồ sơ</h3>
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div>
+                        <h4>📋 Thông tin cơ bản</h4>
+                        <div id="profileInfo" class="loading">Đang tải...</div>
+                        <div style="margin-top: 20px;">
+                            <button class="btn btn-primary" onclick="showEditProfileModal()">✏️ Chỉnh sửa hồ sơ</button>
+                            <button class="btn btn-warning" onclick="showChangePasswordModal()">🔒 Đổi mật khẩu</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h4>📊 Thống kê hoạt động</h4>
+                        <div id="profileStats" class="loading">Đang tải...</div>
+                    </div>
                 </div>
-                
-                <div class="section-card">
-                    <h3>💳 Gói tập hiện tại</h3>
-                    <div id="membershipInfo" class="loading">Đang tải...</div>
-                </div>
-                
-                <div class="section-card">
-                    <h3>📈 Thống kê cá nhân</h3>
-                    <div id="personalStats" class="loading">Đang tải...</div>
-                </div>
-                
+            </div>
+
+            <div class="section-card">
+                <h3>💳 Gói tập hiện tại</h3>
+                <div id="membershipInfo" class="loading">Đang tải...</div>
             </div>
         </div>
     </div>
@@ -547,6 +602,7 @@
         const API_BASE_URL = 'http://localhost:3000/api';
         let currentUser = null;
         let memberData = null;
+        let historyEnrollments = []; // Store all history data for filtering
 
         // API Call Function with Debug
         async function apiCall(endpoint, method = 'GET', body = null) {
@@ -892,60 +948,146 @@
             container.innerHTML = '<div class="loading">Đang tải...</div>';
             
             try {
-                const response = await apiCall('/classes/my/history');
-                const enrollments = response.data?.enrollments || [];
+                const response = await apiCall('/classes/my/history?limit=100');
+                historyEnrollments = response.data?.enrollments || [];
                 
-                if (enrollments.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="icon">📊</div>
-                            <h3>Chưa có lịch sử tập luyện</h3>
-                            <p>Hãy tham gia lớp tập đầu tiên!</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                let html = `
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Lớp học</th>
-                                <th>Loại</th>
-                                <th>Ngày</th>
-                                <th>Thời gian</th>
-                                <th>Trạng thái</th>
-                                <th>HLV</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
+                console.log('📋 History tab - API response:', response);
+                console.log('📋 History tab - Enrollments array:', historyEnrollments);
+                console.log('📋 History tab - Total from API:', response.data?.total);
+                console.log('📋 History tab - Array length:', historyEnrollments.length);
                 
-                enrollments.forEach(enrollment => {
-                    const schedule = enrollment.classSchedule;
-                    const startTime = schedule ? new Date(schedule.startTime) : null;
-                    
-                    html += `
-                        <tr>
-                            <td>${schedule?.class?.name || 'N/A'}</td>
-                            <td><span style="color: ${schedule?.class?.classType?.color || '#666'}">${schedule?.class?.classType?.name || 'N/A'}</span></td>
-                            <td>${startTime ? startTime.toLocaleDateString('vi-VN') : 'N/A'}</td>
-                            <td>${startTime ? startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'}) : 'N/A'}</td>
-                            <td>${enrollment.checkinTime ? 
-                                `<span style="color: #28a745; font-weight: bold;">✅ Đã tham gia</span>` :
-                                `<span style="color: #ffc107; font-weight: bold;">⏳ Đã đăng ký</span>`
-                            }</td>
-                            <td>${schedule?.class?.trainer?.fullName || 'N/A'}</td>
-                        </tr>
-                    `;
-                });
+                // Load class types for filter dropdown
+                await loadHistoryFilters();
                 
-                html += '</tbody></table>';
-                container.innerHTML = html;
+                // Display all data initially
+                displayHistoryData(historyEnrollments);
                 
             } catch (error) {
                 container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
             }
+        }
+
+        // Load class types for history filters
+        async function loadHistoryFilters() {
+            try {
+                const response = await apiCall('/classes/types');
+                const types = response.data || [];
+                
+                const select = document.getElementById('historyClassFilter');
+                select.innerHTML = '<option value="">Tất cả lớp</option>';
+                
+                types.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type.name;
+                    option.textContent = type.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading history filters:', error);
+            }
+        }
+
+        // Display history data in table
+        function displayHistoryData(enrollments) {
+            const container = document.getElementById('historyList');
+            
+            if (enrollments.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📊</div>
+                        <h3>Không tìm thấy kết quả</h3>
+                        <p>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Lớp học</th>
+                            <th>Loại</th>
+                            <th>Ngày</th>
+                            <th>Thời gian</th>
+                            <th>Trạng thái</th>
+                            <th>HLV</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            enrollments.forEach((enrollment, index) => {
+                const schedule = enrollment.classSchedule;
+                const cls = schedule?.class;
+                const classType = cls?.classType;
+                const trainer = cls?.trainer;
+                const startTime = schedule ? new Date(schedule.startTime) : null;
+                
+                html += `
+                    <tr>
+                        <td>${cls?.name || schedule?.name || 'Tên lớp không rõ'}</td>
+                        <td><span style="color: ${classType?.color || '#666'}; font-weight: bold;">
+                            ${classType?.name || cls?.type || 'Loại không rõ'}
+                        </span></td>
+                        <td>${startTime ? startTime.toLocaleDateString('vi-VN') : 
+                             schedule?.date ? new Date(schedule.date).toLocaleDateString('vi-VN') : 'N/A'}</td>
+                        <td>${startTime ? startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'}) : 
+                             schedule?.startTime ? schedule.startTime : 'N/A'}</td>
+                        <td>${enrollment.checkinTime ? 
+                            `<span style="color: #28a745; font-weight: bold;">✅ Đã tham gia</span>` :
+                            `<span style="color: #ffc107; font-weight: bold;">⏳ Đã đăng ký</span>`
+                        }</td>
+                        <td>${trainer?.fullName || cls?.trainerName || schedule?.trainerName || 'HLV không rõ'}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Filter history based on search, month, and class type
+        function filterHistory() {
+            const searchTerm = document.getElementById('historySearch').value.toLowerCase().trim();
+            const selectedMonth = document.getElementById('historyMonth').value;
+            const selectedClass = document.getElementById('historyClassFilter').value;
+            
+            console.log('🔍 Filtering with:', { searchTerm, selectedMonth, selectedClass });
+            
+            let filteredData = historyEnrollments;
+            
+            // Filter by search term (class name)
+            if (searchTerm) {
+                filteredData = filteredData.filter(enrollment => {
+                    const className = enrollment.classSchedule?.class?.name || '';
+                    return className.toLowerCase().includes(searchTerm);
+                });
+            }
+            
+            // Filter by month
+            if (selectedMonth) {
+                const [year, month] = selectedMonth.split('-');
+                filteredData = filteredData.filter(enrollment => {
+                    const schedule = enrollment.classSchedule;
+                    const scheduleDate = schedule ? new Date(schedule.startTime || schedule.date) : null;
+                    if (!scheduleDate) return false;
+                    
+                    return scheduleDate.getFullYear() == year && 
+                           (scheduleDate.getMonth() + 1) == parseInt(month);
+                });
+            }
+            
+            // Filter by class type
+            if (selectedClass) {
+                filteredData = filteredData.filter(enrollment => {
+                    const classType = enrollment.classSchedule?.class?.classType?.name || '';
+                    return classType === selectedClass;
+                });
+            }
+            
+            console.log('📊 Filtered results:', filteredData.length);
+            displayHistoryData(filteredData);
         }
 
         // Load Available Classes
@@ -1053,122 +1195,289 @@
         }
 
         // Load Profile
+        // Load Profile
         async function loadProfile() {
+            const profileInfoContainer = document.getElementById('profileInfo');
+            const profileStatsContainer = document.getElementById('profileStats');
+            
+            profileInfoContainer.innerHTML = '<div class="loading">Đang tải...</div>';
+            profileStatsContainer.innerHTML = '<div class="loading">Đang tải...</div>';
+            
             try {
-                // Load member profile
-                const profileResponse = await apiCall('/auth/me');
-                const memberProfile = profileResponse.data || {};
-                
-                document.getElementById('memberProfile').innerHTML = `
-                    <div id="profileView">
-                        <p><strong>Họ tên:</strong> ${memberProfile.fullName || currentUser.fullName || 'N/A'}</p>
-                        <p><strong>Email:</strong> ${memberProfile.email || currentUser.email || 'N/A'}</p>
-                        <p><strong>Username:</strong> ${memberProfile.username || currentUser.username || 'N/A'}</p>
-                        <p><strong>Vai trò:</strong> Thành viên</p>
-                        <button class="btn btn-primary" onclick="editProfile()">✏️ Chỉnh sửa</button>
-                    </div>
-                    <div id="profileEdit" style="display: none;">
-                        <form onsubmit="saveProfile(event)">
-                            <div style="margin-bottom: 15px;">
-                                <label><strong>Họ tên:</strong></label>
-                                <input type="text" id="editFullName" value="${memberProfile.fullName || currentUser.fullName || ''}" 
-                                       required style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;">
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <label><strong>Email:</strong></label>
-                                <input type="email" id="editEmail" value="${memberProfile.email || currentUser.email || ''}" 
-                                       required style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;">
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <button type="submit" class="btn btn-primary">💾 Lưu</button>
-                                <button type="button" class="btn btn-secondary" onclick="cancelEdit()" style="margin-left: 10px;">❌ Hủy</button>
-                            </div>
-                        </form>
+                // Load basic profile info from current user data
+                const profileInfo = `
+                    <div class="profile-card">
+                        <div class="profile-item">
+                            <strong>👤 Tên đăng nhập:</strong>
+                            <span>${currentUser.username || 'N/A'}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>📧 Email:</strong>
+                            <span>${currentUser.email || 'N/A'}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>👨‍🎓 Họ tên:</strong>
+                            <span>${currentUser.fullName || 'Chưa cập nhật'}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>📱 Điện thoại:</strong>
+                            <span>${currentUser.phone || 'Chưa cập nhật'}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>💼 Vai trò:</strong>
+                            <span style="color: #5b86e5; font-weight: bold;">Thành viên</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>📅 Ngày tham gia:</strong>
+                            <span>${currentUser.createdAt ? new Date(currentUser.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>✅ Trạng thái:</strong>
+                            <span style="color: #28a745; font-weight: bold;">${currentUser.isActive ? 'Hoạt động' : 'Không hoạt động'}</span>
+                        </div>
                     </div>
                 `;
+                profileInfoContainer.innerHTML = profileInfo;
+                
+                // Load profile statistics
+                await loadProfileStats();
                 
                 // Load current membership package
                 await loadCurrentMembershipDisplay();
                 
-                // Load personal stats with real data
-                await loadPersonalStats();
-                
-                // Load available memberships
-                const membershipsResponse = await apiCall('/members/memberships/all');
-                const memberships = membershipsResponse.data || [];
-                
-                let membershipHtml = '';
-                memberships.forEach(membership => {
-                    membershipHtml += `
-                        <div class="class-card">
-                            <div class="class-header">
-                                <div>
-                                    <div class="class-title">${membership.name}</div>
-                                    <div class="class-meta">
-                                        ${membership.durationDays} ngày • ${parseInt(membership.price).toLocaleString('vi-VN')}đ
-                                    </div>
-                                    <div style="color: #666; margin-top: 5px;">${membership.description || ''}</div>
-                                </div>
-                                <button class="btn btn-sm btn-primary" onclick="purchaseMembership(${membership.id})">💳 Mua</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                document.getElementById('availableMemberships').innerHTML = membershipHtml || '<p>Không có gói tập nào.</p>';
-                
             } catch (error) {
-                console.error('Error loading profile:', error);
+                profileInfoContainer.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
             }
         }
-
-        // Edit Profile Functions
-        function editProfile() {
-            document.getElementById('profileView').style.display = 'none';
-            document.getElementById('profileEdit').style.display = 'block';
-        }
-
-        function cancelEdit() {
-            document.getElementById('profileView').style.display = 'block';
-            document.getElementById('profileEdit').style.display = 'none';
-        }
-
-        async function saveProfile(event) {
-            event.preventDefault();
+        
+        async function loadProfileStats() {
+            const container = document.getElementById('profileStats');
+            
             try {
-                const fullName = document.getElementById('editFullName').value.trim();
-                const email = document.getElementById('editEmail').value.trim();
-
-                if (!fullName || !email) {
-                    alert('❌ Vui lòng nhập đầy đủ thông tin');
+                // Debug: Log API calls to understand the data structure
+                console.log('🔍 Loading member profile stats...');
+                
+                // Get member's enrollment history
+                const historyResponse = await apiCall('/classes/my/history?limit=100');
+                console.log('📊 History response:', historyResponse);
+                const historyEnrollments = historyResponse.data?.enrollments || [];
+                const totalEnrollmentsFromHistory = historyResponse.data?.total || historyEnrollments.length;
+                
+                // Get member's upcoming classes
+                const upcomingResponse = await apiCall('/classes/my/schedules');
+                console.log('⏰ Upcoming response:', upcomingResponse);
+                const upcomingClasses = upcomingResponse.data?.schedules?.length || 0;
+                
+                // Get member's check-ins
+                const checkInsResponse = await apiCall('/classes/my/checkins');
+                console.log('✅ Check-ins response:', checkInsResponse);
+                const totalCheckIns = checkInsResponse.data?.checkIns?.length || 0;
+                
+                // Better calculation: Use actual enrollment count 
+                console.log('🧮 Enrollment calculation:');
+                console.log('  - History enrollments array length:', historyEnrollments.length);
+                console.log('  - History total from API:', totalEnrollmentsFromHistory);
+                console.log('  - Upcoming classes:', upcomingClasses);
+                
+                // Use only history enrollments for now, don't double count
+                const totalEnrollments = Math.max(totalEnrollmentsFromHistory, historyEnrollments.length);
+                console.log('📝 Final total enrollments:', totalEnrollments);
+                
+                // Calculate this month's activity
+                const thisMonth = new Date();
+                const firstDayOfMonth = new Date(thisMonth.getFullYear(), thisMonth.getMonth(), 1);
+                const thisMonthCheckIns = checkInsResponse.data?.checkIns?.filter(checkIn => 
+                    new Date(checkIn.checkinTime) >= firstDayOfMonth
+                ).length || 0;
+                
+                // Get favorite class types from all enrollments
+                const allEnrollments = [...historyEnrollments];
+                if (upcomingResponse.data?.schedules) {
+                    // Add upcoming schedules as enrollments for counting favorite types
+                    upcomingResponse.data.schedules.forEach(schedule => {
+                        allEnrollments.push({
+                            classSchedule: schedule
+                        });
+                    });
+                }
+                
+                console.log('🎯 All enrollments for analysis:', allEnrollments);
+                
+                const classTypeCount = {};
+                allEnrollments.forEach(enrollment => {
+                    if (enrollment.classSchedule?.class?.classType) {
+                        const typeName = enrollment.classSchedule.class.classType.name;
+                        classTypeCount[typeName] = (classTypeCount[typeName] || 0) + 1;
+                    }
+                });
+                
+                console.log('📈 Class type count:', classTypeCount);
+                
+                const favoriteClassType = Object.keys(classTypeCount).length > 0 ? 
+                    Object.keys(classTypeCount).reduce((a, b) => 
+                        classTypeCount[a] > classTypeCount[b] ? a : b
+                    ) : 'Chưa có';
+                
+                const stats = `
+                    <div style="margin-bottom: 15px; padding: 10px; background: #f0f8ff; border-left: 4px solid #5b86e5; border-radius: 4px;">
+                        <small style="color: #666;">Debug: History=${totalEnrollmentsFromHistory}, Upcoming=${upcomingClasses}, Total=${totalEnrollments}</small>
+                    </div>
+                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <div class="stat-number">${totalEnrollments}</div>
+                            <div>Lớp đã đăng ký</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <div class="stat-number">${upcomingClasses}</div>
+                            <div>Lớp sắp tới</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <div class="stat-number">${totalCheckIns}</div>
+                            <div>Buổi đã tham gia</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                            <div class="stat-number">${thisMonthCheckIns}</div>
+                            <div>Buổi tháng này</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); grid-column: 1 / -1;">
+                            <div class="stat-number" style="font-size: 24px;">${favoriteClassType}</div>
+                            <div>Loại lớp yêu thích</div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML = stats;
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+        
+        // Edit Profile Modal
+        function showEditProfileModal() {
+            let content = `
+                <div class="section-card">
+                    <h4>✏️ Chỉnh sửa hồ sơ</h4>
+                    <form id="editProfileForm">
+                        <div class="form-group">
+                            <label>Họ tên *</label>
+                            <input type="text" name="fullName" value="${currentUser.fullName || ''}" required placeholder="Nhập họ tên đầy đủ">
+                        </div>
+                        <div class="form-group">
+                            <label>Email *</label>
+                            <input type="email" name="email" value="${currentUser.email || ''}" required placeholder="email@example.com">
+                            <small style="color: #666;">Lưu ý: Thay đổi email có thể ảnh hưởng đến việc đăng nhập</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Số điện thoại</label>
+                            <input type="tel" name="phone" value="${currentUser.phone || ''}" placeholder="0123456789">
+                        </div>
+                        <div style="text-align: right; margin-top: 20px;">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal()">Hủy</button>
+                            <button type="submit" class="btn btn-success">💾 Lưu thay đổi</button>
+                        </div>
+                    </form>
+                    <div id="editProfileResult"></div>
+                </div>
+            `;
+            
+            showModal('Chỉnh sửa hồ sơ', content);
+            
+            // Add form handler
+            document.getElementById('editProfileForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const data = {
+                    fullName: formData.get('fullName'),
+                    email: formData.get('email'),
+                    phone: formData.get('phone')
+                };
+                
+                try {
+                    const response = await apiCall('/auth/update-profile', 'PUT', data);
+                    if (response.success) {
+                        // Update current user info
+                        currentUser = { ...currentUser, ...data };
+                        localStorage.setItem('gym_user_info', JSON.stringify(currentUser));
+                        
+                        // Update display name
+                        document.getElementById('memberName').textContent = currentUser.fullName || currentUser.username;
+                        
+                        document.getElementById('editProfileResult').innerHTML = '<div class="success">✅ Cập nhật hồ sơ thành công!</div>';
+                        setTimeout(() => {
+                            loadProfile();
+                            closeModal();
+                        }, 1500);
+                    }
+                } catch (error) {
+                    document.getElementById('editProfileResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+                }
+            });
+        }
+        
+        // Change Password Modal
+        function showChangePasswordModal() {
+            let content = `
+                <div class="section-card">
+                    <h4>🔒 Đổi mật khẩu</h4>
+                    <form id="changePasswordForm">
+                        <div class="form-group">
+                            <label>Mật khẩu hiện tại *</label>
+                            <input type="password" name="currentPassword" required placeholder="Nhập mật khẩu hiện tại">
+                        </div>
+                        <div class="form-group">
+                            <label>Mật khẩu mới *</label>
+                            <input type="password" name="newPassword" required placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)" minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label>Xác nhận mật khẩu mới *</label>
+                            <input type="password" name="confirmPassword" required placeholder="Nhập lại mật khẩu mới" minlength="6">
+                        </div>
+                        <div style="text-align: right; margin-top: 20px;">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal()">Hủy</button>
+                            <button type="submit" class="btn btn-warning">🔒 Đổi mật khẩu</button>
+                        </div>
+                    </form>
+                    <div id="changePasswordResult"></div>
+                </div>
+            `;
+            
+            showModal('Đổi mật khẩu', content);
+            
+            // Add form handler
+            document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const currentPassword = formData.get('currentPassword');
+                const newPassword = formData.get('newPassword');
+                const confirmPassword = formData.get('confirmPassword');
+                
+                // Validate password confirmation
+                if (newPassword !== confirmPassword) {
+                    document.getElementById('changePasswordResult').innerHTML = '<div class="error">❌ Mật khẩu xác nhận không khớp!</div>';
                     return;
                 }
-
-                console.log('Updating profile:', { fullName, email });
                 
-                // Call API to update profile
-                const response = await apiCall('/auth/update-profile', 'PUT', {
-                    fullName: fullName,
-                    email: email
-                });
-
-                if (response.success) {
-                    // Update current user info
-                    currentUser.fullName = fullName;
-                    currentUser.email = email;
-                    localStorage.setItem('gym_user_info', JSON.stringify(currentUser));
-
-                    alert('✅ Cập nhật thông tin thành công!');
-                    cancelEdit();
-                    loadProfile(); // Reload to show updated info
-                } else {
-                    alert('❌ Lỗi cập nhật: ' + (response.message || 'Không xác định'));
+                const data = {
+                    currentPassword,
+                    newPassword
+                };
+                
+                try {
+                    const response = await apiCall('/auth/change-password', 'PUT', data);
+                    if (response.success) {
+                        document.getElementById('changePasswordResult').innerHTML = '<div class="success">✅ Đổi mật khẩu thành công!</div>';
+                        setTimeout(() => {
+                            closeModal();
+                        }, 1500);
+                    }
+                } catch (error) {
+                    document.getElementById('changePasswordResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
                 }
-            } catch (error) {
-                console.error('Error saving profile:', error);
-                alert('❌ Lỗi cập nhật thông tin: ' + error.message);
-            }
+            });
         }
+
 
 
         // Load Current Membership Display

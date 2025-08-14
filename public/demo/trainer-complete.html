@@ -213,6 +213,55 @@
             border: 2px solid #28a745;
             background: #f8fff9;
         }
+        
+        .profile-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e1e5e9;
+        }
+        
+        .profile-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .profile-item:last-child {
+            border-bottom: none;
+        }
+        
+        .profile-item strong {
+            color: #333;
+            min-width: 140px;
+        }
+        
+        .profile-item span {
+            flex: 1;
+            text-align: right;
+            color: #666;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .badge-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .badge-success {
+            background-color: #28a745;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -252,6 +301,7 @@
             <button class="tab-btn" onclick="switchTab('attendance')">👥 Điểm danh</button>
             <button class="tab-btn" onclick="switchTab('enrollments')">✅ Đăng ký</button>
             <button class="tab-btn" onclick="switchTab('members')">👤 Học viên</button>
+            <button class="tab-btn" onclick="switchTab('profile')">👨‍🏫 Hồ sơ</button>
         </div>
 
         <!-- Tab: Overview -->
@@ -261,7 +311,7 @@
                 <div class="form-grid">
                     <div>
                         <h4>Lịch hôm nay</h4>
-                        <div id="todaySchedulesList">Đang tải...</div>
+                        <div id="overviewTodaySchedules">Đang tải...</div>
                     </div>
                     <div>
                         <h4>Hoạt động gần đây</h4>
@@ -276,7 +326,6 @@
             <div class="section-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h3>📚 Lớp tập của tôi</h3>
-                    <button class="btn btn-primary" onclick="showCreateClassModal()">➕ Tạo lớp mới</button>
                 </div>
                 <div id="myClassesList" class="loading">Đang tải...</div>
             </div>
@@ -284,14 +333,28 @@
 
         <!-- Tab: Schedules -->
         <div id="schedules" class="tab-content">
+            <!-- Today's Schedules -->
+            <div class="section-card">
+                <h3>📅 Lịch tập hôm nay</h3>
+                <div id="todaySchedulesList" class="loading">Đang tải...</div>
+            </div>
+
+            <!-- Upcoming Schedules -->
+            <div class="section-card">
+                <h3>⏰ Lịch tập sắp tới (7 ngày tới)</h3>
+                <div id="upcomingSchedulesList" class="loading">Đang tải...</div>
+            </div>
+
+            <!-- All Schedules by Date -->
             <div class="section-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3>📅 Lịch tập</h3>
+                    <h3>📊 Xem lịch theo ngày</h3>
                     <div>
-                        <input type="date" id="scheduleDate" onchange="loadSchedules()" style="margin-right: 10px;">
+                        <input type="date" id="scheduleDate" onchange="loadSchedulesByDate()" style="margin-right: 10px;">
+                        <button class="btn btn-secondary" onclick="loadSchedulesByDate()">🔍 Xem</button>
                     </div>
                 </div>
-                <div id="schedulesList" class="loading">Đang tải...</div>
+                <div id="schedulesByDateList">Chọn ngày để xem lịch tập</div>
             </div>
         </div>
 
@@ -336,6 +399,27 @@
                     <button class="btn btn-secondary" onclick="loadMembers()">🔄 Tải lại</button>
                 </div>
                 <div id="membersList" class="loading">Đang tải...</div>
+            </div>
+        </div>
+
+        <!-- Tab: Profile -->
+        <div id="profile" class="tab-content">
+            <div class="section-card">
+                <h3>👨‍🏫 Thông tin hồ sơ</h3>
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div>
+                        <h4>📋 Thông tin cơ bản</h4>
+                        <div id="profileInfo" class="loading">Đang tải...</div>
+                        <div style="margin-top: 20px;">
+                            <button class="btn btn-primary" onclick="showEditProfileModal()">✏️ Chỉnh sửa hồ sơ</button>
+                            <button class="btn btn-warning" onclick="showChangePasswordModal()">🔒 Đổi mật khẩu</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h4>📊 Thống kê hoạt động</h4>
+                        <div id="profileStats" class="loading">Đang tải...</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -453,7 +537,7 @@
                     loadMyClasses();
                     break;
                 case 'schedules':
-                    loadSchedules();
+                    loadAllSchedules();
                     break;
                 case 'attendance':
                     loadAttendance();
@@ -463,6 +547,9 @@
                     break;
                 case 'members':
                     loadMembers();
+                    break;
+                case 'profile':
+                    loadProfile();
                     break;
             }
         }
@@ -546,55 +633,126 @@
         // Load Overview
         async function loadOverview() {
             try {
+                // Load today's schedules for overview
                 const today = new Date().toISOString().split('T')[0];
-                const todaySchedules = await apiCall(`/classes/trainer/schedules?startDate=${today}&endDate=${today}`);
-                const schedules = todaySchedules.data?.schedules || [];
+                const todayResponse = await apiCall(`/classes/trainer/schedules?startDate=${today}&endDate=${today}`);
+                const todaySchedules = todayResponse.data?.schedules || [];
                 
-                const todayContainer = document.getElementById('todaySchedulesList');
-                if (schedules.length === 0) {
-                    todayContainer.innerHTML = '<p>Không có lịch tập nào hôm nay.</p>';
+                const todayContainer = document.getElementById('overviewTodaySchedules');
+                if (todaySchedules.length === 0) {
+                    todayContainer.innerHTML = `
+                        <div class="empty-state" style="padding: 20px; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">😴</div>
+                            <p>Không có lịch tập nào hôm nay</p>
+                            <p style="color: #666; font-size: 14px;">Bạn có thể nghỉ ngơi hoặc tạo lịch mới!</p>
+                        </div>
+                    `;
                 } else {
                     let html = '';
-                    schedules.forEach(schedule => {
+                    todaySchedules.forEach(schedule => {
+                        const cls = schedule.class || {};
+                        const classType = cls.classType || {};
                         const startTime = new Date(schedule.startTime);
+                        const endTime = new Date(schedule.endTime);
                         const now = new Date();
                         const canCheckin = now >= startTime;
+                        const isCompleted = schedule.status === 'completed';
                         
                         html += `
-                            <div class="item-card ${canCheckin ? 'checkin-card' : ''}">
-                                <div class="item-title">${schedule.class?.name || 'N/A'}</div>
-                                <div class="item-meta">
-                                    ${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} 
-                                    • ${schedule.room || 'Chưa có phòng'}
-                                    • ${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0} người
+                            <div class="item-card ${canCheckin && !isCompleted ? 'checkin-card' : ''}" style="margin-bottom: 12px;">
+                                <div class="item-header">
+                                    <div>
+                                        <div class="item-title">${cls.name || 'N/A'}</div>
+                                        <div class="item-meta">
+                                            <strong>${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - 
+                                            ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}</strong>
+                                            • <span style="color: ${classType.color || '#666'};">${classType.name || 'N/A'}</span>
+                                            • ${schedule.room || 'Chưa có phòng'}
+                                            • ${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0} người
+                                        </div>
+                                    </div>
+                                    <div class="btn-group">
+                                        ${canCheckin && !isCompleted ? 
+                                            `<button class="btn btn-sm btn-success" onclick="viewAttendance(${schedule.id})" title="Điểm danh">👥</button>` : 
+                                            '<span class="badge badge-secondary">Chưa đến giờ</span>'
+                                        }
+                                    </div>
                                 </div>
-                                ${canCheckin ? '<small style="color: #28a745; font-weight: bold;">✅ Có thể điểm danh</small>' : ''}
+                                ${isCompleted ? '<div style="margin-top: 8px; color: #28a745; font-weight: bold; font-size: 14px;">✅ Đã hoàn thành</div>' : 
+                                  canCheckin ? '<div style="margin-top: 8px; color: #28a745; font-weight: bold; font-size: 14px;">🔥 Có thể điểm danh!</div>' : 
+                                  '<div style="margin-top: 8px; color: #ffc107; font-weight: bold; font-size: 14px;">⏰ Chưa đến giờ</div>'}
                             </div>
                         `;
                     });
                     todayContainer.innerHTML = html;
                 }
                 
-                // Load recent activity
-                const checkIns = await apiCall('/classes/checkins');
-                const recentCheckIns = checkIns.data?.checkIns?.slice(0, 5) || [];
-                
+                // Load recent activity - filter for trainer's classes only
                 const activityContainer = document.getElementById('recentActivity');
-                if (recentCheckIns.length === 0) {
-                    activityContainer.innerHTML = '<p>Không có hoạt động gần đây.</p>';
-                } else {
-                    let html = '<ul>';
-                    recentCheckIns.forEach(checkIn => {
-                        html += `<li>${checkIn.member?.fullName} - ${checkIn.classSchedule?.class?.name} 
-                                (${new Date(checkIn.checkinTime).toLocaleString('vi-VN')})</li>`;
-                    });
-                    html += '</ul>';
-                    activityContainer.innerHTML = html;
+                try {
+                    const checkInsResponse = await apiCall('/classes/checkins');
+                    const allCheckIns = checkInsResponse.data?.checkIns || [];
+                    
+                    // Filter check-ins for trainer's classes
+                    const myCheckIns = allCheckIns.filter(checkIn => 
+                        checkIn.classSchedule?.class?.trainerId === currentUser.id ||
+                        checkIn.classSchedule?.class?.trainer?.id === currentUser.id
+                    );
+                    
+                    const recentCheckIns = myCheckIns.slice(0, 5);
+                    
+                    if (recentCheckIns.length === 0) {
+                        activityContainer.innerHTML = `
+                            <div style="padding: 20px; text-align: center; color: #666;">
+                                <div style="font-size: 32px; margin-bottom: 10px;">📋</div>
+                                <p>Chưa có hoạt động nào</p>
+                                <p style="font-size: 14px;">Hoạt động check-in sẽ hiển thị ở đây</p>
+                            </div>
+                        `;
+                    } else {
+                        let html = '<div style="max-height: 200px; overflow-y: auto;">';
+                        recentCheckIns.forEach(checkIn => {
+                            const checkInTime = new Date(checkIn.checkinTime);
+                            const timeAgo = getTimeAgo(checkInTime);
+                            
+                            html += `
+                                <div style="padding: 8px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <div style="font-weight: bold; color: #333;">👤 ${checkIn.member?.fullName || 'N/A'}</div>
+                                        <div style="font-size: 13px; color: #666;">📚 ${checkIn.classSchedule?.class?.name || 'N/A'}</div>
+                                    </div>
+                                    <div style="text-align: right; font-size: 12px; color: #999;">
+                                        <div>✅ Check-in</div>
+                                        <div>${timeAgo}</div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                        activityContainer.innerHTML = html;
+                    }
+                } catch (error) {
+                    console.error('Error loading recent activity:', error);
+                    activityContainer.innerHTML = '<p style="color: #666; text-align: center;">Không thể tải hoạt động gần đây</p>';
                 }
                 
             } catch (error) {
                 console.error('Error loading overview:', error);
+                document.getElementById('overviewTodaySchedules').innerHTML = `<div class="error">❌ Lỗi tải dữ liệu: ${error.message}</div>`;
+                document.getElementById('recentActivity').innerHTML = `<div class="error">❌ Lỗi tải hoạt động: ${error.message}</div>`;
             }
+        }
+        
+        // Helper function to get time ago string
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000); // seconds
+            
+            if (diff < 60) return 'vừa xong';
+            if (diff < 3600) return Math.floor(diff / 60) + ' phút trước';
+            if (diff < 86400) return Math.floor(diff / 3600) + ' giờ trước';
+            if (diff < 2592000) return Math.floor(diff / 86400) + ' ngày trước';
+            return date.toLocaleDateString('vi-VN');
         }
 
         // Load My Classes
@@ -611,8 +769,7 @@
                         <div class="empty-state">
                             <div class="icon" style="font-size: 64px; opacity: 0.5; margin-bottom: 16px;">📚</div>
                             <h3>Chưa có lớp tập nào</h3>
-                            <p>Hãy tạo lớp tập đầu tiên của bạn!</p>
-                            <button class="btn btn-primary" onclick="showCreateClassModal()">➕ Tạo lớp ngay</button>
+                            <p>Vui lòng liên hệ Admin để được phân công lớp tập!</p>
                         </div>
                     `;
                     return;
@@ -652,38 +809,224 @@
             }
         }
 
-        // Load Schedules
-        async function loadSchedules() {
-            const container = document.getElementById('schedulesList');
+        // Load All Schedules Tab
+        async function loadAllSchedules() {
+            await Promise.all([
+                loadTodaySchedules(),
+                loadUpcomingSchedules()
+            ]);
+        }
+
+        // Load Today's Schedules
+        async function loadTodaySchedules() {
+            const container = document.getElementById('todaySchedulesList');
             container.innerHTML = '<div class="loading">Đang tải...</div>';
             
             try {
-                const dateInput = document.getElementById('scheduleDate');
-                const selectedDate = dateInput.value || new Date().toISOString().split('T')[0];
-                dateInput.value = selectedDate;
+                const today = new Date().toISOString().split('T')[0];
+                const response = await apiCall(`/classes/trainer/schedules?startDate=${today}&endDate=${today}`);
+                const todaySchedules = response.data?.schedules || [];
                 
-                const response = await apiCall(`/classes/trainer/schedules?startDate=${selectedDate}&endDate=${selectedDate}`);
-                mySchedules = response.data?.schedules || [];
-                
-                if (mySchedules.length === 0) {
+                if (todaySchedules.length === 0) {
                     container.innerHTML = `
                         <div class="empty-state">
-                            <div class="icon" style="font-size: 64px; opacity: 0.5; margin-bottom: 16px;">📅</div>
-                            <h3>Không có lịch tập nào</h3>
-                            <p>Hãy tạo lịch tập cho ngày này!</p>
+                            <div class="icon" style="font-size: 48px; opacity: 0.5; margin-bottom: 12px;">📅</div>
+                            <h4>Không có lịch tập hôm nay</h4>
+                            <p>Bạn có thể nghỉ ngơi hoặc tạo lịch mới!</p>
                         </div>
                     `;
                     return;
                 }
 
                 let html = '';
-                mySchedules.forEach(schedule => {
+                todaySchedules.forEach(schedule => {
                     const cls = schedule.class || {};
                     const classType = cls.classType || {};
                     const startTime = new Date(schedule.startTime);
                     const endTime = new Date(schedule.endTime);
                     const now = new Date();
                     const canCheckin = now >= startTime;
+                    const isCompleted = schedule.status === 'completed';
+                    
+                    html += `
+                        <div class="item-card ${canCheckin && !isCompleted ? 'checkin-card' : ''}">
+                            <div class="item-header">
+                                <div>
+                                    <div class="item-title">${cls.name}</div>
+                                    <div class="item-meta">
+                                        <strong>${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - 
+                                        ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}</strong>
+                                        • <span style="color: ${classType.color || '#666'}; font-weight: bold;">${classType.name}</span>
+                                        • ${schedule.room || 'Chưa có phòng'}
+                                        • ${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0} người
+                                    </div>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-success" onclick="viewAttendance(${schedule.id})" 
+                                            ${!canCheckin ? 'disabled' : ''} title="Điểm danh lớp học">
+                                        👥 ${canCheckin ? 'Điểm danh' : 'Chưa đến giờ'}
+                                    </button>
+                                    <button class="btn btn-sm btn-info" onclick="viewScheduleEnrollments(${schedule.id})" title="Xem danh sách đăng ký">📋</button>
+                                    <button class="btn btn-sm btn-warning" onclick="editSchedule(${schedule.id})" title="Chỉnh sửa lịch">✏️</button>
+                                </div>
+                            </div>
+                            ${schedule.notes ? `<div style="margin-top: 10px; color: #666; font-style: italic;">📝 ${schedule.notes}</div>` : ''}
+                            ${isCompleted ? '<div style="margin-top: 10px; color: #28a745; font-weight: bold;">✅ Đã hoàn thành</div>' : 
+                              canCheckin ? '<div style="margin-top: 10px; color: #28a745; font-weight: bold;">🔥 Có thể điểm danh ngay!</div>' : 
+                              '<div style="margin-top: 10px; color: #ffc107; font-weight: bold;">⏰ Chưa đến giờ</div>'}
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Load Upcoming Schedules (Next 7 days)
+        async function loadUpcomingSchedules() {
+            const container = document.getElementById('upcomingSchedulesList');
+            container.innerHTML = '<div class="loading">Đang tải...</div>';
+            
+            try {
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(today.getDate() + 1);
+                const nextWeek = new Date(today);
+                nextWeek.setDate(today.getDate() + 7);
+                
+                const startDate = tomorrow.toISOString().split('T')[0];
+                const endDate = nextWeek.toISOString().split('T')[0];
+                
+                const response = await apiCall(`/classes/trainer/schedules?startDate=${startDate}&endDate=${endDate}`);
+                const upcomingSchedules = response.data?.schedules || [];
+                
+                if (upcomingSchedules.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="icon" style="font-size: 48px; opacity: 0.5; margin-bottom: 12px;">⏰</div>
+                            <h4>Không có lịch tập sắp tới</h4>
+                            <p>Hãy tạo thêm lịch tập cho tuần này!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Group schedules by date
+                const schedulesByDate = {};
+                upcomingSchedules.forEach(schedule => {
+                    const date = new Date(schedule.date).toDateString();
+                    if (!schedulesByDate[date]) {
+                        schedulesByDate[date] = [];
+                    }
+                    schedulesByDate[date].push(schedule);
+                });
+
+                let html = '';
+                Object.keys(schedulesByDate).sort((a, b) => new Date(a) - new Date(b)).forEach(dateStr => {
+                    const schedules = schedulesByDate[dateStr];
+                    const date = new Date(dateStr);
+                    const dateDisplay = date.toLocaleDateString('vi-VN', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    });
+                    
+                    html += `
+                        <div style="margin-bottom: 25px;">
+                            <h4 style="color: #f5576c; border-bottom: 2px solid #f5576c; padding-bottom: 5px; margin-bottom: 15px;">
+                                📅 ${dateDisplay}
+                            </h4>
+                    `;
+                    
+                    schedules.forEach(schedule => {
+                        const cls = schedule.class || {};
+                        const classType = cls.classType || {};
+                        const startTime = new Date(schedule.startTime);
+                        const endTime = new Date(schedule.endTime);
+                        
+                        html += `
+                            <div class="item-card" style="margin-bottom: 10px;">
+                                <div class="item-header">
+                                    <div>
+                                        <div class="item-title">${cls.name}</div>
+                                        <div class="item-meta">
+                                            <strong>${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - 
+                                            ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}</strong>
+                                            • <span style="color: ${classType.color || '#666'}; font-weight: bold;">${classType.name}</span>
+                                            • ${schedule.room || 'Chưa có phòng'}
+                                            • ${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0} người
+                                        </div>
+                                    </div>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-info" onclick="viewScheduleEnrollments(${schedule.id})" title="Xem danh sách đăng ký">📋 ĐK</button>
+                                        <button class="btn btn-sm btn-warning" onclick="editSchedule(${schedule.id})" title="Chỉnh sửa">✏️</button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${schedule.id})" title="Xóa lịch">🗑️</button>
+                                    </div>
+                                </div>
+                                ${schedule.notes ? `<div style="margin-top: 8px; color: #666; font-style: italic; font-size: 14px;">📝 ${schedule.notes}</div>` : ''}
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                });
+                
+                container.innerHTML = html;
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Load Schedules by Selected Date
+        async function loadSchedulesByDate() {
+            const container = document.getElementById('schedulesByDateList');
+            const dateInput = document.getElementById('scheduleDate');
+            
+            if (!dateInput.value) {
+                container.innerHTML = '<p style="color: #666; text-align: center;">Vui lòng chọn ngày để xem lịch tập</p>';
+                return;
+            }
+            
+            container.innerHTML = '<div class="loading">Đang tải...</div>';
+            
+            try {
+                const selectedDate = dateInput.value;
+                const response = await apiCall(`/classes/trainer/schedules?startDate=${selectedDate}&endDate=${selectedDate}`);
+                const schedules = response.data?.schedules || [];
+                
+                const selectedDateObj = new Date(selectedDate + 'T00:00:00');
+                const dateDisplay = selectedDateObj.toLocaleDateString('vi-VN', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                
+                if (schedules.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="icon" style="font-size: 48px; opacity: 0.5; margin-bottom: 12px;">📅</div>
+                            <h4>Không có lịch tập</h4>
+                            <p>Ngày ${dateDisplay} không có lịch tập nào</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = `<h4 style="color: #f5576c; margin-bottom: 15px;">📅 Lịch tập ngày ${dateDisplay}</h4>`;
+                
+                schedules.forEach(schedule => {
+                    const cls = schedule.class || {};
+                    const classType = cls.classType || {};
+                    const startTime = new Date(schedule.startTime);
+                    const endTime = new Date(schedule.endTime);
+                    const now = new Date();
+                    const canCheckin = now >= startTime && selectedDate === new Date().toISOString().split('T')[0];
                     
                     html += `
                         <div class="item-card ${canCheckin ? 'checkin-card' : ''}">
@@ -691,24 +1034,22 @@
                                 <div>
                                     <div class="item-title">${cls.name}</div>
                                     <div class="item-meta">
-                                        ${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - 
-                                        ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}
-                                        • <span style="color: ${classType.color}">${classType.name}</span>
+                                        <strong>${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - 
+                                        ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}</strong>
+                                        • <span style="color: ${classType.color || '#666'}; font-weight: bold;">${classType.name}</span>
                                         • ${schedule.room || 'Chưa có phòng'}
                                         • ${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0} người
                                     </div>
                                 </div>
                                 <div class="btn-group">
-                                    <button class="btn btn-sm btn-success" onclick="viewAttendance(${schedule.id})" ${!canCheckin ? 'disabled' : ''}>
-                                        👥 ${canCheckin ? 'Điểm danh' : 'Chưa đến giờ'}
-                                    </button>
+                                    ${canCheckin ? `<button class="btn btn-sm btn-success" onclick="viewAttendance(${schedule.id})">👥 Điểm danh</button>` : ''}
                                     <button class="btn btn-sm btn-info" onclick="viewScheduleEnrollments(${schedule.id})">📋 Đăng ký</button>
                                     <button class="btn btn-sm btn-warning" onclick="editSchedule(${schedule.id})">✏️ Sửa</button>
                                     <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${schedule.id})">🗑️ Xóa</button>
                                 </div>
                             </div>
-                            ${schedule.notes ? `<div style="margin-top: 10px; color: #666;">${schedule.notes}</div>` : ''}
-                            ${canCheckin ? '<div style="margin-top: 10px; color: #28a745; font-weight: bold;">✅ Có thể điểm danh ngay</div>' : ''}
+                            ${schedule.notes ? `<div style="margin-top: 10px; color: #666; font-style: italic;">📝 ${schedule.notes}</div>` : ''}
+                            ${canCheckin ? '<div style="margin-top: 10px; color: #28a745; font-weight: bold;">🔥 Có thể điểm danh ngay!</div>' : ''}
                         </div>
                     `;
                 });
@@ -1073,7 +1414,7 @@
                             document.getElementById('quickScheduleResult').innerHTML = '<div class="success">✅ Tạo lịch thành công!</div>';
                             e.target.reset();
                             setTimeout(() => {
-                                loadSchedules();
+                                loadAllSchedules();
                                 loadStats();
                                 document.getElementById('quickScheduleResult').innerHTML = '';
                             }, 2000);
@@ -1249,7 +1590,7 @@
                     if (response.success) {
                         document.getElementById('modalScheduleResult').innerHTML = '<div class="success">✅ Tạo lịch thành công!</div>';
                         setTimeout(() => {
-                            loadSchedules();
+                            loadAllSchedules();
                             loadStats();
                             closeModal();
                         }, 1500);
@@ -1260,114 +1601,7 @@
             });
         }
 
-        // Create Class Modal
-        function showCreateClassModal() {
-            let content = `
-                <div class="section-card">
-                    <h4>➕ Tạo lớp mới</h4>
-                    <form id="modalClassForm">
-                        <div class="form-group">
-                            <label>Tên lớp *</label>
-                            <input type="text" name="name" required placeholder="VD: Yoga buổi sáng">
-                        </div>
-                        <div class="form-group">
-                            <label>Loại lớp *</label>
-                            <select name="classTypeId" required>
-                                <option value="">Chọn loại lớp</option>
-            `;
-            
-            // Add class types - this would be loaded from API
-            // For now, adding some basic options
-            content += `
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Thời lượng (phút)</label>
-                                <input type="number" name="duration" placeholder="60" min="15" max="300">
-                            </div>
-                            <div class="form-group">
-                                <label>Giá (VND)</label>
-                                <input type="number" name="price" placeholder="100000" min="0">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Số lượng học viên tối đa</label>
-                                <input type="number" name="maxParticipants" placeholder="20" min="1" max="100">
-                            </div>
-                            <div class="form-group">
-                                <label>Phòng tập</label>
-                                <input type="text" name="room" placeholder="VD: Studio A">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Mô tả</label>
-                            <textarea name="description" rows="3" placeholder="Mô tả về lớp tập..."></textarea>
-                        </div>
-                        <div style="text-align: right; margin-top: 20px;">
-                            <button type="button" class="btn btn-secondary" onclick="closeModal()">Hủy</button>
-                            <button type="submit" class="btn btn-success">💾 Tạo lớp</button>
-                        </div>
-                    </form>
-                    <div id="modalClassResult"></div>
-                </div>
-            `;
-            
-            showModal('Tạo lớp mới', content);
-            
-            // Load class types and setup form after DOM is ready
-            setTimeout(() => {
-                loadClassTypesForModal();
-                
-                // Handle form submission
-                document.getElementById('modalClassForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const formData = new FormData(e.target);
-                const data = {
-                    name: formData.get('name'),
-                    classTypeId: parseInt(formData.get('classTypeId')),
-                    duration: formData.get('duration') ? parseInt(formData.get('duration')) : null,
-                    price: formData.get('price') ? parseFloat(formData.get('price')) : null,
-                    maxParticipants: formData.get('maxParticipants') ? parseInt(formData.get('maxParticipants')) : null,
-                    room: formData.get('room'),
-                    description: formData.get('description')
-                };
-                
-                console.log('Sending class data:', data);
-                
-                try {
-                    const response = await apiCall('/classes', 'POST', data);
-                    document.getElementById('modalClassResult').innerHTML = '<div class="success">✅ Tạo lớp thành công!</div>';
-                    
-                    // Reload classes and close modal
-                    setTimeout(() => {
-                        loadMyClasses();
-                        closeModal();
-                    }, 1500);
-                } catch (error) {
-                    document.getElementById('modalClassResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
-                }
-                });
-            }, 100);
-        }
 
-        async function loadClassTypesForModal() {
-            try {
-                const response = await apiCall('/classes/types');
-                const select = document.querySelector('#modalClassForm select[name="classTypeId"]');
-                
-                response.data.forEach(type => {
-                    const option = document.createElement('option');
-                    option.value = type.id;
-                    option.textContent = `${type.name} (${type.difficulty})`;
-                    select.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Failed to load class types:', error);
-            }
-        }
 
         // Placeholder functions
         function createScheduleForClass(classId) {
@@ -1553,6 +1787,251 @@
             } else {
                 loadMembers();
             }
+        }
+
+        // Load Profile
+        async function loadProfile() {
+            const profileInfoContainer = document.getElementById('profileInfo');
+            const profileStatsContainer = document.getElementById('profileStats');
+            
+            profileInfoContainer.innerHTML = '<div class="loading">Đang tải...</div>';
+            profileStatsContainer.innerHTML = '<div class="loading">Đang tải...</div>';
+            
+            try {
+                // Load basic profile info from current user data
+                const profileInfo = `
+                    <div class="profile-card">
+                        <div class="profile-item">
+                            <strong>👤 Tên đăng nhập:</strong>
+                            <span>${currentUser.username || 'N/A'}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>📧 Email:</strong>
+                            <span>${currentUser.email || 'N/A'}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>👨‍🏫 Họ tên:</strong>
+                            <span>${currentUser.fullName || 'Chưa cập nhật'}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>📱 Điện thoại:</strong>
+                            <span>${currentUser.phone || 'Chưa cập nhật'}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>💼 Vai trò:</strong>
+                            <span style="color: #f5576c; font-weight: bold;">Huấn luyện viên</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>📅 Ngày tham gia:</strong>
+                            <span>${currentUser.createdAt ? new Date(currentUser.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</span>
+                        </div>
+                        <div class="profile-item">
+                            <strong>✅ Trạng thái:</strong>
+                            <span style="color: #28a745; font-weight: bold;">${currentUser.isActive ? 'Hoạt động' : 'Không hoạt động'}</span>
+                        </div>
+                    </div>
+                `;
+                profileInfoContainer.innerHTML = profileInfo;
+                
+                // Load profile statistics
+                await loadProfileStats();
+                
+            } catch (error) {
+                profileInfoContainer.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+        
+        async function loadProfileStats() {
+            const container = document.getElementById('profileStats');
+            
+            try {
+                // Get trainer's classes count
+                const classesResponse = await apiCall(`/classes?trainerId=${currentUser.id}`);
+                const totalClasses = classesResponse.data?.classes?.length || 0;
+                
+                // Get total schedules
+                const schedulesResponse = await apiCall('/classes/trainer/schedules');
+                const totalSchedules = schedulesResponse.data?.total || 0;
+                
+                // Get total enrollments for trainer's classes
+                const enrollmentsResponse = await apiCall('/classes/enrollments');
+                const allEnrollments = enrollmentsResponse.data || [];
+                const myEnrollments = allEnrollments.filter(e => 
+                    e.classSchedule?.class?.trainerId === currentUser.id || 
+                    e.classSchedule?.class?.trainer?.id === currentUser.id
+                );
+                const totalEnrollments = myEnrollments.length;
+                const uniqueStudents = new Set(myEnrollments.map(e => e.memberId)).size;
+                
+                // Get attendance count
+                const attendedSessions = myEnrollments.filter(e => e.checkinTime).length;
+                
+                // Calculate this month's activity
+                const thisMonth = new Date();
+                const firstDayOfMonth = new Date(thisMonth.getFullYear(), thisMonth.getMonth(), 1);
+                const thisMonthSchedules = schedulesResponse.data?.schedules?.filter(s => 
+                    new Date(s.date) >= firstDayOfMonth
+                ).length || 0;
+                
+                const stats = `
+                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <div class="stat-number">${totalClasses}</div>
+                            <div>Lớp được phân công</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <div class="stat-number">${totalSchedules}</div>
+                            <div>Tổng buổi học</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <div class="stat-number">${uniqueStudents}</div>
+                            <div>Học viên đã dạy</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                            <div class="stat-number">${attendedSessions}</div>
+                            <div>Buổi đã hoàn thành</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                            <div class="stat-number">${thisMonthSchedules}</div>
+                            <div>Buổi học tháng này</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333;">
+                            <div class="stat-number">${totalEnrollments}</div>
+                            <div>Lượt đăng ký</div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML = stats;
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+        
+        // Edit Profile Modal
+        function showEditProfileModal() {
+            let content = `
+                <div class="section-card">
+                    <h4>✏️ Chỉnh sửa hồ sơ</h4>
+                    <form id="editProfileForm">
+                        <div class="form-group">
+                            <label>Họ tên *</label>
+                            <input type="text" name="fullName" value="${currentUser.fullName || ''}" required placeholder="Nhập họ tên đầy đủ">
+                        </div>
+                        <div class="form-group">
+                            <label>Email *</label>
+                            <input type="email" name="email" value="${currentUser.email || ''}" required placeholder="email@example.com">
+                            <small style="color: #666;">Lưu ý: Thay đổi email có thể ảnh hưởng đến việc đăng nhập</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Số điện thoại</label>
+                            <input type="tel" name="phone" value="${currentUser.phone || ''}" placeholder="0123456789">
+                        </div>
+                        <div style="text-align: right; margin-top: 20px;">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal()">Hủy</button>
+                            <button type="submit" class="btn btn-success">💾 Lưu thay đổi</button>
+                        </div>
+                    </form>
+                    <div id="editProfileResult"></div>
+                </div>
+            `;
+            
+            showModal('Chỉnh sửa hồ sơ', content);
+            
+            // Add form handler
+            document.getElementById('editProfileForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const data = {
+                    fullName: formData.get('fullName'),
+                    email: formData.get('email'),
+                    phone: formData.get('phone')
+                };
+                
+                try {
+                    const response = await apiCall('/auth/update-profile', 'PUT', data);
+                    if (response.success) {
+                        // Update current user info
+                        currentUser = { ...currentUser, ...data };
+                        localStorage.setItem('gym_user_info', JSON.stringify(currentUser));
+                        
+                        // Update display name
+                        document.getElementById('trainerName').textContent = currentUser.fullName || currentUser.username;
+                        
+                        document.getElementById('editProfileResult').innerHTML = '<div class="success">✅ Cập nhật hồ sơ thành công!</div>';
+                        setTimeout(() => {
+                            loadProfile();
+                            closeModal();
+                        }, 1500);
+                    }
+                } catch (error) {
+                    document.getElementById('editProfileResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+                }
+            });
+        }
+        
+        // Change Password Modal
+        function showChangePasswordModal() {
+            let content = `
+                <div class="section-card">
+                    <h4>🔒 Đổi mật khẩu</h4>
+                    <form id="changePasswordForm">
+                        <div class="form-group">
+                            <label>Mật khẩu hiện tại *</label>
+                            <input type="password" name="currentPassword" required placeholder="Nhập mật khẩu hiện tại">
+                        </div>
+                        <div class="form-group">
+                            <label>Mật khẩu mới *</label>
+                            <input type="password" name="newPassword" required placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)" minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label>Xác nhận mật khẩu mới *</label>
+                            <input type="password" name="confirmPassword" required placeholder="Nhập lại mật khẩu mới" minlength="6">
+                        </div>
+                        <div style="text-align: right; margin-top: 20px;">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal()">Hủy</button>
+                            <button type="submit" class="btn btn-warning">🔒 Đổi mật khẩu</button>
+                        </div>
+                    </form>
+                    <div id="changePasswordResult"></div>
+                </div>
+            `;
+            
+            showModal('Đổi mật khẩu', content);
+            
+            // Add form handler
+            document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const currentPassword = formData.get('currentPassword');
+                const newPassword = formData.get('newPassword');
+                const confirmPassword = formData.get('confirmPassword');
+                
+                // Validate password confirmation
+                if (newPassword !== confirmPassword) {
+                    document.getElementById('changePasswordResult').innerHTML = '<div class="error">❌ Mật khẩu xác nhận không khớp!</div>';
+                    return;
+                }
+                
+                const data = {
+                    currentPassword,
+                    newPassword
+                };
+                
+                try {
+                    const response = await apiCall('/auth/change-password', 'PUT', data);
+                    if (response.success) {
+                        document.getElementById('changePasswordResult').innerHTML = '<div class="success">✅ Đổi mật khẩu thành công!</div>';
+                        setTimeout(() => {
+                            closeModal();
+                        }, 1500);
+                    }
+                } catch (error) {
+                    document.getElementById('changePasswordResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+                }
+            });
         }
 
         function logout() {

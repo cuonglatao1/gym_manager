@@ -309,30 +309,41 @@ const startServer = async () => {
         console.log('🔄 Syncing database models...');
         
         await sequelize.sync({ 
-            force: true,  // Reset database for clean sequential IDs
+            alter: false,  // Don't reset database, preserve existing data
             logging: false
         });
         
         console.log('✅ All models synchronized successfully!');
-        console.log('🔄  Database reset with clean sequential IDs!');
+        console.log('💾 Database preserved - existing data maintained!');
         
-        // Create default admin (ID: 1)
-        await createDefaultAdmin(User);
+        // Check if data already exists
+        const existingUsers = await User.count();
+        const existingClasses = await Class.count();
         
-        // Create trainers immediately after admin for sequential IDs (ID: 2, 3, 4, 5)
-        await seedSampleTrainers();
-        
-        // Seed other data
-        await seedMembershipPackages();
-        await seedClassTypes();
-        await seedSampleClasses();
-        await seedSampleSchedules();
-        
-        // Seed members but don't crash if it fails
-        try {
-            await seedSampleMembers();
-        } catch (memberError) {
-            console.error('⚠️  Member seeding failed, but continuing server startup:', memberError.message);
+        if (existingUsers === 0 || existingClasses === 0) {
+            console.log('🌱 Database is empty, seeding initial data...');
+            
+            // Create default admin (ID: 1)
+            await createDefaultAdmin(User);
+            
+            // Create trainers immediately after admin for sequential IDs (ID: 2, 3, 4, 5)
+            await seedSampleTrainers();
+            
+            // Seed other data
+            await seedMembershipPackages();
+            await seedClassTypes();
+            await seedSampleClasses();
+            await seedSampleSchedules();
+            
+            // Seed members but don't crash if it fails
+            try {
+                await seedSampleMembers();
+            } catch (memberError) {
+                console.error('⚠️  Member seeding failed, but continuing server startup:', memberError.message);
+            }
+        } else {
+            console.log('💾 Database already contains data, skipping seeding...');
+            console.log(`📊 Found ${existingUsers} users and ${existingClasses} classes`);
         }
         
         // Update trainer assignments to diversify (trainers should now have sequential IDs)

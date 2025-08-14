@@ -4,13 +4,13 @@ const authController = {
     // POST /api/auth/register
     register: async (req, res) => {
         try {
-            const { username, email, password, fullName, phone, role } = req.body;
+            const { email, password, fullName, phone, role } = req.body;
 
             // Validate input
-            if (!username || !email || !password) {
+            if (!email || !password) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Username, email và password là bắt buộc'
+                    message: 'Email và password là bắt buộc'
                 });
             }
 
@@ -22,7 +22,7 @@ const authController = {
             }
 
             const result = await authService.register({
-                username, email, password, fullName, phone, role
+                email, password, fullName, phone, role
             });
 
             res.status(201).json({
@@ -177,7 +177,7 @@ const authController = {
     // PUT /api/auth/update-profile - Update user profile
     updateProfile: async (req, res) => {
         try {
-            const { fullName, email } = req.body;
+            const { fullName, email, phone } = req.body;
             const userId = req.user.userId;
 
             // Validate input
@@ -197,7 +197,7 @@ const authController = {
                 });
             }
 
-            const result = await authService.updateProfile(userId, { fullName, email });
+            const result = await authService.updateProfile(userId, { fullName, email, phone });
 
             res.json({
                 success: true,
@@ -208,6 +208,49 @@ const authController = {
         } catch (error) {
             if (error.message.includes('Email đã tồn tại')) {
                 res.status(409).json({
+                    success: false,
+                    message: error.message
+                });
+            } else {
+                res.status(500).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+        }
+    },
+
+    // PUT /api/auth/change-password - Change user password
+    changePassword: async (req, res) => {
+        try {
+            const { currentPassword, newPassword } = req.body;
+            const userId = req.user.userId;
+
+            // Validate input
+            if (!currentPassword || !newPassword) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Mật khẩu hiện tại và mật khẩu mới là bắt buộc'
+                });
+            }
+
+            if (newPassword.length < 6) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
+                });
+            }
+
+            const result = await authService.changePassword(userId, currentPassword, newPassword);
+
+            res.json({
+                success: true,
+                message: 'Đổi mật khẩu thành công'
+            });
+
+        } catch (error) {
+            if (error.message.includes('Mật khẩu hiện tại không đúng')) {
+                res.status(400).json({
                     success: false,
                     message: error.message
                 });

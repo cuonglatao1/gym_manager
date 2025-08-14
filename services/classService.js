@@ -1257,6 +1257,7 @@ class ClassService {
             if (!member) {
                 return {
                     enrollments: [],
+                    total: 0,
                     pagination: {
                         currentPage: parseInt(page),
                         totalPages: 0,
@@ -1275,7 +1276,24 @@ class ClassService {
                     {
                         model: ClassSchedule,
                         as: 'classSchedule',
-                        required: false
+                        required: false,
+                        include: [
+                            {
+                                model: Class,
+                                as: 'class',
+                                include: [
+                                    {
+                                        model: ClassType,
+                                        as: 'classType'
+                                    },
+                                    {
+                                        model: User,
+                                        as: 'trainer',
+                                        attributes: ['id', 'fullName', 'username']
+                                    }
+                                ]
+                            }
+                        ]
                     }
                 ],
                 order: [['id', 'DESC']],
@@ -1286,6 +1304,7 @@ class ClassService {
 
             return {
                 enrollments: rows,
+                total: count,
                 pagination: {
                     currentPage: parseInt(page),
                     totalPages: Math.ceil(count / parseInt(limit)),
@@ -1297,6 +1316,7 @@ class ClassService {
             console.error('Error in getUserClassHistory:', error);
             return {
                 enrollments: [],
+                total: 0,
                 pagination: {
                     currentPage: parseInt(page),
                     totalPages: 0,

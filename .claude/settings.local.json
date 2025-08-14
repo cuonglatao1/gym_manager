@@ -22,7 +22,8 @@
       "Bash(start http://localhost:3001/demo/admin-new.html)",
       "Bash(start http://localhost:3001/demo/trainer-new.html)",
       "Bash(start http://localhost:3001/demo/member-new.html)",
-      "Bash(start:*)"
+      "Bash(start:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }
