@@ -184,6 +184,66 @@
             border-radius: 4px;
             margin: 10px 0;
         }
+        
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            color: #333;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .modal-close:hover {
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
     </style>
 </head>
 <body>
@@ -195,25 +255,6 @@
             <button onclick="logout()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; float: right;">Đăng xuất</button>
         </div>
 
-        <!-- Stats Overview -->
-        <div class="stats-grid" id="statsGrid">
-            <div class="stat-card">
-                <div class="stat-number" id="totalMembers">-</div>
-                <div>Tổng thành viên</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="totalClasses">-</div>
-                <div>Tổng lớp học</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="totalTrainers">-</div>
-                <div>Tổng huấn luyện viên</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="totalCheckIns">-</div>
-                <div>Check-in hôm nay</div>
-            </div>
-        </div>
 
         <!-- Main Navigation Tabs -->
         <div class="main-tabs">
@@ -231,18 +272,38 @@
 
         <!-- Tab: Dashboard -->
         <div id="dashboard" class="tab-content active">
+            <!-- System Stats Cards -->
+            <div class="stats-grid" id="systemStats">
+                <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="stat-number" id="totalMembers">-</div>
+                    <div>Hội viên</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="stat-number" id="totalTrainers">-</div>
+                    <div>Huấn luyện viên</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <div class="stat-number" id="totalClasses">-</div>
+                    <div>Lớp học</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                    <div class="stat-number" id="todayCheckIns">-</div>
+                    <div>Check-in hôm nay</div>
+                </div>
+            </div>
+
             <div class="section-card">
                 <h3>📊 Tổng quan hệ thống</h3>
                 <div id="dashboardContent">
                     <div class="form-grid">
                         <div>
-                            <h4>Hoạt động hôm nay</h4>
+                            <h4>🔥 Hoạt động hôm nay</h4>
                             <ul id="todayActivity">
                                 <li>Đang tải...</li>
                             </ul>
                         </div>
                         <div>
-                            <h4>Thống kê nhanh</h4>
+                            <h4>📈 Thống kê nhanh</h4>
                             <ul id="quickStats">
                                 <li>Đang tải...</li>
                             </ul>
@@ -256,17 +317,12 @@
         <div id="members" class="tab-content">
             <div class="section-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3>👥 Quản lý thành viên</h3>
-                    <button class="btn btn-primary" onclick="showCreateMemberModal()">➕ Thêm thành viên</button>
+                    <h3>👥 Quản lý hội viên</h3>
+                    <button class="btn btn-primary" onclick="showCreateMemberModal()">➕ Thêm hội viên</button>
                 </div>
                 
                 <div class="filter-bar">
-                    <input type="text" id="memberSearch" placeholder="Tìm kiếm thành viên..." onkeyup="searchMembers()">
-                    <select id="memberFilter" onchange="filterMembers()">
-                        <option value="">Tất cả</option>
-                        <option value="active">Hoạt động</option>
-                        <option value="inactive">Không hoạt động</option>
-                    </select>
+                    <input type="text" id="memberSearch" placeholder="Tìm kiếm hội viên..." onkeyup="searchMembers()">
                     <button class="btn btn-secondary" onclick="loadMembers()">🔄 Tải lại</button>
                 </div>
                 
@@ -428,6 +484,9 @@
     <script>
         const API_BASE_URL = 'http://localhost:3000/api';
         let currentUser = null;
+        let allMembers = []; // Store all members data for filtering
+        let allClasses = []; // Store all classes data for filtering
+        let allSchedules = []; // Store all schedules data for filtering
 
         // API Call Function with Debug
         async function apiCall(endpoint, method = 'GET', body = null) {
@@ -570,69 +629,148 @@
 
         async function initDashboard() {
             try {
-                await loadStats();
                 await loadDashboard();
             } catch (error) {
                 console.error('Error initializing dashboard:', error);
             }
         }
 
-        // Load Statistics
-        async function loadStats() {
-            try {
-                const [membersRes, classesRes, checkInsRes] = await Promise.all([
-                    apiCall('/members/statistics'),
-                    apiCall('/classes'),
-                    apiCall('/classes/checkins')
-                ]);
-                
-                document.getElementById('totalMembers').textContent = membersRes.data?.totalMembers || 0;
-                document.getElementById('totalClasses').textContent = classesRes.data?.classes?.length || 0;
-                
-                const today = new Date().toISOString().split('T')[0];
-                const todayCheckIns = checkInsRes.data?.checkIns?.filter(c => 
-                    c.checkinTime?.startsWith(today)) || [];
-                document.getElementById('totalCheckIns').textContent = todayCheckIns.length;
-                
-                // Count trainers
-                const allMembers = await apiCall('/members');
-                const trainers = allMembers.data?.members?.filter(m => m.user?.role === 'trainer') || [];
-                document.getElementById('totalTrainers').textContent = trainers.length;
-                
-            } catch (error) {
-                console.error('Error loading stats:', error);
-            }
-        }
-
         // Dashboard Functions
         async function loadDashboard() {
+            console.log('🔄 Loading admin dashboard...');
+            
+            const todayActivity = document.getElementById('todayActivity');
+            const quickStats = document.getElementById('quickStats');
+            
+            // Set loading state
+            todayActivity.innerHTML = '<li>⏳ Đang tải hoạt động hôm nay...</li>';
+            quickStats.innerHTML = '<li>⏳ Đang tải thống kê...</li>';
+            
             try {
                 const today = new Date().toISOString().split('T')[0];
-                const [checkInsRes, enrollmentsRes] = await Promise.all([
+                console.log('📅 Loading data for date:', today);
+                
+                // Load all data in parallel
+                console.log('🔍 Fetching all dashboard data...');
+                const [checkInsRes, enrollmentsRes, membersRes, classesRes] = await Promise.all([
                     apiCall(`/classes/checkins/${today}`),
-                    apiCall('/classes/enrollments')
+                    apiCall('/classes/enrollments'),
+                    apiCall('/members?limit=100'),
+                    apiCall('/classes')
                 ]);
                 
-                const todayActivity = document.getElementById('todayActivity');
-                const quickStats = document.getElementById('quickStats');
+                console.log('✅ API responses received');
                 
-                const checkIns = checkInsRes.data?.checkIns || [];
-                const enrollments = enrollmentsRes.data?.enrollments || [];
+                const checkIns = checkInsRes.data?.checkIns || checkInsRes.data || [];
+                const enrollments = enrollmentsRes.data?.enrollments || enrollmentsRes.data || [];
+                const members = membersRes.data?.members || membersRes.data || [];
+                const classes = classesRes.data?.classes || classesRes.data || [];
+                
+                console.log('📊 Processed data:', {
+                    checkIns: checkIns.length,
+                    enrollments: enrollments.length,
+                    members: members.length,
+                    classes: classes.length
+                });
+                
+                // Count members and trainers using User.role for accuracy
+                let regularMembers = 0;
+                let trainers = 0;
+                
+                members.forEach(member => {
+                    if (member.memberCode && member.isActive) {
+                        // Skip deleted records
+                        if (member.memberCode.startsWith('DELETED_') || member.memberCode.startsWith('DEL_')) return;
+                        
+                        // Use User.role as primary determinant if available
+                        if (member.user && member.user.role) {
+                            if (member.user.role === 'trainer') {
+                                trainers++;
+                            } else if (member.user.role === 'member') {
+                                regularMembers++;
+                            }
+                            // Skip admin and other roles
+                        } else {
+                            // Fallback for records without user data - use email and memberCode patterns
+                            const isTrainerByEmail = member.email && (member.email.includes('trainer') || member.email.includes('hlv'));
+                            const isTrainerByCode = member.memberCode.startsWith('TR');
+                            
+                            if (isTrainerByEmail || isTrainerByCode) {
+                                trainers++;
+                            } else {
+                                regularMembers++;
+                            }
+                        }
+                    }
+                });
+                
+                console.log('👥 Counted users:', { regularMembers, trainers });
+                
+                // Update stats cards
+                document.getElementById('totalMembers').textContent = regularMembers;
+                document.getElementById('totalTrainers').textContent = trainers;
+                document.getElementById('totalClasses').textContent = classes.length;
+                document.getElementById('todayCheckIns').textContent = checkIns.length;
+                
+                // Calculate today's new enrollments
+                const todayEnrollments = enrollments.filter(e => {
+                    const enrollDate = e.createdAt ? e.createdAt.split('T')[0] : null;
+                    return enrollDate === today;
+                });
+                
+                // Calculate active schedules today
+                const activeSchedules = new Set(checkIns.map(c => c.scheduleId || c.classScheduleId)).size;
+                
+                // Get recent activity
+                const recentEnrollments = enrollments.slice(-5).reverse(); // Last 5 enrollments
+                const recentCheckIns = checkIns.slice(-5).reverse(); // Last 5 check-ins
+                
+                // Update today's activity
+                todayActivity.innerHTML = `
+                    <li>✅ Check-ins hôm nay: <strong>${checkIns.length}</strong></li>
+                    <li>📝 Đăng ký mới hôm nay: <strong>${todayEnrollments.length}</strong></li>
+                    <li>🏃 Lớp đã hoạt động: <strong>${activeSchedules}</strong></li>
+                    <li>⏰ Lớp sắp diễn ra: <strong>...</strong></li>
+                `;
+                
+                // Calculate participation rate
+                const participationRate = enrollments.length > 0 ? 
+                    Math.round((checkIns.length / enrollments.length) * 100) : 0;
+                
+                // Calculate active members (had activity in last 30 days)
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                const activeMembers = members.filter(m => 
+                    new Date(m.updatedAt || m.createdAt) >= thirtyDaysAgo
+                ).length;
+                
+                // Update quick stats
+                quickStats.innerHTML = `
+                    <li>📊 Tổng đăng ký: <strong>${enrollments.length}</strong></li>
+                    <li>📈 Tỷ lệ tham gia hôm nay: <strong>${participationRate}%</strong></li>
+                    <li>👥 Thành viên hoạt động: <strong>${activeMembers}</strong></li>
+                    <li>🟢 Trạng thái hệ thống: <strong style="color: #28a745;">Hoạt động</strong></li>
+                `;
+                
+                console.log('✅ Dashboard loaded successfully!');
+                
+            } catch (error) {
+                console.error('❌ Error loading dashboard:', error);
+                
+                // Set error states for stats cards
+                document.getElementById('totalMembers').textContent = '!';
+                document.getElementById('totalTrainers').textContent = '!';
+                document.getElementById('totalClasses').textContent = '!';
+                document.getElementById('todayCheckIns').textContent = '!';
                 
                 todayActivity.innerHTML = `
-                    <li>Check-ins hôm nay: ${checkIns.length}</li>
-                    <li>Đăng ký mới: ${enrollments.filter(e => e.createdAt?.startsWith(today)).length}</li>
-                    <li>Lớp hoạt động: ${new Set(checkIns.map(c => c.scheduleId)).size}</li>
+                    <li style="color: #dc3545;">❌ Lỗi tải hoạt động: ${error.message}</li>
                 `;
                 
                 quickStats.innerHTML = `
-                    <li>Tổng đăng ký: ${enrollments.length}</li>
-                    <li>Tỷ lệ tham gia: ${checkIns.length > 0 ? Math.round((checkIns.length / enrollments.length) * 100) : 0}%</li>
-                    <li>Trạng thái: Hoạt động</li>
+                    <li style="color: #dc3545;">❌ Lỗi tải thống kê: ${error.message}</li>
+                    <li style="color: #ffc107;">💡 Hãy kiểm tra kết nối và thử lại</li>
                 `;
-                
-            } catch (error) {
-                console.error('Error loading dashboard:', error);
             }
         }
 
@@ -642,23 +780,64 @@
             container.innerHTML = '<div class="loading">Đang tải...</div>';
             
             try {
-                const response = await apiCall('/members');
+                const response = await apiCall('/members?limit=100');
                 const members = response.data?.members || [];
                 
-                if (members.length === 0) {
-                    container.innerHTML = '<p>Không có thành viên nào.</p>';
-                    return;
-                }
+                console.log('🔍 LoadMembers - Total fetched:', members.length);
+                
+                // Store all members data for filtering (only members, exclude trainers)
+                allMembers = members.filter(member => {
+                    if (!member.memberCode || !member.isActive) return false;
+                    
+                    // Skip deleted records
+                    if (member.memberCode.startsWith('DELETED_') || member.memberCode.startsWith('DEL_')) return false;
+                    
+                    // Use User.role as primary determinant if available
+                    if (member.user && member.user.role) {
+                        const isActualMember = member.user.role === 'member';
+                        if (!isActualMember) {
+                            console.log('⚠️  Excluded from members (role-based):', member.memberCode, member.fullName, 'role:', member.user.role);
+                        }
+                        return isActualMember;
+                    } else {
+                        // Fallback for records without user data - use email and memberCode patterns
+                        const isTrainerByEmail = member.email && (member.email.includes('trainer') || member.email.includes('hlv'));
+                        const isTrainerByCode = member.memberCode.startsWith('TR');
+                        const isActualMember = !isTrainerByEmail && !isTrainerByCode;
+                        
+                        if (!isActualMember) {
+                            console.log('⚠️  Excluded from members (pattern-based):', member.memberCode, member.fullName, 'email:', member.email);
+                        }
+                        
+                        return isActualMember;
+                    }
+                });
+                
+                console.log('✅ LoadMembers - Filtered members:', allMembers.length);
+                displayMembers(allMembers);
+                
+            } catch (error) {
+                console.error('Error loading members:', error);
+                container.innerHTML = '<p class="error">Lỗi tải danh sách hội viên.</p>';
+            }
+        }
+
+        function displayMembers(members) {
+            const container = document.getElementById('membersContent');
+            
+            if (members.length === 0) {
+                container.innerHTML = '<p>Không có hội viên nào.</p>';
+                return;
+            }
                 
                 let html = `
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Mã TV</th>
+                                <th>Mã HV</th>
                                 <th>Họ tên</th>
                                 <th>Email</th>
                                 <th>Điện thoại</th>
-                                <th>Trạng thái</th>
                                 <th>Ngày tham gia</th>
                                 <th>Hành động</th>
                             </tr>
@@ -673,7 +852,6 @@
                             <td>${member.fullName}</td>
                             <td>${member.email || 'N/A'}</td>
                             <td>${member.phone}</td>
-                            <td>${member.isActive ? '✅ Hoạt động' : '❌ Không hoạt động'}</td>
                             <td>${new Date(member.joinDate).toLocaleDateString('vi-VN')}</td>
                             <td>
                                 <button class="btn btn-sm btn-primary" onclick="viewMemberDetails(${member.id})">👁️</button>
@@ -686,19 +864,47 @@
                 
                 html += '</tbody></table>';
                 container.innerHTML = html;
-                
-            } catch (error) {
-                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
-            }
         }
+        
 
         async function loadTrainers() {
             const container = document.getElementById('trainersContent');
             container.innerHTML = '<div class="loading">Đang tải...</div>';
             
             try {
-                const response = await apiCall('/members');
-                const trainers = response.data?.members?.filter(m => m.user?.role === 'trainer') || [];
+                const response = await apiCall('/members?limit=100');
+                const members = response.data?.members || [];
+                
+                console.log('🔍 LoadTrainers - Total fetched:', members.length);
+                
+                const trainers = members.filter(m => {
+                    if (!m.memberCode || !m.isActive) return false;
+                    
+                    // Skip deleted records
+                    if (m.memberCode.startsWith('DELETED_') || m.memberCode.startsWith('DEL_')) return false;
+                    
+                    // Use User.role as primary determinant if available
+                    if (m.user && m.user.role) {
+                        const isActualTrainer = m.user.role === 'trainer';
+                        if (!isActualTrainer) {
+                            console.log('⚠️  Excluded from trainers (role-based):', m.memberCode, m.fullName, 'role:', m.user.role);
+                        }
+                        return isActualTrainer;
+                    } else {
+                        // Fallback for records without user data - use email and memberCode patterns
+                        const isTrainerByEmail = m.email && (m.email.includes('trainer') || m.email.includes('hlv'));
+                        const isTrainerByCode = m.memberCode.startsWith('TR');
+                        const isActualTrainer = isTrainerByEmail || isTrainerByCode;
+                        
+                        if (!isActualTrainer) {
+                            console.log('⚠️  Excluded from trainers (pattern-based):', m.memberCode, m.fullName, 'email:', m.email);
+                        }
+                        
+                        return isActualTrainer;
+                    }
+                });
+                
+                console.log('✅ LoadTrainers - Filtered trainers:', trainers.length);
                 
                 let html = `
                     <div style="margin-bottom: 20px;">
@@ -714,7 +920,6 @@
                                 <th>Họ tên</th>
                                 <th>Email</th>
                                 <th>Điện thoại</th>
-                                <th>Trạng thái</th>
                                 <th>Ngày tạo</th>
                                 <th>Thao tác</th>
                             </tr>
@@ -723,21 +928,16 @@
                 `;
                 
                 if (trainers.length === 0) {
-                    html += '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #666;">Không có huấn luyện viên nào</td></tr>';
+                    html += '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #666;">Không có huấn luyện viên nào</td></tr>';
                 }
                 
                 trainers.forEach(trainer => {
                     html += `
                         <tr>
-                            <td>${trainer.membershipNumber}</td>
+                            <td>${trainer.memberCode}</td>
                             <td>${trainer.fullName}</td>
-                            <td>${trainer.user?.email || 'N/A'}</td>
+                            <td>${trainer.email || 'N/A'}</td>
                             <td>${trainer.phone || 'N/A'}</td>
-                            <td>
-                                <span class="status-badge ${trainer.isActive ? 'success' : 'warning'}">
-                                    ${trainer.isActive ? 'Hoạt động' : 'Tạm ngưng'}
-                                </span>
-                            </td>
                             <td>${new Date(trainer.createdAt).toLocaleDateString('vi-VN')}</td>
                             <td>
                                 <button class="btn btn-sm btn-info" onclick="viewTrainerDetails(${trainer.id})">👁️</button>
@@ -766,7 +966,9 @@
             
             try {
                 const response = await apiCall(`/members/search?q=${encodeURIComponent(searchTerm)}`);
-                const trainers = response.data?.members?.filter(m => m.user?.role === 'trainer') || [];
+                const trainers = response.data?.members?.filter(m => 
+                    m.memberCode && m.memberCode.startsWith('TR')
+                ) || [];
                 // Handle search results similar to loadTrainers display
                 const container = document.getElementById('trainersContent');
                 // ... similar display logic as loadTrainers
@@ -775,19 +977,22 @@
             }
         }
 
-        async function searchMembers() {
-            const searchTerm = document.getElementById('memberSearch').value;
+        function searchMembers() {
+            const searchTerm = document.getElementById('memberSearch').value.toLowerCase();
+            
             if (searchTerm.length < 2) {
-                loadMembers();
+                displayMembers(allMembers);
                 return;
             }
             
-            try {
-                const response = await apiCall(`/members/search?q=${encodeURIComponent(searchTerm)}`);
-                // Handle search results similar to loadMembers
-            } catch (error) {
-                console.error('Search error:', error);
-            }
+            const filteredMembers = allMembers.filter(member => 
+                member.fullName.toLowerCase().includes(searchTerm) ||
+                member.email?.toLowerCase().includes(searchTerm) ||
+                member.memberCode.toLowerCase().includes(searchTerm) ||
+                member.phone.includes(searchTerm)
+            );
+            
+            displayMembers(filteredMembers);
         }
 
         // Class Types Functions
@@ -840,46 +1045,88 @@
             container.innerHTML = '<div class="loading">Đang tải...</div>';
             
             try {
-                const response = await apiCall('/classes');
-                const classes = response.data?.classes || [];
+                const [classesResponse, classTypesResponse, membersResponse] = await Promise.all([
+                    apiCall('/classes'),
+                    apiCall('/classes/types'),
+                    apiCall('/members?limit=100')
+                ]);
                 
-                let html = `
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Tên lớp</th>
-                                <th>Loại</th>
-                                <th>HLV</th>
-                                <th>Thời lượng</th>
-                                <th>Giá</th>
-                                <th>Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
+                const classes = classesResponse.data?.classes || [];
+                const classTypes = classTypesResponse.data || [];
+                const trainers = membersResponse.data?.members?.filter(m => 
+                    m.memberCode && m.memberCode.startsWith('TR')
+                ) || [];
                 
-                classes.forEach(cls => {
-                    html += `
-                        <tr>
-                            <td>${cls.name}</td>
-                            <td><span style="color: ${cls.classType?.color || '#333'}">${cls.classType?.name || 'N/A'}</span></td>
-                            <td>${cls.trainer?.fullName || 'N/A'}</td>
-                            <td>${cls.duration || 0} phút</td>
-                            <td>${cls.price ? parseInt(cls.price).toLocaleString('vi-VN') + 'đ' : 'Miễn phí'}</td>
-                            <td>
-                                <button class="btn btn-sm btn-warning" onclick="editClass(${cls.id})">✏️</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteClass(${cls.id})">🗑️</button>
-                            </td>
-                        </tr>
-                    `;
-                });
+                // Store data for filtering
+                allClasses = classes;
                 
-                html += '</tbody></table>';
-                container.innerHTML = html;
+                // Populate filter dropdowns
+                populateClassFilters(classTypes, trainers);
+                
+                displayClasses(classes);
                 
             } catch (error) {
                 container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
             }
+        }
+        
+        function populateClassFilters(classTypes, trainers) {
+            // Populate class type filter
+            const classTypeFilter = document.getElementById('classTypeFilter');
+            classTypeFilter.innerHTML = '<option value="">Tất cả loại</option>';
+            classTypes.forEach(type => {
+                classTypeFilter.innerHTML += `<option value="${type.id}">${type.name}</option>`;
+            });
+            
+            // Populate trainer filter
+            const trainerFilter = document.getElementById('trainerFilter');
+            trainerFilter.innerHTML = '<option value="">Tất cả HLV</option>';
+            trainers.forEach(trainer => {
+                trainerFilter.innerHTML += `<option value="${trainer.id}">${trainer.fullName}</option>`;
+            });
+        }
+        
+        function displayClasses(classes) {
+            const container = document.getElementById('classesContent');
+            
+            if (classes.length === 0) {
+                container.innerHTML = '<p>Không có lớp học nào.</p>';
+                return;
+            }
+            
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tên lớp</th>
+                            <th>Loại</th>
+                            <th>HLV</th>
+                            <th>Thời lượng</th>
+                            <th>Giá</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            classes.forEach(cls => {
+                html += `
+                    <tr>
+                        <td>${cls.name}</td>
+                        <td><span style="color: ${cls.classType?.color || '#333'}">${cls.classType?.name || 'N/A'}</span></td>
+                        <td>${cls.trainer?.fullName || 'N/A'}</td>
+                        <td>${cls.duration || 0} phút</td>
+                        <td>${cls.price ? parseInt(cls.price).toLocaleString('vi-VN') + 'đ' : 'Miễn phí'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editClass(${cls.id})">✏️</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteClass(${cls.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
         }
 
         // Schedules Functions
@@ -888,56 +1135,81 @@
             container.innerHTML = '<div class="loading">Đang tải...</div>';
             
             try {
-                const dateFilter = document.getElementById('scheduleDate')?.value;
-                let endpoint = '/classes/schedules';
-                if (dateFilter) {
-                    endpoint += `?startDate=${dateFilter}&endDate=${dateFilter}`;
-                }
+                const [schedulesResponse, classesResponse] = await Promise.all([
+                    apiCall('/classes/schedules'),
+                    apiCall('/classes')
+                ]);
                 
-                const response = await apiCall(endpoint);
-                const schedules = response.data?.schedules || [];
+                const schedules = schedulesResponse.data?.schedules || [];
+                const classes = classesResponse.data?.classes || [];
                 
-                let html = `
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Lớp học</th>
-                                <th>Ngày</th>
-                                <th>Thời gian</th>
-                                <th>Phòng</th>
-                                <th>Số người</th>
-                                <th>Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
+                // Store data for filtering
+                allSchedules = schedules;
                 
-                schedules.forEach(schedule => {
-                    const startTime = new Date(schedule.startTime);
-                    const endTime = new Date(schedule.endTime);
-                    
-                    html += `
-                        <tr>
-                            <td>${schedule.class?.name || 'N/A'}</td>
-                            <td>${startTime.toLocaleDateString('vi-VN')}</td>
-                            <td>${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}</td>
-                            <td>${schedule.room || 'N/A'}</td>
-                            <td>${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0}</td>
-                            <td>
-                                <button class="btn btn-sm btn-info" onclick="viewEnrollments(${schedule.id})">👥</button>
-                                <button class="btn btn-sm btn-warning" onclick="editSchedule(${schedule.id})">✏️</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${schedule.id})">🗑️</button>
-                            </td>
-                        </tr>
-                    `;
-                });
+                // Populate schedule filter dropdown
+                populateScheduleFilters(classes);
                 
-                html += '</tbody></table>';
-                container.innerHTML = html;
+                displaySchedules(schedules);
                 
             } catch (error) {
                 container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
             }
+        }
+        
+        function populateScheduleFilters(classes) {
+            // Populate schedule class filter
+            const scheduleClassFilter = document.getElementById('scheduleClassFilter');
+            scheduleClassFilter.innerHTML = '<option value="">Tất cả lớp</option>';
+            classes.forEach(cls => {
+                scheduleClassFilter.innerHTML += `<option value="${cls.id}">${cls.name}</option>`;
+            });
+        }
+        
+        function displaySchedules(schedules) {
+            const container = document.getElementById('schedulesContent');
+            
+            if (schedules.length === 0) {
+                container.innerHTML = '<p>Không có lịch tập nào.</p>';
+                return;
+            }
+            
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Lớp học</th>
+                            <th>Ngày</th>
+                            <th>Thời gian</th>
+                            <th>Phòng</th>
+                            <th>Số người</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            schedules.forEach(schedule => {
+                const startTime = new Date(schedule.startTime);
+                const endTime = new Date(schedule.endTime);
+                
+                html += `
+                    <tr>
+                        <td>${schedule.class?.name || 'N/A'}</td>
+                        <td>${startTime.toLocaleDateString('vi-VN')}</td>
+                        <td>${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}</td>
+                        <td>${schedule.room || 'N/A'}</td>
+                        <td>${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="viewEnrollments(${schedule.id})">👥</button>
+                            <button class="btn btn-sm btn-warning" onclick="editSchedule(${schedule.id})">✏️</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${schedule.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
         }
 
         // Enrollments Functions
@@ -1128,35 +1400,71 @@
             const content = `
                 <form id="createMemberForm">
                     <div class="form-group">
-                        <label>Họ tên *</label>
+                        <label>Họ và tên *</label>
                         <input type="text" name="fullName" required>
                     </div>
                     <div class="form-group">
-                        <label>Điện thoại *</label>
+                        <label>Số điện thoại *</label>
                         <input type="tel" name="phone" required>
                     </div>
                     <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" name="email">
+                        <label>Email *</label>
+                        <input type="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Mật khẩu *</label>
+                        <input type="password" name="password" required minlength="6" placeholder="Tối thiểu 6 ký tự">
+                    </div>
+                    <div class="form-group">
+                        <label>Ngày sinh</label>
+                        <input type="date" name="dateOfBirth">
+                    </div>
+                    <div class="form-group">
+                        <label>Giới tính</label>
+                        <select name="gender">
+                            <option value="">Chọn giới tính</option>
+                            <option value="male">Nam</option>
+                            <option value="female">Nữ</option>
+                            <option value="other">Khác</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Địa chỉ</label>
-                        <textarea name="address" rows="3"></textarea>
+                        <input type="text" name="address">
                     </div>
-                    <button type="submit" class="btn btn-primary">Tạo thành viên</button>
+                    <div class="form-group">
+                        <label>Số liên hệ khẩn cấp</label>
+                        <input type="text" name="emergencyContact">
+                    </div>
+                    <div class="form-group">
+                        <label>Điện thoại khẩn cấp</label>
+                        <input type="tel" name="emergencyPhone">
+                    </div>
+                    <button type="submit" class="btn btn-primary">➕ Đăng ký hội viên</button>
                 </form>
                 <div id="createMemberResult"></div>
             `;
-            showModal('Thêm thành viên mới', content);
+            showModal('Đăng ký hội viên mới', content);
             
             document.getElementById('createMemberForm').onsubmit = async (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData.entries());
                 
+                // Remove empty optional fields instead of setting to null
+                Object.keys(data).forEach(key => {
+                    if (data[key] === '' && ['dateOfBirth', 'gender', 'address', 'emergencyContact', 'emergencyPhone', 'notes'].includes(key)) {
+                        delete data[key];
+                    }
+                });
+                
+                // Set role as member for admin creation
+                data.role = 'member';
+                
                 try {
-                    await apiCall('/members/register', 'POST', data);
-                    document.getElementById('createMemberResult').innerHTML = '<div class="success">✅ Tạo thành viên thành công!</div>';
+                    const response = await apiCall('/auth/register', 'POST', data);
+                    const memberCode = response.data.member ? response.data.member.memberCode : 'N/A';
+                    document.getElementById('createMemberResult').innerHTML = `<div class="success">✅ Đăng ký thành công! Mã hội viên: ${memberCode}</div>`;
                     setTimeout(() => {
                         closeModal();
                         loadMembers();
@@ -1171,8 +1479,12 @@
             const content = `
                 <form id="createTrainerForm">
                     <div class="form-group">
-                        <label>Tên đăng nhập *</label>
-                        <input type="text" name="username" required>
+                        <label>Họ tên *</label>
+                        <input type="text" name="fullName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Số điện thoại *</label>
+                        <input type="text" name="phone" required>
                     </div>
                     <div class="form-group">
                         <label>Email *</label>
@@ -1180,15 +1492,7 @@
                     </div>
                     <div class="form-group">
                         <label>Mật khẩu *</label>
-                        <input type="password" name="password" required minlength="6">
-                    </div>
-                    <div class="form-group">
-                        <label>Họ tên *</label>
-                        <input type="text" name="fullName" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Số điện thoại *</label>
-                        <input type="text" name="phone" required>
+                        <input type="password" name="password" required minlength="6" placeholder="Tối thiểu 6 ký tự">
                     </div>
                     <div class="form-group">
                         <label>Ngày sinh</label>
@@ -1217,6 +1521,14 @@
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData.entries());
+                
+                // Remove empty optional fields instead of setting to null
+                Object.keys(data).forEach(key => {
+                    if (data[key] === '' && ['dateOfBirth', 'gender', 'address', 'specialization', 'experience'].includes(key)) {
+                        delete data[key];
+                    }
+                });
+                
                 data.role = 'trainer'; // Set role as trainer
                 
                 try {
@@ -1242,6 +1554,22 @@
                     <div class="form-group">
                         <label>Mô tả</label>
                         <textarea name="description" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Thời lượng (phút) *</label>
+                        <input type="number" name="duration" min="15" max="180" value="60" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Số người tối đa *</label>
+                        <input type="number" name="maxParticipants" min="1" max="50" value="20" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Độ khó</label>
+                        <select name="difficulty">
+                            <option value="beginner">Cơ bản</option>
+                            <option value="intermediate" selected>Trung bình</option>
+                            <option value="advanced">Nâng cao</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Màu sắc</label>
@@ -1277,8 +1605,10 @@
                 apiCall('/classes/types'),
                 apiCall('/members')
             ]).then(([classTypesResponse, membersResponse]) => {
-                const classTypes = classTypesResponse.data?.classTypes || [];
-                const trainers = membersResponse.data?.members?.filter(m => m.user?.role === 'trainer') || [];
+                const classTypes = classTypesResponse.data || [];
+                const trainers = membersResponse.data?.members?.filter(m => 
+                    m.memberCode && m.memberCode.startsWith('TR')
+                ) || [];
                 
                 const content = `
                     <form id="createClassForm">
@@ -1472,6 +1802,14 @@
                     e.preventDefault();
                     const formData = new FormData(e.target);
                     const data = Object.fromEntries(formData.entries());
+                    
+                    // Clean up empty strings to null for optional fields
+                    Object.keys(data).forEach(key => {
+                        if (data[key] === '') {
+                            data[key] = null;
+                        }
+                    });
+                    
                     data.isActive = data.isActive === 'true';
                     
                     try {
@@ -1495,7 +1833,7 @@
                 const response = await apiCall(`/members/${id}`);
                 const member = response.data;
                 
-                if(confirm(`Xóa thành viên "${member.fullName}" (${member.membershipNumber})?\n\nHành động này không thể hoàn tác!`)) {
+                if(confirm(`Xóa hội viên "${member.fullName}" (${member.memberCode})?\n\nHành động này không thể hoàn tác!`)) {
                     await apiCall(`/members/${id}`, 'DELETE');
                     alert('✅ Đã xóa thành viên thành công!');
                     loadMembers();
@@ -1513,9 +1851,9 @@
                 
                 const content = `
                     <div class="trainer-details">
-                        <div class="detail-row"><strong>Mã HLV:</strong> ${trainer.membershipNumber}</div>
+                        <div class="detail-row"><strong>Mã HLV:</strong> ${trainer.memberCode}</div>
                         <div class="detail-row"><strong>Họ tên:</strong> ${trainer.fullName}</div>
-                        <div class="detail-row"><strong>Email:</strong> ${trainer.user?.email || 'N/A'}</div>
+                        <div class="detail-row"><strong>Email:</strong> ${trainer.email || 'N/A'}</div>
                         <div class="detail-row"><strong>Điện thoại:</strong> ${trainer.phone || 'N/A'}</div>
                         <div class="detail-row"><strong>Ngày sinh:</strong> ${trainer.dateOfBirth ? new Date(trainer.dateOfBirth).toLocaleDateString('vi-VN') : 'N/A'}</div>
                         <div class="detail-row"><strong>Giới tính:</strong> ${trainer.gender === 'male' ? 'Nam' : trainer.gender === 'female' ? 'Nữ' : trainer.gender === 'other' ? 'Khác' : 'N/A'}</div>
@@ -1548,7 +1886,7 @@
                         </div>
                         <div class="form-group">
                             <label>Email</label>
-                            <input type="email" name="email" value="${trainer.user?.email || ''}" readonly>
+                            <input type="email" name="email" value="${trainer.email || ''}" readonly>
                             <small style="color: #666;">Email không thể thay đổi</small>
                         </div>
                         <div class="form-group">
@@ -1597,6 +1935,14 @@
                     e.preventDefault();
                     const formData = new FormData(e.target);
                     const data = Object.fromEntries(formData.entries());
+                    
+                    // Clean up empty strings to null for optional fields
+                    Object.keys(data).forEach(key => {
+                        if (data[key] === '') {
+                            data[key] = null;
+                        }
+                    });
+                    
                     data.isActive = data.isActive === 'true';
                     delete data.email; // Don't update email
                     
@@ -1621,12 +1967,9 @@
                 const response = await apiCall(`/members/${id}`);
                 const trainer = response.data;
                 
-                if(confirm(`Xóa huấn luyện viên "${trainer.fullName}" (${trainer.membershipNumber})?\n\nHành động này sẽ xóa cả tài khoản đăng nhập và không thể hoàn tác!`)) {
-                    // Delete both member record and user account
+                if(confirm(`Xóa huấn luyện viên "${trainer.fullName}" (${trainer.memberCode})?\n\nHành động này không thể hoàn tác!`)) {
+                    // Delete member record only
                     await apiCall(`/members/${id}`, 'DELETE');
-                    if(trainer.user?.id) {
-                        await apiCall(`/auth/users/${trainer.user.id}`, 'DELETE');
-                    }
                     alert('✅ Đã xóa huấn luyện viên thành công!');
                     loadTrainers();
                 }
@@ -1728,7 +2071,7 @@
                 const [classResponse, classTypesResponse, membersResponse] = await Promise.all([
                     apiCall(`/classes/${id}`),
                     apiCall('/classes/types'),
-                    apiCall('/members')
+                    apiCall('/members?limit=100')
                 ]);
                 
                 const classData = classResponse.data;
@@ -1845,7 +2188,7 @@
                 const [scheduleResponse, classesResponse, membersResponse] = await Promise.all([
                     apiCall(`/classes/schedules/${id}`),
                     apiCall('/classes'),
-                    apiCall('/members')
+                    apiCall('/members?limit=100')
                 ]);
                 
                 const schedule = scheduleResponse.data;
@@ -2048,14 +2391,161 @@
                 alert(`❌ Lỗi xóa gói tập: ${error.message}`);
             }
         }
+        function showCreateScheduleModal() {
+            // Load classes for dropdown
+            apiCall('/classes').then(response => {
+                const classes = response.data?.classes || [];
+                
+                const content = `
+                    <form id="createScheduleForm">
+                        <div class="form-group">
+                            <label>Lớp học *</label>
+                            <select name="classId" required>
+                                <option value="">Chọn lớp học</option>
+                                ${classes.map(cls => `<option value="${cls.id}">${cls.name} (${cls.classType.name})</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày *</label>
+                            <input type="date" name="date" required min="${new Date().toISOString().split('T')[0]}">
+                        </div>
+                        <div class="form-group">
+                            <label>Giờ bắt đầu *</label>
+                            <input type="time" name="startTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Giờ kết thúc *</label>
+                            <input type="time" name="endTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phòng tập</label>
+                            <input type="text" name="room" placeholder="VD: Studio A, Phòng tập 1">
+                        </div>
+                        <div class="form-group">
+                            <label>Ghi chú</label>
+                            <textarea name="notes" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">➕ Tạo lịch tập</button>
+                    </form>
+                    <div id="createScheduleResult"></div>
+                `;
+                showModal('Thêm lịch tập mới', content);
+                
+                document.getElementById('createScheduleForm').onsubmit = async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    const data = Object.fromEntries(formData.entries());
+                    
+                    // Keep time in HH:MM format as API expects
+                    
+                    try {
+                        const classId = data.classId;
+                        delete data.classId; // Remove classId from data as it goes in URL
+                        
+                        await apiCall(`/classes/${classId}/schedules`, 'POST', data);
+                        document.getElementById('createScheduleResult').innerHTML = '<div class="success">✅ Tạo lịch tập thành công!</div>';
+                        setTimeout(() => {
+                            closeModal();
+                            loadSchedules();
+                        }, 2000);
+                    } catch (error) {
+                        document.getElementById('createScheduleResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+                    }
+                };
+            });
+        }
+
         function viewMemberDetails(id) { alert('Chức năng xem chi tiết sẽ được phát triển'); }
         function viewEnrollments(id) { alert('Chức năng xem đăng ký sẽ được phát triển'); }
         function cancelEnrollment(id) { if(confirm('Hủy đăng ký này?')) alert('Chức năng hủy sẽ được phát triển'); }
-        function filterMembers() { loadMembers(); }
-        function filterClasses() { loadClasses(); }
-        function filterSchedules() { loadSchedules(); }
+        function filterClasses() {
+            const classTypeFilter = document.getElementById('classTypeFilter').value;
+            const trainerFilter = document.getElementById('trainerFilter').value;
+            
+            let filteredClasses = allClasses;
+            
+            if (classTypeFilter) {
+                filteredClasses = filteredClasses.filter(cls => 
+                    cls.classTypeId == classTypeFilter
+                );
+            }
+            
+            if (trainerFilter) {
+                filteredClasses = filteredClasses.filter(cls => 
+                    cls.trainerId == trainerFilter
+                );
+            }
+            
+            displayClasses(filteredClasses);
+        }
+        function filterSchedules() {
+            const dateFilter = document.getElementById('scheduleDate').value;
+            const classFilter = document.getElementById('scheduleClassFilter').value;
+            
+            let filteredSchedules = allSchedules;
+            
+            if (dateFilter) {
+                filteredSchedules = filteredSchedules.filter(schedule => {
+                    const scheduleDate = new Date(schedule.startTime).toISOString().split('T')[0];
+                    return scheduleDate === dateFilter;
+                });
+            }
+            
+            if (classFilter) {
+                filteredSchedules = filteredSchedules.filter(schedule => 
+                    schedule.classId == classFilter
+                );
+            }
+            
+            displaySchedules(filteredSchedules);
+        }
         function filterEnrollments() { loadEnrollments(); }
         function filterCheckIns() { loadCheckIns(); }
+
+        // Modal Functions
+        function showModal(title, content) {
+            const modal = document.getElementById('modalContainer') || createModalContainer();
+            modal.innerHTML = `
+                <div class="modal-backdrop" onclick="closeModal()">
+                    <div class="modal-content" onclick="event.stopPropagation()">
+                        <div class="modal-header">
+                            <h3>${title}</h3>
+                            <button class="modal-close" onclick="closeModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            ${content}
+                        </div>
+                    </div>
+                </div>
+            `;
+            modal.style.display = 'flex';
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('modalContainer');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        function createModalContainer() {
+            const modal = document.createElement('div');
+            modal.id = 'modalContainer';
+            modal.style.cssText = `
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+            document.body.appendChild(modal);
+            return modal;
+        }
 
         function logout() {
             localStorage.removeItem('gym_auth_token');

@@ -161,7 +161,15 @@ class MemberService {
 
         const { count, rows } = await Member.findAndCountAll({
             where: whereCondition,
-            include: [membershipInclude],
+            include: [
+                {
+                    model: User,
+                    as: 'user',
+                    attributes: ['id', 'username', 'email', 'role'],
+                    required: false
+                },
+                membershipInclude
+            ],
             limit: parseInt(limit),
             offset: offset,
             order: [['createdAt', 'DESC']],
@@ -424,7 +432,7 @@ class MemberService {
         await member.update({ 
             isActive: false,
             email: `deleted_${member.id}_${member.email}`,
-            memberCode: `DELETED_${member.memberCode}`
+            memberCode: `DEL_${member.id}` // Keep it short to avoid varchar(20) limit
         });
 
         // Also deactivate associated user account

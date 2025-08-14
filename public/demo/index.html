@@ -212,7 +212,72 @@
         </div>
 
         <div class="extra-links">
+            <a href="#" onclick="showRegisterForm()" style="margin-right: 15px;">🆕 Đăng ký hội viên</a>
             <span style="color: #666;">Hệ thống Gym Management v2.0</span>
+        </div>
+    </div>
+
+    <!-- Registration Form (Initially Hidden) -->
+    <div id="registerContainer" class="login-container" style="display: none;">
+        <div class="header">
+            <h1>🏋️ Đăng ký hội viên</h1>
+            <p>Tạo tài khoản hội viên mới</p>
+        </div>
+
+        <div id="registerMessageContainer"></div>
+
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="regFullName">Họ và tên *</label>
+                <input type="text" id="regFullName" placeholder="Nhập họ và tên" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="regPhone">Số điện thoại *</label>
+                <input type="tel" id="regPhone" placeholder="Nhập số điện thoại" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="regEmail">Email *</label>
+                <input type="email" id="regEmail" placeholder="Nhập địa chỉ email" required>
+            </div>
+
+
+            <div class="form-group">
+                <label for="regPassword">Mật khẩu *</label>
+                <input type="password" id="regPassword" placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)" required minlength="6">
+            </div>
+
+            <div class="form-group">
+                <label for="regConfirmPassword">Xác nhận mật khẩu *</label>
+                <input type="password" id="regConfirmPassword" placeholder="Nhập lại mật khẩu" required minlength="6">
+            </div>
+
+            <div class="form-group">
+                <label for="regDateOfBirth">Ngày sinh</label>
+                <input type="date" id="regDateOfBirth">
+            </div>
+
+            <div class="form-group">
+                <label for="regGender">Giới tính</label>
+                <select id="regGender">
+                    <option value="">Chọn giới tính</option>
+                    <option value="male">Nam</option>
+                    <option value="female">Nữ</option>
+                    <option value="other">Khác</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="regAddress">Địa chỉ</label>
+                <input type="text" id="regAddress" placeholder="Nhập địa chỉ">
+            </div>
+            
+            <button type="submit" class="btn" id="registerBtn">🆕 Đăng ký</button>
+        </form>
+
+        <div class="extra-links">
+            <a href="#" onclick="showLoginForm()">← Quay lại đăng nhập</a>
         </div>
     </div>
 
@@ -345,6 +410,106 @@
                     container.innerHTML = '';
                 }, 5000);
             }
+        }
+
+        // Form switching functions
+        function showRegisterForm() {
+            document.getElementById('loginForm').parentNode.style.display = 'none';
+            document.getElementById('registerContainer').style.display = 'block';
+        }
+
+        function showLoginForm() {
+            document.getElementById('registerContainer').style.display = 'none';
+            document.getElementById('loginForm').parentNode.style.display = 'block';
+        }
+
+        // Handle registration
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await handleRegistration();
+        });
+
+        async function handleRegistration() {
+            const registerBtn = document.getElementById('registerBtn');
+            registerBtn.disabled = true;
+            registerBtn.textContent = 'Đang đăng ký...';
+
+            // Validate password confirmation
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                showRegisterMessage('error', 'Mật khẩu xác nhận không khớp');
+                registerBtn.disabled = false;
+                registerBtn.textContent = '🆕 Đăng ký';
+                return;
+            }
+
+            const formData = {
+                fullName: document.getElementById('regFullName').value,
+                phone: document.getElementById('regPhone').value,
+                email: document.getElementById('regEmail').value,
+                password: password
+            };
+
+            // Only add optional fields if they have values
+            const dateOfBirth = document.getElementById('regDateOfBirth').value;
+            if (dateOfBirth) formData.dateOfBirth = dateOfBirth;
+            
+            const gender = document.getElementById('regGender').value;
+            if (gender) formData.gender = gender;
+            
+            const address = document.getElementById('regAddress').value;
+            if (address) formData.address = address;
+
+            try {
+                formData.role = 'member'; // Set role as member
+                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const memberCode = data.data.member ? ` - Mã hội viên: ${data.data.member.memberCode}` : '';
+                    showRegisterMessage('success', `🎉 Đăng ký thành công!${memberCode} Bạn có thể đăng nhập ngay bây giờ.`);
+                    
+                    // Reset form
+                    document.getElementById('registerForm').reset();
+                    
+                    // Auto switch back to login after 3 seconds
+                    setTimeout(() => {
+                        showLoginForm();
+                        showMessage('success', 'Bạn có thể đăng nhập bằng email và mật khẩu được gửi qua email');
+                    }, 3000);
+
+                } else {
+                    showRegisterMessage('error', data.message || 'Đăng ký thất bại');
+                }
+
+            } catch (error) {
+                console.error('Registration error:', error);
+                showRegisterMessage('error', 'Lỗi kết nối. Vui lòng thử lại.');
+            } finally {
+                registerBtn.disabled = false;
+                registerBtn.textContent = '🆕 Đăng ký';
+            }
+        }
+
+        function showRegisterMessage(type, message) {
+            const container = document.getElementById('registerMessageContainer');
+            const className = type === 'success' ? 'success' : 'error';
+            
+            container.innerHTML = `<div class="${className}">${message}</div>`;
+            
+            // Auto hide sau 5 giây
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
         }
 
         // Thêm CSS animation cho pulse effect

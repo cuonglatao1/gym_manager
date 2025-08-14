@@ -6,20 +6,23 @@ const { User, RefreshToken } = require('../models');
 class AuthService {
     // Đăng ký
     async register(userData) {
-        const { username, email, password, fullName, phone, role = 'member' } = userData;
+        const { email, password, fullName, phone, role = 'member', dateOfBirth, gender, address } = userData;
+
+        // Tạo username từ email (phần trước @)
+        const username = email.split('@')[0].toLowerCase();
 
         // Kiểm tra user đã tồn tại
         const existingUser = await User.findOne({
             where: {
                 [require('sequelize').Op.or]: [
                     { email: email.toLowerCase() },
-                    { username: username.toLowerCase() }
+                    { username: username }
                 ]
             }
         });
 
         if (existingUser) {
-            throw new Error('Email hoặc username đã được sử dụng');
+            throw new Error('Email đã được sử dụng');
         }
 
         // Hash password
@@ -27,7 +30,7 @@ class AuthService {
 
         // Tạo user mới
         const user = await User.create({
-            username: username.toLowerCase(),
+            username: username,
             email: email.toLowerCase(),
             passwordHash,
             fullName,
@@ -35,13 +38,51 @@ class AuthService {
             role
         });
 
+        // Tạo Member record cho cả member và trainer  
+        let member = null;
+        if (role === 'member' || role === 'trainer') {
+            try {
+                const { Member } = require('../models');
+                const memberService = require('./memberService');
+                
+                console.log('🏃‍♂️ Creating member record for user ID:', user.id);
+                
+                // Generate member code
+                const memberCode = await memberService.generateMemberCode();
+                
+                member = await Member.create({
+                    userId: user.id,
+                    memberCode,
+                    fullName,
+                    phone,
+                    email: email.toLowerCase(),
+                    dateOfBirth: dateOfBirth || null,
+                    gender: gender || null,
+                    address: address || null
+                });
+                
+                console.log('✅ Member record created:', member.memberCode);
+            } catch (memberError) {
+                console.error('❌ Error creating member record:', memberError);
+                // Don't fail the whole registration if member creation fails
+                // but log the error for debugging
+            }
+        }
+
         // Tạo tokens
         const tokens = await this.generateTokens(user);
 
-        return {
+        const result = {
             user: user.toJSON(),
             ...tokens
         };
+
+        // Thêm thông tin member nếu có
+        if (member) {
+            result.member = member.toJSON();
+        }
+
+        return result;
     }
 
     // Đăng nhập
@@ -69,7 +110,7 @@ class AuthService {
 
     // Tạo token pair
     async generateTokens(user) {
-        // Access token (2 phút for testing)
+        // Access token (1 giờ)
         const accessToken = jwt.sign(
             {
                 userId: user.id,
@@ -78,7 +119,7 @@ class AuthService {
                 type: 'access'
             },
             process.env.JWT_ACCESS_SECRET || 'access-secret',
-            { expiresIn: '2m' }
+            { expiresIn: '1h' }
         );
 
         // Refresh token (7 ngày)
@@ -95,7 +136,7 @@ class AuthService {
         return {
             accessToken,
             refreshToken,
-            expiresIn: 120 // 2 phút for testing
+            expiresIn: 3600 // 1 giờ
         };
     }
 
@@ -133,13 +174,13 @@ class AuthService {
                 type: 'access'
             },
             process.env.JWT_ACCESS_SECRET || 'access-secret',
-            { expiresIn: '2m' }
+            { expiresIn: '1h' }
         );
 
         return {
             accessToken,
             refreshToken, // Giữ nguyên refresh token
-            expiresIn: 120 // 2 phút for testing
+            expiresIn: 3600 // 1 giờ
         };
     }
 
@@ -218,7 +259,7 @@ class AuthService {
 
     // Update user profile
     async updateProfile(userId, profileData) {
-        const { fullName, email } = profileData;
+        const { fullName, email, phone } = profileData;
 
         // Check if user exists
         const user = await User.findByPk(userId);
@@ -243,7 +284,8 @@ class AuthService {
         // Update user profile
         const updatedUser = await user.update({
             fullName: fullName || user.fullName,
-            email: email ? email.toLowerCase() : user.email
+            email: email ? email.toLowerCase() : user.email,
+            phone: phone !== undefined ? phone : user.phone
         });
 
         // Return updated user without sensitive data
@@ -255,6 +297,37 @@ class AuthService {
             phone: updatedUser.phone,
             role: updatedUser.role,
             isActive: updatedUser.isActive
+        };
+    }
+
+    // Change user password
+    async changePassword(userId, currentPassword, newPassword) {
+        // Get user
+        const user = await User.findByPk(userId);
+        if (!user) {
+            throw new Error('Không tìm thấy người dùng');
+        }
+
+        // Check current password
+        const isValidPassword = await user.checkPassword(currentPassword);
+        if (!isValidPassword) {
+            throw new Error('Mật khẩu hiện tại không đúng');
+        }
+
+        // Hash new password
+        const newPasswordHash = await bcrypt.hash(newPassword, 12);
+
+        // Update password
+        await user.update({ passwordHash: newPasswordHash });
+
+        // Revoke all refresh tokens to force re-login on other devices
+        await RefreshToken.update(
+            { isRevoked: true },
+            { where: { userId: userId } }
+        );
+
+        return {
+            message: 'Đổi mật khẩu thành công'
         };
     }
 }

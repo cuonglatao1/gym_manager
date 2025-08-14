@@ -52,18 +52,18 @@ const memberSchemas = {
                 'any.required': 'Số điện thoại là bắt buộc'
             }),
         
-        email: Joi.string().email().optional()
+        email: Joi.string().email().allow(null).optional()
             .messages({
                 'string.email': 'Email không hợp lệ'
             }),
         
-        membershipId: Joi.number().integer().positive().optional(),
-        dateOfBirth: Joi.date().max('now').optional(),
-        gender: Joi.string().valid('male', 'female', 'other').optional(),
-        address: Joi.string().max(500).optional(),
-        emergencyContact: Joi.string().max(100).optional(),
-        emergencyPhone: Joi.string().pattern(/^[0-9]{10,11}$/).optional(),
-        notes: Joi.string().max(1000).optional()
+        membershipId: Joi.number().integer().positive().allow(null).optional(),
+        dateOfBirth: Joi.date().max('now').allow(null).optional(),
+        gender: Joi.string().valid('male', 'female', 'other').allow(null).optional(),
+        address: Joi.string().max(500).allow(null).optional(),
+        emergencyContact: Joi.string().max(100).allow(null).optional(),
+        emergencyPhone: Joi.string().pattern(/^[0-9]{10,11}$/).allow(null).optional(),
+        notes: Joi.string().max(1000).allow(null).optional()
     }),
 
     update: Joi.object({
