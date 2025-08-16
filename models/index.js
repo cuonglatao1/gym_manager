@@ -13,6 +13,15 @@ const Class = require('./Class');
 const ClassSchedule = require('./ClassSchedule');
 const ClassEnrollment = require('./ClassEnrollment');
 
+// Import payment models
+const Payment = require('./Payment');
+const Invoice = require('./Invoice');
+const InvoiceItem = require('./InvoiceItem');
+
+// Import promotion models
+const Promotion = require('./Promotion');
+const PromotionUsage = require('./PromotionUsage');
+
 // ===== EXISTING ASSOCIATIONS =====
 // User & RefreshToken
 User.hasMany(RefreshToken, {
@@ -136,6 +145,154 @@ ClassEnrollment.belongsTo(ClassSchedule, {
     as: 'classSchedule'
 });
 
+// ===== PAYMENT ASSOCIATIONS =====
+
+// Member & Payment
+Member.hasMany(Payment, {
+    foreignKey: 'memberId',
+    as: 'payments',
+    onDelete: 'CASCADE'
+});
+
+Payment.belongsTo(Member, {
+    foreignKey: 'memberId',
+    as: 'member'
+});
+
+// User (Admin/Staff) & Payment (processed by)
+User.hasMany(Payment, {
+    foreignKey: 'processedBy',
+    as: 'processedPayments',
+    onDelete: 'SET NULL'
+});
+
+Payment.belongsTo(User, {
+    foreignKey: 'processedBy',
+    as: 'processor'
+});
+
+// Member & Invoice
+Member.hasMany(Invoice, {
+    foreignKey: 'memberId',
+    as: 'invoices',
+    onDelete: 'CASCADE'
+});
+
+Invoice.belongsTo(Member, {
+    foreignKey: 'memberId',
+    as: 'member'
+});
+
+// User (Admin/Staff) & Invoice (created by)
+User.hasMany(Invoice, {
+    foreignKey: 'createdBy',
+    as: 'createdInvoices',
+    onDelete: 'SET NULL'
+});
+
+Invoice.belongsTo(User, {
+    foreignKey: 'createdBy',
+    as: 'creator'
+});
+
+// Invoice & Payment
+Invoice.hasMany(Payment, {
+    foreignKey: 'invoiceId',
+    as: 'payments',
+    onDelete: 'SET NULL'
+});
+
+Payment.belongsTo(Invoice, {
+    foreignKey: 'invoiceId',
+    as: 'invoice'
+});
+
+// Invoice & InvoiceItem
+Invoice.hasMany(InvoiceItem, {
+    foreignKey: 'invoiceId',
+    as: 'items',
+    onDelete: 'CASCADE'
+});
+
+InvoiceItem.belongsTo(Invoice, {
+    foreignKey: 'invoiceId',
+    as: 'invoice'
+});
+
+// ===== PROMOTION ASSOCIATIONS =====
+
+// User & Promotion
+User.hasMany(Promotion, {
+    foreignKey: 'createdBy',
+    as: 'createdPromotions',
+    onDelete: 'SET NULL'
+});
+
+Promotion.belongsTo(User, {
+    foreignKey: 'createdBy',
+    as: 'creator'
+});
+
+// Promotion & PromotionUsage
+Promotion.hasMany(PromotionUsage, {
+    foreignKey: 'promotionId',
+    as: 'usages',
+    onDelete: 'CASCADE'
+});
+
+PromotionUsage.belongsTo(Promotion, {
+    foreignKey: 'promotionId',
+    as: 'promotion'
+});
+
+// User & PromotionUsage
+User.hasMany(PromotionUsage, {
+    foreignKey: 'userId',
+    as: 'promotionUsages',
+    onDelete: 'CASCADE'
+});
+
+PromotionUsage.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'user'
+});
+
+// Member & PromotionUsage
+Member.hasMany(PromotionUsage, {
+    foreignKey: 'memberId',
+    as: 'promotionUsages',
+    onDelete: 'CASCADE'
+});
+
+PromotionUsage.belongsTo(Member, {
+    foreignKey: 'memberId',
+    as: 'member'
+});
+
+// Invoice & PromotionUsage
+Invoice.hasMany(PromotionUsage, {
+    foreignKey: 'invoiceId',
+    as: 'promotionUsages',
+    onDelete: 'SET NULL'
+});
+
+PromotionUsage.belongsTo(Invoice, {
+    foreignKey: 'invoiceId',
+    as: 'invoice'
+});
+
+// Payment & PromotionUsage
+Payment.hasMany(PromotionUsage, {
+    foreignKey: 'paymentId',
+    as: 'promotionUsages',
+    onDelete: 'SET NULL'
+});
+
+PromotionUsage.belongsTo(Payment, {
+    foreignKey: 'paymentId',
+    as: 'payment'
+});
+
 // ===== HELPER METHODS =====
 
 // Helper method to get active membership for a member
@@ -149,7 +306,7 @@ Member.prototype.getActiveMembership = async function() {
             model: Membership,
             as: 'membership'
         }],
-        order: [['endDate', 'DESC']]
+        order: [['createdAt', 'DESC']] // Get the most recently purchased membership
     });
 };
 
@@ -223,5 +380,10 @@ module.exports = {
     ClassType,
     Class,
     ClassSchedule,
-    ClassEnrollment
+    ClassEnrollment,
+    Payment,
+    Invoice,
+    InvoiceItem,
+    Promotion,
+    PromotionUsage
 };

@@ -23,8 +23,19 @@
       "Bash(start http://localhost:3001/demo/trainer-new.html)",
       "Bash(start http://localhost:3001/demo/member-new.html)",
       "Bash(start:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(psql:*)",
+      "Bash(npm test)",
+      "Bash(timeout:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run:*)",
+      "Bash(touch:*)",
+      "Bash(git stash:*)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [
+      "D:\\d D:"
+    ]
   }
 }

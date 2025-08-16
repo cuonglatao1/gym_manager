@@ -59,8 +59,8 @@ class ClassService {
         return ClassType.create({
             name,
             description,
-            duration,
-            maxParticipants: maxParticipants || 10,
+            duration: duration || null,
+            maxParticipants: maxParticipants || null,
             equipment: Array.isArray(equipment) ? equipment : [],
             difficulty: difficulty || 'beginner',
             color: color || '#3498db'
@@ -230,15 +230,17 @@ class ClassService {
             throw new Error('Không tìm thấy loại lớp');
         }
 
-        // Validate trainer exists
-        const trainer = await User.findOne({
-            where: { 
-                id: trainerId, 
-                role: { [Op.in]: ['trainer', 'admin'] } 
+        // Validate trainer exists (optional)
+        if (trainerId) {
+            const trainer = await User.findOne({
+                where: { 
+                    id: trainerId, 
+                    role: { [Op.in]: ['trainer', 'admin'] } 
+                }
+            });
+            if (!trainer) {
+                throw new Error('Không tìm thấy huấn luyện viên');
             }
-        });
-        if (!trainer) {
-            throw new Error('Không tìm thấy huấn luyện viên');
         }
 
         const classInfo = await Class.create({
@@ -526,9 +528,35 @@ class ClassService {
         console.log('⏰ startTime:', startTime, typeof startTime);
         console.log('⏰ endTime:', endTime, typeof endTime);
         
+        // Validate input formats first
+        if (!date) {
+            throw new Error('Ngày không được để trống');
+        }
+        if (!startTime) {
+            throw new Error('Giờ bắt đầu không được để trống');
+        }
+        if (!endTime) {
+            throw new Error('Giờ kết thúc không được để trống');
+        }
+        
+        // Validate time format (HH:MM)
+        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        if (!timeRegex.test(startTime)) {
+            throw new Error('Định dạng giờ bắt đầu không hợp lệ (phải là HH:MM)');
+        }
+        if (!timeRegex.test(endTime)) {
+            throw new Error('Định dạng giờ kết thúc không hợp lệ (phải là HH:MM)');
+        }
+        
         // Convert date to string if it's a Date object
         const dateString = date instanceof Date ? date.toISOString().split('T')[0] : date;
         console.log('📅 dateString:', dateString);
+        
+        // Validate date format (YYYY-MM-DD)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(dateString)) {
+            throw new Error('Định dạng ngày không hợp lệ (phải là YYYY-MM-DD)');
+        }
         
         // Convert HH:MM time format to proper datetime for database
         const startDateTime = new Date(`${dateString}T${startTime}:00`);
@@ -540,7 +568,7 @@ class ClassService {
         // Validate time
         if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
             console.log('❌ Invalid date detected!');
-            throw new Error('Định dạng thời gian không hợp lệ');
+            throw new Error('Dữ liệu thời gian không thể chuyển đổi được - vui lòng kiểm tra lại định dạng');
         }
 
         if (endDateTime <= startDateTime) {
@@ -599,10 +627,92 @@ class ClassService {
             throw new Error('Không thể sửa lịch đã hoàn thành');
         }
 
+        // Process updateData to handle time formats properly
+        const processedUpdateData = { ...updateData };
+        
+        // Validate time format if provided
+        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        if (updateData.startTime && !timeRegex.test(updateData.startTime)) {
+            throw new Error('Định dạng giờ bắt đầu không hợp lệ (phải là HH:MM)');
+        }
+        if (updateData.endTime && !timeRegex.test(updateData.endTime)) {
+            throw new Error('Định dạng giờ kết thúc không hợp lệ (phải là HH:MM)');
+        }
+        
+        // Convert date + time format to full datetime for database
+        if (updateData.date && updateData.startTime) {
+            console.log('🔍 updateData.date:', updateData.date, 'Type:', typeof updateData.date);
+            console.log('🔍 Is Date?', updateData.date instanceof Date);
+            
+            // Handle both Date object and string
+            let dateStr;
+            if (updateData.date instanceof Date) {
+                if (isNaN(updateData.date.getTime())) {
+                    throw new Error('Ngày là Invalid Date object');
+                }
+                dateStr = updateData.date.toISOString().split('T')[0];
+            } else {
+                dateStr = updateData.date;
+                // Validate date format if it's a string
+                const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                if (!dateRegex.test(dateStr)) {
+                    throw new Error('Định dạng ngày không hợp lệ (phải là YYYY-MM-DD)');
+                }
+            }
+            console.log('🔍 Final dateStr:', dateStr);
+            
+            processedUpdateData.startTime = new Date(`${dateStr}T${updateData.startTime}:00`);
+            if (isNaN(processedUpdateData.startTime.getTime())) {
+                throw new Error('Dữ liệu thời gian bắt đầu không thể chuyển đổi được');
+            }
+        } else if (updateData.startTime) {
+            // If only time is provided, use current date
+            const currentDate = schedule.date || new Date();
+            const dateStr = currentDate.toISOString().split('T')[0];
+            processedUpdateData.startTime = new Date(`${dateStr}T${updateData.startTime}:00`);
+            if (isNaN(processedUpdateData.startTime.getTime())) {
+                throw new Error('Dữ liệu thời gian bắt đầu không thể chuyển đổi được');
+            }
+        }
+        
+        if (updateData.date && updateData.endTime) {
+            console.log('🔍 Processing endTime - updateData.date:', updateData.date, 'Type:', typeof updateData.date);
+            
+            // Handle both Date object and string  
+            let dateStr;
+            if (updateData.date instanceof Date) {
+                if (isNaN(updateData.date.getTime())) {
+                    throw new Error('Ngày là Invalid Date object (endTime processing)');
+                }
+                dateStr = updateData.date.toISOString().split('T')[0];
+            } else {
+                dateStr = updateData.date;
+                // Validate date format if it's a string
+                const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                if (!dateRegex.test(dateStr)) {
+                    throw new Error('Định dạng ngày không hợp lệ (phải là YYYY-MM-DD) [endTime validation]');
+                }
+            }
+            console.log('🔍 endTime dateStr:', dateStr);
+            
+            processedUpdateData.endTime = new Date(`${dateStr}T${updateData.endTime}:00`);
+            if (isNaN(processedUpdateData.endTime.getTime())) {
+                throw new Error('Dữ liệu thời gian kết thúc không thể chuyển đổi được');
+            }
+        } else if (updateData.endTime) {
+            // If only time is provided, use current date
+            const currentDate = schedule.date || new Date();
+            const dateStr = currentDate.toISOString().split('T')[0];
+            processedUpdateData.endTime = new Date(`${dateStr}T${updateData.endTime}:00`);
+            if (isNaN(processedUpdateData.endTime.getTime())) {
+                throw new Error('Dữ liệu thời gian kết thúc không thể chuyển đổi được');
+            }
+        }
+
         // If updating time, check for conflicts
         if (updateData.startTime || updateData.endTime || updateData.trainerId) {
-            const startTime = updateData.startTime || schedule.startTime;
-            const endTime = updateData.endTime || schedule.endTime;
+            const startTime = processedUpdateData.startTime || schedule.startTime;
+            const endTime = processedUpdateData.endTime || schedule.endTime;
             const trainerId = updateData.trainerId || schedule.trainerId;
 
             const conflictingSchedule = await ClassSchedule.findOne({
@@ -633,7 +743,7 @@ class ClassService {
             }
         }
 
-        await schedule.update(updateData);
+        await schedule.update(processedUpdateData);
         return this.getScheduleById(id);
     }
 
@@ -670,6 +780,18 @@ class ClassService {
     async enrollInClass(scheduleId, userId) {
         console.log('🔍 Enrollment Debug - scheduleId:', scheduleId, 'userId:', userId);
         
+        // Check user role first
+        const user = await User.findByPk(userId);
+        if (!user) {
+            throw new Error('Không tìm thấy thông tin người dùng');
+        }
+        
+        // Prevent admin and trainer from enrolling in classes
+        if (user.role === 'admin' || user.role === 'trainer') {
+            const roleText = user.role === 'admin' ? 'Quản trị viên' : 'Huấn luyện viên';
+            throw new Error(`${roleText} không thể đăng ký lớp học như hội viên`);
+        }
+        
         // Get member from userId
         const member = await Member.findOne({ 
             where: { userId },
@@ -684,8 +806,6 @@ class ClassService {
         console.log('🔍 Found member:', member ? `ID: ${member.id}, Code: ${member.memberCode}` : 'NOT FOUND');
         
         if (!member) {
-            // Try to create member automatically if user exists
-            const user = await User.findByPk(userId);
             console.log('🔍 Found user for auto-member creation:', user ? `${user.fullName} (${user.role})` : 'NOT FOUND');
             
             if (user) {
@@ -785,7 +905,38 @@ class ClassService {
         // Update current participants count
         await schedule.increment('currentParticipants');
 
-        return ClassEnrollment.findByPk(enrollment.id, {
+        // Create invoice for class enrollment if class has a price
+        const classPrice = parseFloat(schedule.class?.price || 0);
+        let invoice = null;
+        let invoiceError = null;
+
+        if (classPrice > 0) {
+            try {
+                const invoiceService = require('./invoiceService');
+                
+                // Calculate due date (3 days for class payment)
+                const dueDate = new Date();
+                dueDate.setDate(dueDate.getDate() + 3);
+
+                invoice = await invoiceService.generateClassInvoice(member.id, {
+                    classId: schedule.classId,
+                    className: schedule.class.name,
+                    sessionCount: 1
+                });
+
+                // Update enrollment with invoice reference
+                await enrollment.update({
+                    notes: `Invoice: ${invoice.invoiceNumber}`
+                });
+
+                console.log(`✅ Created invoice ${invoice.invoiceNumber} for class enrollment`);
+            } catch (error) {
+                console.warn('Failed to create invoice for class enrollment:', error.message);
+                invoiceError = 'Không thể tạo hóa đơn tự động. Vui lòng liên hệ admin.';
+            }
+        }
+
+        const enrollmentResult = await ClassEnrollment.findByPk(enrollment.id, {
             include: [
                 {
                     model: Member,
@@ -805,6 +956,14 @@ class ClassService {
                 }
             ]
         });
+
+        // Return enrollment with invoice info
+        return {
+            enrollment: enrollmentResult,
+            invoice: invoice,
+            invoiceError: invoiceError,
+            hasPayment: classPrice > 0
+        };
     }
 
     async cancelEnrollment(scheduleId, userId) {
@@ -910,7 +1069,9 @@ class ClassService {
         };
     }
 
-    async checkInToClass(scheduleId, userId) {
+    async checkInToClass(scheduleId, userId, options = {}) {
+        const { bypassTimeValidation = false } = options;
+        
         // Get member from userId
         const member = await Member.findOne({ where: { userId } });
         if (!member) {
@@ -931,15 +1092,48 @@ class ClassService {
 
         const schedule = await ClassSchedule.findByPk(scheduleId);
         
-        // Manual check-in validation
-        const now = new Date();
-        const startTime = new Date(schedule.startTime);
-        const checkInStart = new Date(startTime.getTime() - 15 * 60 * 1000); // 15 minutes before
-        const checkInEnd = new Date(startTime.getTime() + 15 * 60 * 1000);   // 15 minutes after
-        const canCheckIn = now >= checkInStart && now <= checkInEnd && schedule.status === 'scheduled';
+        // Check if member is already attending another class at the same time
+        const conflictEnrollment = await ClassEnrollment.findOne({
+            where: {
+                memberId: member.id,
+                status: 'attended',
+                checkinTime: { [Op.ne]: null },
+                checkoutTime: null // Still attending
+            },
+            include: [{
+                model: ClassSchedule,
+                where: {
+                    date: schedule.date,
+                    [Op.or]: [
+                        // Current schedule overlaps with existing attendance
+                        {
+                            [Op.and]: [
+                                { startTime: { [Op.lte]: schedule.endTime } },
+                                { endTime: { [Op.gte]: schedule.startTime } }
+                            ]
+                        }
+                    ]
+                }
+            }]
+        });
         
-        if (!canCheckIn) {
-            throw new Error('Chưa đến giờ check-in hoặc đã quá giờ');
+        if (conflictEnrollment) {
+            throw new Error('Thành viên đang tham gia lớp khác cùng thời gian này');
+        }
+        
+        // Time validation (can be bypassed by admin/trainer)
+        if (!bypassTimeValidation) {
+            const now = new Date();
+            const startTime = new Date(schedule.startTime);
+            const checkInStart = new Date(startTime.getTime() - 15 * 60 * 1000); // 15 minutes before
+            const checkInEnd = new Date(startTime.getTime() + 15 * 60 * 1000);   // 15 minutes after
+            const canCheckIn = now >= checkInStart && now <= checkInEnd && schedule.status === 'scheduled';
+            
+            if (!canCheckIn) {
+                throw new Error('Chưa đến giờ check-in hoặc đã quá giờ');
+            }
+        } else {
+            console.log('⏰ Time validation bypassed by admin/trainer');
         }
 
         await enrollment.update({
@@ -979,16 +1173,38 @@ class ClassService {
     }
 
     async getClassEnrollments(scheduleId) {
-        return ClassEnrollment.findAll({
+        const enrollments = await ClassEnrollment.findAll({
             where: { classScheduleId: scheduleId },
             include: [
                 {
                     model: Member,
                     as: 'member',
-                    attributes: ['id', 'memberCode', 'fullName', 'phone']
+                    attributes: ['id', 'memberCode', 'fullName', 'phone'],
+                    include: [
+                        {
+                            model: User,
+                            as: 'user',
+                            attributes: ['role'],
+                            required: false // Allow members without users
+                        }
+                    ]
                 }
             ],
             order: [['enrollmentDate', 'ASC']]
+        });
+
+        // Filter to only show enrollments from actual members, excluding admin/trainer
+        // Include only if: no user record OR user role is 'member'
+        return enrollments.filter(enrollment => {
+            if (!enrollment.member) return false;
+            
+            // If no user record, check member code pattern to exclude admin codes
+            if (!enrollment.member.user) {
+                return !enrollment.member.memberCode.includes('ADMIN');
+            }
+            
+            // If user record exists, only include if role is 'member'
+            return enrollment.member.user.role === 'member';
         });
     }
 
@@ -1002,13 +1218,21 @@ class ClassService {
             whereCondition.status = status;
         }
 
-        return ClassEnrollment.findAll({
+        const enrollments = await ClassEnrollment.findAll({
             where: whereCondition,
             include: [
                 {
                     model: Member,
                     as: 'member',
-                    attributes: ['id', 'memberCode', 'fullName', 'phone']
+                    attributes: ['id', 'memberCode', 'fullName', 'phone'],
+                    include: [
+                        {
+                            model: User,
+                            as: 'user',
+                            attributes: ['role'],
+                            required: false // Allow members without users
+                        }
+                    ]
                 },
                 {
                     model: ClassSchedule,
@@ -1025,6 +1249,20 @@ class ClassService {
             ],
             order: [['enrollmentDate', 'DESC']],
             limit: parseInt(limit)
+        });
+
+        // Filter to only show enrollments from actual members, excluding admin/trainer
+        // Include only if: no user record OR user role is 'member'
+        return enrollments.filter(enrollment => {
+            if (!enrollment.member) return false;
+            
+            // If no user record, check member code pattern to exclude admin codes
+            if (!enrollment.member.user) {
+                return !enrollment.member.memberCode.includes('ADMIN');
+            }
+            
+            // If user record exists, only include if role is 'member'
+            return enrollment.member.user.role === 'member';
         });
     }
 

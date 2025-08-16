@@ -141,6 +141,22 @@ router.delete('/:id',
     classController.deleteClass
 );
 
+// GET /api/classes/:id/pricing - Get class pricing for current user (Members only)
+router.get('/:id/pricing', 
+    authenticate, 
+    authorize('member'),
+    validateId,
+    classController.getClassPricing
+);
+
+// POST /api/classes/:id/payment - Create payment for class (Members only)
+router.post('/:id/payment', 
+    authenticate, 
+    authorize('member'),
+    validateId,
+    classController.createClassPayment
+);
+
 // GET /api/classes/:id - Get class details (must come after specific /:id/xxx routes)
 router.get('/:id', validateId, classController.getClassById);
 

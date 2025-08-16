@@ -12,10 +12,26 @@ const app = express();
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Debug middleware to log request body
+app.use((req, res, next) => {
+    if (req.method === 'PUT' && req.url.includes('/schedules/')) {
+        console.log('🔍 Raw req.body:', req.body);
+        console.log('🔍 req.body type:', typeof req.body);
+        console.log('🔍 Content-Type:', req.headers['content-type']);
+    }
+    next();
+});
 app.use(cors({
     origin: ['http://localhost:3000', 'http://127.0.0.1:5500', 'http://localhost:5500'],
     credentials: true
 }));
+
+// Set UTF-8 encoding for API responses only
+app.use('/api', (req, res, next) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    next();
+});
 
 // Serve static files (frontend)
 app.use(express.static('public'));
@@ -54,6 +70,27 @@ app.get('/api/debug/users', async (req, res) => {
         });
     } catch (error) {
         console.error('Debug users error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Debug endpoint to fix trainer_id constraint
+app.get('/api/debug/fix-trainer-constraint', async (req, res) => {
+    try {
+        const { sequelize } = require('./models');
+        
+        // Execute SQL to remove NOT NULL constraint
+        await sequelize.query('ALTER TABLE classes ALTER COLUMN trainer_id DROP NOT NULL;');
+        
+        res.json({
+            success: true,
+            message: 'trainer_id constraint removed successfully'
+        });
+    } catch (error) {
+        console.error('Fix constraint error:', error);
         res.status(500).json({
             success: false,
             message: error.message
@@ -125,16 +162,40 @@ app.post('/api/debug/create-members', async (req, res) => {
     }
 });
 
+// Debug SQL endpoint
+app.post('/api/debug/sql', async (req, res) => {
+    try {
+        const { sequelize } = require('./config/database');
+        const { sql } = req.body;
+        
+        const result = await sequelize.query(sql);
+        res.json({
+            success: true,
+            result: result
+        });
+    } catch (error) {
+        console.error('Debug SQL error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
 // Add routes
 console.log('🔐 Loading routes...');
 try {
     const authRoutes = require('./routes/authRoutes');
     const memberRoutes = require('./routes/memberRoutes');
-    const classRoutes = require('./routes/classRoutes'); // NEW!
+    const classRoutes = require('./routes/classRoutes');
+    const paymentRoutes = require('./routes/paymentRoutes');
+    const invoiceRoutes = require('./routes/invoiceRoutes');
     
     app.use('/api/auth', authRoutes);
     app.use('/api/members', memberRoutes);
-    app.use('/api/classes', classRoutes); // NEW!
+    app.use('/api/classes', classRoutes);
+    app.use('/api/payments', paymentRoutes);
+    app.use('/api/invoices', invoiceRoutes);
     
     console.log('✅ Routes loaded successfully!');
 } catch (error) {
@@ -266,6 +327,11 @@ app.get('/api', (req, res) => {
             '✅ Complete Class Management System'
         ]
     });
+});
+
+// Handle favicon.ico to prevent crashes
+app.get('/favicon.ico', (req, res) => {
+    res.status(204).end(); // No content
 });
 
 // Handle undefined routes

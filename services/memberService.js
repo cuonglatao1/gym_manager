@@ -1,6 +1,8 @@
 // services/memberService.js
 const { Member, Membership, MembershipHistory, User, ClassEnrollment } = require('../models');
-const { Op } = require('sequelize');
+const { Op, sequelize } = require('sequelize');
+const { sequelize: db } = require('../config/database');
+const invoiceService = require('./invoiceService');
 
 class MemberService {
     // Generate unique member code
@@ -101,6 +103,33 @@ class MemberService {
         return member;
     }
 
+    // Get all trainers for dropdown (public method)
+    async getTrainers() {
+        const trainers = await User.findAll({
+            where: { 
+                role: 'trainer',
+                isActive: true 
+            },
+            include: [{
+                model: Member,
+                as: 'member',
+                required: false,
+                attributes: ['id', 'memberCode', 'fullName']
+            }],
+            attributes: ['id', 'fullName', 'email'],
+            order: [['fullName', 'ASC']]
+        });
+
+        // Format for frontend
+        return trainers.map(trainer => ({
+            id: trainer.id,
+            fullName: trainer.fullName,
+            email: trainer.email,
+            memberCode: trainer.member?.memberCode || null,
+            memberId: trainer.member?.id || null
+        }));
+    }
+
     // Get all members with pagination and search
     async getAllMembers(options = {}) {
         const {
@@ -198,8 +227,10 @@ class MemberService {
         return this.getMemberById(id);
     }
 
-    // Purchase membership for member
-    async purchaseMembership(memberId, membershipId, startDate = null) {
+    // Purchase membership for member (updated with invoice & promotion support)
+    async purchaseMembership(memberId, membershipId, options = {}) {
+        const { startDate = null, promotionCode = null, createdBy = null } = options;
+        
         // Validate member exists
         const member = await Member.findByPk(memberId);
         if (!member) {
@@ -212,27 +243,81 @@ class MemberService {
             throw new Error('Không tìm thấy gói membership');
         }
 
+        if (!membership.isActive) {
+            throw new Error('Gói membership hiện không khả dụng');
+        }
+
         // Calculate dates
         const start = startDate ? new Date(startDate) : new Date();
         const endDate = new Date(start);
         endDate.setDate(start.getDate() + membership.duration);
 
-        // Create membership history
+        // Calculate due date (7 days to pay)
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 7);
+
+        // Create membership history with pending payment status
         const membershipHistory = await MembershipHistory.create({
             memberId,
             membershipId,
             startDate: start,
             endDate: endDate,
-            price: membership.price
+            price: membership.price,
+            paymentStatus: 'pending'
         });
 
-        // Return with membership details
-        return MembershipHistory.findByPk(membershipHistory.id, {
-            include: [{
-                model: Membership,
-                as: 'membership'
-            }]
-        });
+        try {
+            // Create invoice automatically
+            const invoice = await invoiceService.createInvoice({
+                memberId: memberId,
+                dueDate: dueDate,
+                items: [{
+                    description: `Gói tập: ${membership.name}`,
+                    quantity: 1,
+                    unitPrice: parseFloat(membership.price),
+                    itemType: 'membership',
+                    itemId: membershipId,
+                    notes: `Thời hạn: ${membership.duration} ngày (${start.toLocaleDateString()} - ${endDate.toLocaleDateString()})`
+                }],
+                description: `Hóa đơn gói tập ${membership.name}`,
+                notes: `Đăng ký gói tập cho hội viên ${member.fullName} (${member.memberCode})`,
+                createdBy: createdBy,
+                applicableFor: 'membership',
+                promotionCode: promotionCode
+            });
+
+            // Update membership history with invoice reference
+            await membershipHistory.update({
+                notes: `Invoice: ${invoice.invoiceNumber}`
+            });
+
+            // Return with full details
+            return {
+                membershipHistory: await MembershipHistory.findByPk(membershipHistory.id, {
+                    include: [{
+                        model: Membership,
+                        as: 'membership'
+                    }]
+                }),
+                invoice: invoice,
+                promotionApplied: invoice.notes?.includes('khuyến mãi') || false
+            };
+
+        } catch (error) {
+            // If invoice creation fails, still return membership history
+            console.warn('Failed to create invoice for membership purchase:', error.message);
+            
+            return {
+                membershipHistory: await MembershipHistory.findByPk(membershipHistory.id, {
+                    include: [{
+                        model: Membership,
+                        as: 'membership'
+                    }]
+                }),
+                invoice: null,
+                error: 'Không thể tạo hóa đơn tự động. Vui lòng tạo hóa đơn thủ công.'
+            };
+        }
     }
 
     // Get member's active membership
@@ -401,51 +486,97 @@ class MemberService {
     }
 
     async deleteMember(memberId) {
-        // Check if member exists
-        const member = await Member.findByPk(memberId);
-        if (!member) {
-            throw new Error('Không tìm thấy thành viên');
-        }
-
-        // Check if member has active enrollments
-        const activeEnrollments = await ClassEnrollment.findAll({
-            where: {
-                memberId: memberId,
-                status: { [Op.in]: ['enrolled', 'attended'] }
+        const transaction = await db.transaction();
+        
+        try {
+            // Check if member exists
+            const member = await Member.findByPk(memberId, {
+                include: [{
+                    model: User,
+                    as: 'user'
+                }]
+            });
+            
+            if (!member) {
+                throw new Error('Không tìm thấy thành viên');
             }
-        });
 
-        if (activeEnrollments.length > 0) {
-            // Cancel all active enrollments first
-            await ClassEnrollment.update(
-                { status: 'cancelled' },
-                {
-                    where: {
-                        memberId: memberId,
-                        status: { [Op.in]: ['enrolled', 'attended'] }
-                    }
+            const user = member.user;
+            const memberName = member.fullName;
+            const isTrainer = user && user.role === 'trainer';
+
+            console.log(`🗑️ Deleting ${isTrainer ? 'trainer' : 'member'}: ${memberName}`);
+
+            // 1. Delete all enrollments (as member)
+            const enrollments = await ClassEnrollment.findAll({
+                where: { memberId: memberId }
+            });
+            
+            if (enrollments.length > 0) {
+                await ClassEnrollment.destroy({
+                    where: { memberId: memberId },
+                    transaction
+                });
+                console.log(`✅ Deleted ${enrollments.length} enrollments`);
+            }
+
+            // 2. If trainer: Delete all schedules they teach
+            if (isTrainer && user) {
+                const { ClassSchedule } = require('../models');
+                
+                // Find schedules taught by this trainer
+                const schedules = await ClassSchedule.findAll({
+                    where: { trainerId: user.id }
+                });
+
+                if (schedules.length > 0) {
+                    // Delete enrollments for these schedules first
+                    const scheduleIds = schedules.map(s => s.id);
+                    await ClassEnrollment.destroy({
+                        where: { 
+                            classScheduleId: { [Op.in]: scheduleIds }
+                        },
+                        transaction
+                    });
+
+                    // Delete the schedules
+                    await ClassSchedule.destroy({
+                        where: { trainerId: user.id },
+                        transaction
+                    });
+                    
+                    console.log(`✅ Deleted ${schedules.length} schedules and their enrollments`);
                 }
-            );
+            }
+
+            // 3. Delete membership history
+            const { MembershipHistory } = require('../models');
+            await MembershipHistory.destroy({
+                where: { memberId: memberId },
+                transaction
+            });
+
+            // 4. Delete member record
+            await member.destroy({ transaction });
+            console.log(`✅ Deleted member record: ${member.memberCode}`);
+
+            // 5. Delete user account if exists
+            if (user) {
+                await user.destroy({ transaction });
+                console.log(`✅ Deleted user account: ${user.email}`);
+            }
+
+            await transaction.commit();
+
+            return {
+                message: `Đã xóa hoàn toàn ${isTrainer ? 'huấn luyện viên' : 'thành viên'} ${memberName} và tất cả dữ liệu liên quan`
+            };
+
+        } catch (error) {
+            await transaction.rollback();
+            console.error('❌ Delete error:', error.message);
+            throw new Error(`Lỗi xóa: ${error.message}`);
         }
-
-        // Soft delete or deactivate member (preserve data for history)
-        await member.update({ 
-            isActive: false,
-            email: `deleted_${member.id}_${member.email}`,
-            memberCode: `DEL_${member.id}` // Keep it short to avoid varchar(20) limit
-        });
-
-        // Also deactivate associated user account
-        if (member.userId) {
-            await User.update(
-                { isActive: false },
-                { where: { id: member.userId } }
-            );
-        }
-
-        return {
-            message: 'Xóa thành viên thành công'
-        };
     }
 
     async cancelCurrentMembership(memberId) {

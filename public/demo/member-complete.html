@@ -76,6 +76,32 @@
             margin-bottom: 20px;
         }
         
+        /* CSS cho phần khám phá lớp tập với thanh cuộn */
+        #availableClasses {
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        /* Thanh cuộn custom */
+        #availableClasses::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #availableClasses::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        #availableClasses::-webkit-scrollbar-thumb {
+            background: #5b86e5;
+            border-radius: 4px;
+        }
+        
+        #availableClasses::-webkit-scrollbar-thumb:hover {
+            background: #4a73d1;
+        }
+        
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -428,6 +454,205 @@
         .history-item p {
             margin: 5px 0;
         }
+
+        /* Payment Tab Styles */
+        .mini-tabs {
+            display: flex;
+            border-bottom: 2px solid #e1e5e9;
+            margin-bottom: 20px;
+        }
+
+        .mini-tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .mini-tab-btn.active {
+            color: #5b86e5;
+            border-bottom-color: #5b86e5;
+        }
+
+        .payment-tab-content {
+            display: none;
+        }
+
+        .payment-tab-content.active {
+            display: block;
+        }
+
+        .invoice-item, .payment-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .invoice-item:hover, .payment-item:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-paid { background: #d4edda; color: #155724; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-overdue { background: #f8d7da; color: #721c24; }
+        .status-draft { background: #e2e3e5; color: #383d41; }
+        .status-sent { background: #cce7ff; color: #004085; }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-failed { background: #f8d7da; color: #721c24; }
+
+        /* Enhanced Membership Card Styles */
+        .membership-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .membership-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .membership-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        .membership-card.popular {
+            border-color: #ffc107;
+            transform: scale(1.02);
+        }
+
+        .membership-card.popular:hover {
+            transform: scale(1.02) translateY(-5px);
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(135deg, #ffc107, #ff9800);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: bold;
+            z-index: 2;
+        }
+
+        .membership-header {
+            background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .membership-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .membership-price {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .discount-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .membership-body {
+            padding: 20px;
+        }
+
+        .membership-description {
+            color: #666;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        .membership-features {
+            margin-bottom: 15px;
+        }
+
+        .feature {
+            margin: 8px 0;
+            color: #333;
+        }
+
+        .feature.highlight {
+            background: linear-gradient(135deg, #ffc107, #ff9800);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+        }
+
+        .membership-benefits .benefit {
+            margin: 5px 0;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .membership-footer {
+            padding: 20px;
+            border-top: 1px solid #f0f0f0;
+            text-align: center;
+        }
+
+        .savings-note {
+            margin-top: 10px;
+            font-size: 0.8em;
+            color: #666;
+            font-style: italic;
+        }
+
+        .membership-info {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #5b86e5;
+        }
+
+        .badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-warning {
+            background: #ffc107;
+            color: #212529;
+        }
     </style>
 </head>
 <body>
@@ -483,6 +708,7 @@
             <button class="tab-btn" onclick="switchTab('history')">📊 Lịch sử</button>
             <button class="tab-btn" onclick="switchTab('explore')">🔍 Khám phá</button>
             <button class="tab-btn" onclick="switchTab('memberships')">💳 Mua gói</button>
+            <button class="tab-btn" onclick="switchTab('payments')">💰 Thanh toán</button>
             <button class="tab-btn" onclick="switchTab('profile')">👤 Hồ sơ</button>
         </div>
 
@@ -549,6 +775,70 @@
             <div class="section-card">
                 <h3>📋 Lịch sử gói tập</h3>
                 <div id="membershipHistoryList" class="loading">Đang tải...</div>
+            </div>
+        </div>
+
+        <!-- Tab: Payments -->
+        <div id="payments" class="tab-content">
+            <div class="section-card">
+                <h3>💰 Thanh toán & Hóa đơn</h3>
+                
+                <!-- Payment Summary -->
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                    <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border-radius: 10px;">
+                        <h4 style="margin: 0; font-size: 24px;" id="totalPaid">0 VNĐ</h4>
+                        <p style="margin: 5px 0 0 0;">Đã thanh toán</p>
+                    </div>
+                    <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); color: white; border-radius: 10px;">
+                        <h4 style="margin: 0; font-size: 24px;" id="totalPending">0 VNĐ</h4>
+                        <p style="margin: 5px 0 0 0;">Chờ thanh toán</p>
+                    </div>
+                    <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%); color: white; border-radius: 10px;">
+                        <h4 style="margin: 0; font-size: 24px;" id="totalOverdue">0 VNĐ</h4>
+                        <p style="margin: 5px 0 0 0;">Quá hạn</p>
+                    </div>
+                </div>
+
+                <!-- Payment Tabs -->
+                <div class="mini-tabs" style="display: flex; margin-bottom: 20px; border-bottom: 2px solid #e1e5e9;">
+                    <button class="mini-tab-btn active" onclick="switchPaymentTab('invoices')">📄 Hóa đơn</button>
+                    <button class="mini-tab-btn" onclick="switchPaymentTab('payment-history')">💳 Lịch sử thanh toán</button>
+                </div>
+
+                <!-- Invoices Tab -->
+                <div id="invoices-tab" class="payment-tab-content active">
+                    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 20px;">
+                        <h4>📄 Danh sách hóa đơn</h4>
+                        <div>
+                            <select id="invoiceStatusFilter" onchange="filterInvoices()" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; margin-right: 10px;">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="draft">Nháp</option>
+                                <option value="sent">Đã gửi</option>
+                                <option value="paid">Đã thanh toán</option>
+                                <option value="overdue">Quá hạn</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="invoicesList" class="loading">Đang tải...</div>
+                </div>
+
+                <!-- Payment History Tab -->
+                <div id="payment-history-tab" class="payment-tab-content">
+                    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 20px;">
+                        <h4>💳 Lịch sử thanh toán</h4>
+                        <div>
+                            <select id="paymentTypeFilter" onchange="filterPayments()" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; margin-right: 10px;">
+                                <option value="">Tất cả loại</option>
+                                <option value="membership">Gói tập</option>
+                                <option value="class">Lớp tập</option>
+                                <option value="service">Dịch vụ</option>
+                                <option value="penalty">Phạt</option>
+                                <option value="other">Khác</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="paymentsList" class="loading">Đang tải...</div>
+                </div>
             </div>
         </div>
 
@@ -695,6 +985,10 @@
                     break;
                 case 'memberships':
                     loadMemberships();
+                    break;
+                case 'payments':
+                    loadMemberInvoices();
+                    updatePaymentSummary();
                     break;
                 case 'profile':
                     loadProfile();
@@ -1101,16 +1395,14 @@
                 const searchFilter = document.getElementById('exploreSearch')?.value.toLowerCase().trim();
                 
                 let endpoint = '/classes/schedules';
-                const params = [];
+                const params = ['limit=100']; // Tăng limit lên 100
                 
                 if (dateFilter) {
                     params.push(`startDate=${dateFilter}`);
                     params.push(`endDate=${dateFilter}`);
                 }
                 
-                if (params.length > 0) {
-                    endpoint += '?' + params.join('&');
-                }
+                endpoint += '?' + params.join('&');
                 
                 const response = await apiCall(endpoint);
                 let schedules = response.data?.schedules || [];
@@ -1637,23 +1929,35 @@
                 
                 let membershipHtml = '<div class="membership-grid">';
                 memberships.forEach(membership => {
+                    const discountPercent = parseFloat(membership.classDiscountPercent || 0);
+                    const maxClasses = membership.maxClasses ? `${membership.maxClasses} lớp/tháng` : 'Không giới hạn';
+                    const isPopular = discountPercent >= 15; // Premium packages
+                    
                     membershipHtml += `
-                        <div class="membership-card">
+                        <div class="membership-card ${isPopular ? 'popular' : ''}">
+                            ${isPopular ? '<div class="popular-badge">🔥 Phổ biến</div>' : ''}
                             <div class="membership-header">
                                 <h4 class="membership-title">${membership.name}</h4>
                                 <div class="membership-price">${parseInt(membership.price).toLocaleString('vi-VN')}đ</div>
+                                ${discountPercent > 0 ? `<div class="discount-badge">🎯 Giảm ${discountPercent}% cho lớp tập</div>` : ''}
                             </div>
                             <div class="membership-body">
                                 <p class="membership-description">${membership.description || ''}</p>
-                                <p class="membership-duration">⏱️ <strong>Thời hạn:</strong> ${membership.duration} ngày</p>
+                                <div class="membership-features">
+                                    <p class="feature">⏱️ <strong>Thời hạn:</strong> ${membership.duration} ngày</p>
+                                    <p class="feature">📚 <strong>Số lớp:</strong> ${maxClasses}</p>
+                                    ${membership.hasPersonalTrainer ? '<p class="feature">👨‍🏫 <strong>Huấn luyện viên riêng</strong></p>' : ''}
+                                    ${discountPercent > 0 ? `<p class="feature highlight">💰 <strong>Tiết kiệm ${discountPercent}% mỗi lớp!</strong></p>` : ''}
+                                </div>
                                 <div class="membership-benefits">
-                                    ${membership.benefits ? membership.benefits.map(benefit => `<p>✅ ${benefit}</p>`).join('') : ''}
+                                    ${membership.benefits ? membership.benefits.map(benefit => `<p class="benefit">✅ ${benefit}</p>`).join('') : ''}
                                 </div>
                             </div>
                             <div class="membership-footer">
                                 <button class="btn btn-primary btn-purchase" onclick="purchaseMembership(${membership.id})">
                                     💳 Mua gói này
                                 </button>
+                                ${discountPercent > 0 ? '<p class="savings-note">💡 Tiết kiệm được nhiều hơn khi tập thường xuyên!</p>' : ''}
                             </div>
                         </div>
                     `;
@@ -2405,6 +2709,458 @@
             } catch (error) {
                 showToast(`❌ ${error.message}`, 'error');
             }
+        }
+
+        // Payment Tab Functions
+        function switchPaymentTab(tabName) {
+            // Hide all payment tab contents
+            document.querySelectorAll('.payment-tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all mini tab buttons
+            document.querySelectorAll('.mini-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab and add active class to button
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+
+            // Load data based on tab
+            if (tabName === 'invoices') {
+                loadMemberInvoices();
+            } else if (tabName === 'payment-history') {
+                loadMemberPayments();
+            }
+        }
+
+        // Get member ID helper function
+        async function getMemberId() {
+            // First try to get from currentUser.member.id
+            if (currentUser.member?.id) {
+                return currentUser.member.id;
+            }
+            
+            // If not available, try to get updated profile info from server
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.data.member) {
+                        // Update currentUser with member info
+                        currentUser.member = data.data.member;
+                        localStorage.setItem('gym_user_info', JSON.stringify(currentUser));
+                        return data.data.member.id;
+                    }
+                }
+            } catch (error) {
+                console.warn('Could not get profile info:', error);
+            }
+            
+            // Demo fallback: Use hardcoded member IDs for demo users
+            console.log('🔍 Using demo fallback for email:', currentUser.email);
+            if (currentUser.email === 'newmember@test.com') {
+                console.log('✅ Demo user detected, using member ID 28');
+                return 28; // Member 28 for demo user
+            }
+            if (currentUser.email === 'khoa@gmail.com') {
+                console.log('✅ Demo user detected, using member ID 24');  
+                return 24; // Member 24 for khoa
+            }
+            if (currentUser.email === 'member1@gmail.com') {
+                console.log('✅ Demo user detected, using member ID 6');  
+                return 6; // Member 6 for member1
+            }
+            if (currentUser.email === 'demouser@test.com') {
+                console.log('✅ Demo user detected, using member ID 30');  
+                return 30; // New member for demo user
+            }
+            
+            console.warn('⚠️ No member ID found for user:', currentUser.email);
+            
+            return null;
+        }
+
+        // Load member invoices
+        async function loadMemberInvoices() {
+            try {
+                const memberId = await getMemberId();
+                if (!memberId) {
+                    document.getElementById('invoicesList').innerHTML = '<p style="text-align: center; color: #666; margin: 40px 0;">Không tìm thấy thông tin hội viên</p>';
+                    return;
+                }
+
+                const response = await fetch(`/api/invoices/member/${memberId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayInvoices(data.data.invoices);
+                    updatePaymentSummary();
+                } else {
+                    document.getElementById('invoicesList').innerHTML = '<p>Không thể tải danh sách hóa đơn</p>';
+                }
+            } catch (error) {
+                console.error('Error loading invoices:', error);
+                document.getElementById('invoicesList').innerHTML = '<p>Lỗi khi tải danh sách hóa đơn</p>';
+            }
+        }
+
+        // Load member payments
+        async function loadMemberPayments() {
+            try {
+                const memberId = await getMemberId();
+                if (!memberId) {
+                    document.getElementById('paymentsList').innerHTML = '<p style="text-align: center; color: #666; margin: 40px 0;">Không tìm thấy thông tin hội viên</p>';
+                    return;
+                }
+
+                const response = await fetch(`/api/payments/history?memberId=${memberId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayPayments(data.data.payments);
+                } else {
+                    document.getElementById('paymentsList').innerHTML = '<p>Không thể tải lịch sử thanh toán</p>';
+                }
+            } catch (error) {
+                console.error('Error loading payments:', error);
+                document.getElementById('paymentsList').innerHTML = '<p>Lỗi khi tải lịch sử thanh toán</p>';
+            }
+        }
+
+        // Display invoices
+        function displayInvoices(invoices) {
+            const container = document.getElementById('invoicesList');
+            
+            if (!invoices || invoices.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; margin: 40px 0;">Chưa có hóa đơn nào</p>';
+                return;
+            }
+
+            container.innerHTML = invoices.map(invoice => `
+                <div class="invoice-item">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <div>
+                            <h4 style="margin: 0; color: #333;">#${invoice.invoiceNumber}</h4>
+                            <p style="margin: 5px 0; color: #666;">${invoice.description || 'Hóa đơn thanh toán'}</p>
+                        </div>
+                        <span class="status-badge status-${invoice.status}">${getInvoiceStatusText(invoice.status)}</span>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 15px;">
+                        <div>
+                            <strong>Tổng tiền:</strong><br>
+                            <span style="font-size: 18px; color: #5b86e5; font-weight: bold;">${formatCurrency(invoice.totalAmount)}</span>
+                        </div>
+                        <div>
+                            <strong>Ngày phát hành:</strong><br>
+                            ${formatDate(invoice.issueDate)}
+                        </div>
+                        <div>
+                            <strong>Hạn thanh toán:</strong><br>
+                            <span style="color: ${new Date(invoice.dueDate) < new Date() ? '#dc3545' : '#666'};">
+                                ${formatDate(invoice.dueDate)}
+                            </span>
+                        </div>
+                    </div>
+
+                    ${invoice.items && invoice.items.length > 0 ? `
+                        <div style="margin-top: 15px;">
+                            <strong>Chi tiết:</strong>
+                            <ul style="margin: 10px 0; padding-left: 20px;">
+                                ${invoice.items.map(item => `
+                                    <li>${item.description} - ${item.quantity} x ${formatCurrency(item.unitPrice)} = ${formatCurrency(item.totalPrice)}</li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+
+                    ${invoice.status === 'sent' || invoice.status === 'overdue' ? `
+                        <div style="margin-top: 15px; text-align: right;">
+                            <button class="btn btn-primary" onclick="payInvoice(${invoice.id})">💳 Thanh toán ngay</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Display payments
+        function displayPayments(payments) {
+            const container = document.getElementById('paymentsList');
+            
+            if (!payments || payments.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; margin: 40px 0;">Chưa có thanh toán nào</p>';
+                return;
+            }
+
+            container.innerHTML = payments.map(payment => `
+                <div class="payment-item">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <div>
+                            <h4 style="margin: 0; color: #333;">${payment.description || getPaymentTypeText(payment.paymentType)}</h4>
+                            <p style="margin: 5px 0; color: #666;">Mã thanh toán: #${payment.id}</p>
+                        </div>
+                        <span class="status-badge status-${payment.paymentStatus}">${getPaymentStatusText(payment.paymentStatus)}</span>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                        <div>
+                            <strong>Số tiền:</strong><br>
+                            <span style="font-size: 18px; color: #28a745; font-weight: bold;">${formatCurrency(payment.amount)}</span>
+                        </div>
+                        <div>
+                            <strong>Phương thức:</strong><br>
+                            ${getPaymentMethodText(payment.paymentMethod)}
+                        </div>
+                        <div>
+                            <strong>Ngày thanh toán:</strong><br>
+                            ${payment.paymentDate ? formatDate(payment.paymentDate) : 'Chưa thanh toán'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update payment summary
+        async function updatePaymentSummary() {
+            try {
+                const memberId = await getMemberId();
+                if (!memberId) return;
+
+                // Get all invoices and payments for this member
+                const [invoicesResponse, paymentsResponse] = await Promise.all([
+                    fetch(`/api/invoices/member/${memberId}`, {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                    }),
+                    fetch(`/api/payments/history?memberId=${memberId}`, {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                    })
+                ]);
+
+                let totalPaid = 0, totalPending = 0, totalOverdue = 0;
+
+                if (paymentsResponse.ok) {
+                    const paymentsData = await paymentsResponse.json();
+                    totalPaid = paymentsData.data.payments
+                        .filter(p => p.paymentStatus === 'completed')
+                        .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+                }
+
+                if (invoicesResponse.ok) {
+                    const invoicesData = await invoicesResponse.json();
+                    const invoices = invoicesData.data.invoices;
+                    
+                    totalPending = invoices
+                        .filter(inv => inv.status === 'sent')
+                        .reduce((sum, inv) => sum + parseFloat(inv.totalAmount), 0);
+                    
+                    totalOverdue = invoices
+                        .filter(inv => inv.status === 'overdue')
+                        .reduce((sum, inv) => sum + parseFloat(inv.totalAmount), 0);
+                }
+
+                document.getElementById('totalPaid').textContent = formatCurrency(totalPaid);
+                document.getElementById('totalPending').textContent = formatCurrency(totalPending);
+                document.getElementById('totalOverdue').textContent = formatCurrency(totalOverdue);
+
+            } catch (error) {
+                console.error('Error updating payment summary:', error);
+            }
+        }
+
+        // Helper functions
+        function getInvoiceStatusText(status) {
+            const statusMap = {
+                'draft': 'Nháp',
+                'sent': 'Đã gửi',
+                'paid': 'Đã thanh toán',
+                'overdue': 'Quá hạn',
+                'cancelled': 'Đã hủy'
+            };
+            return statusMap[status] || status;
+        }
+
+        function getPaymentStatusText(status) {
+            const statusMap = {
+                'pending': 'Chờ xử lý',
+                'completed': 'Hoàn thành',
+                'failed': 'Thất bại',
+                'refunded': 'Đã hoàn tiền'
+            };
+            return statusMap[status] || status;
+        }
+
+        function getPaymentMethodText(method) {
+            const methodMap = {
+                'cash': 'Tiền mặt',
+                'card': 'Thẻ',
+                'bank_transfer': 'Chuyển khoản',
+                'mobile_payment': 'Ví điện tử'
+            };
+            return methodMap[method] || method;
+        }
+
+        function getPaymentTypeText(type) {
+            const typeMap = {
+                'membership': 'Phí gói tập',
+                'class': 'Phí lớp tập',
+                'service': 'Dịch vụ',
+                'penalty': 'Phí phạt',
+                'other': 'Khác'
+            };
+            return typeMap[type] || type;
+        }
+
+        // Format currency helper function
+        function formatCurrency(amount) {
+            if (!amount) return '0 VNĐ';
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(amount);
+        }
+
+        // Format date helper function  
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleDateString('vi-VN');
+        }
+
+        // Filter functions
+        function filterInvoices() {
+            const status = document.getElementById('invoiceStatusFilter').value;
+            loadMemberInvoices(); // Reload with filter - you can modify API to support filtering
+        }
+
+        function filterPayments() {
+            const type = document.getElementById('paymentTypeFilter').value;
+            loadMemberPayments(); // Reload with filter - you can modify API to support filtering
+        }
+
+        // Pay invoice function
+        async function payInvoice(invoiceId) {
+            try {
+                const memberId = await getMemberId();
+                if (!memberId) {
+                    showToast('❌ Không tìm thấy thông tin hội viên', 'error');
+                    return;
+                }
+
+                // Get invoice details first
+                const invoiceResponse = await fetch(`/api/invoices/${invoiceId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+
+                if (!invoiceResponse.ok) {
+                    showToast('❌ Không thể tải thông tin hóa đơn', 'error');
+                    return;
+                }
+
+                const invoiceData = await invoiceResponse.json();
+                const invoice = invoiceData.data;
+
+                // Show payment confirmation dialog
+                const paymentMethod = await showPaymentDialog(invoice);
+                if (!paymentMethod) return; // User cancelled
+
+                // Create payment record
+                const paymentResponse = await fetch('/api/payments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}`
+                    },
+                    body: JSON.stringify({
+                        memberId: memberId,
+                        referenceId: invoiceId,
+                        amount: invoice.totalAmount,
+                        paymentMethod: paymentMethod,
+                        paymentType: 'invoice',
+                        description: `Thanh toán hóa đơn ${invoice.invoiceNumber}`
+                    })
+                });
+
+                if (paymentResponse.ok) {
+                    const paymentData = await paymentResponse.json();
+                    
+                    // Payment is automatically completed for members
+                    showToast('✅ Thanh toán thành công!', 'success');
+                    
+                    // Reload data to show updated payment and invoice status
+                    loadMemberInvoices();
+                    loadMemberPayments();
+                    updatePaymentSummary();
+                } else {
+                    const error = await paymentResponse.json();
+                    showToast(`❌ Lỗi: ${error.message}`, 'error');
+                }
+
+            } catch (error) {
+                console.error('Payment error:', error);
+                showToast('❌ Lỗi khi thanh toán', 'error');
+            }
+        }
+
+        // Show payment method selection dialog
+        function showPaymentDialog(invoice) {
+            return new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.className = 'modal';
+                modal.style.display = 'block';
+                modal.innerHTML = `
+                    <div class="modal-content" style="max-width: 400px;">
+                        <div class="modal-header">
+                            <h3>💳 Thanh toán hóa đơn</h3>
+                            <span class="close" id="cancelPayment">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <div style="margin-bottom: 20px;">
+                                <strong>Hóa đơn:</strong> ${invoice.invoiceNumber}<br>
+                                <strong>Số tiền:</strong> <span style="color: #5b86e5; font-weight: bold;">${formatCurrency(invoice.totalAmount)}</span>
+                            </div>
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 10px;"><strong>Chọn phương thức thanh toán:</strong></label>
+                                <select id="paymentMethodSelect" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                                    <option value="cash">💵 Tiền mặt</option>
+                                    <option value="card">💳 Thẻ ngân hàng</option>
+                                    <option value="bank_transfer">🏦 Chuyển khoản</option>
+                                    <option value="mobile_payment">📱 Ví điện tử</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" id="cancelPaymentBtn">Hủy</button>
+                            <button type="button" class="btn btn-primary" id="confirmPaymentBtn">Thanh toán</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                // Set up event listeners
+                modal.querySelector('#cancelPayment').addEventListener('click', () => {
+                    modal.remove();
+                    resolve(null);
+                });
+                
+                modal.querySelector('#cancelPaymentBtn').addEventListener('click', () => {
+                    modal.remove();
+                    resolve(null);
+                });
+                
+                modal.querySelector('#confirmPaymentBtn').addEventListener('click', () => {
+                    const method = modal.querySelector('#paymentMethodSelect').value;
+                    modal.remove();
+                    resolve(method);
+                });
+            });
         }
     </script>
 </body>

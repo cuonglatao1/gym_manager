@@ -14,6 +14,9 @@ router.post('/register',
     memberController.register
 );
 
+// Public endpoint for getting trainers (for dropdowns)
+router.get('/trainers', memberController.getTrainers);
+
 // Protected - Admin & Trainer
 router.get('/', 
     authenticate, 
@@ -91,15 +94,15 @@ router.delete('/:id/membership',
 // ===== MEMBERSHIP ROUTES =====
 
 // Public
-router.get('/memberships/all', membershipController.getAll);
-router.get('/memberships/:id', validateId, membershipController.getById);
+router.get('/memberships/all', membershipController.getAllMemberships);
+router.get('/memberships/:id', validateId, membershipController.getMembershipById);
 
 // Admin only
 router.post('/memberships', 
     authenticate, 
     authorize('admin'),
     validate(membershipSchemas.create),
-    membershipController.create
+    membershipController.createMembership
 );
 
 router.put('/memberships/:id', 
@@ -107,21 +110,21 @@ router.put('/memberships/:id',
     authorize('admin'),
     validateId,
     validate(membershipSchemas.update),
-    membershipController.update
+    membershipController.updateMembership
 );
 
 router.delete('/memberships/:id', 
     authenticate, 
     authorize('admin'),
     validateId,
-    membershipController.delete
+    membershipController.deleteMembership
 );
 
 router.get('/memberships/:id/statistics', 
     authenticate, 
     authorize('admin'),
     validateId,
-    membershipController.getStatistics
+    membershipController.getMembershipStatistics
 );
 
 module.exports = router;

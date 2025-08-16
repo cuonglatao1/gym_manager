@@ -134,12 +134,106 @@ const authSchemas = {
     })
 };
 
-module.exports = {
-    validate,
-    validateId,
-    memberSchemas,
-    membershipSchemas,
-    authSchemas
+// Payment validation schemas
+const paymentSchemas = {
+    create: Joi.object({
+        memberId: Joi.number().integer().positive().required()
+            .messages({
+                'number.base': 'Member ID phải là số',
+                'number.positive': 'Member ID phải là số dương',
+                'any.required': 'Member ID là bắt buộc'
+            }),
+        
+        amount: Joi.number().positive().precision(2).required()
+            .messages({
+                'number.base': 'Số tiền phải là số',
+                'number.positive': 'Số tiền phải lớn hơn 0',
+                'any.required': 'Số tiền là bắt buộc'
+            }),
+        
+        paymentMethod: Joi.string().valid('cash', 'card', 'bank_transfer', 'mobile_payment').required()
+            .messages({
+                'any.only': 'Phương thức thanh toán không hợp lệ',
+                'any.required': 'Phương thức thanh toán là bắt buộc'
+            }),
+        
+        paymentType: Joi.string().valid('membership', 'class', 'service', 'penalty', 'other', 'invoice').required()
+            .messages({
+                'any.only': 'Loại thanh toán không hợp lệ',
+                'any.required': 'Loại thanh toán là bắt buộc'
+            }),
+        
+        description: Joi.string().max(255).optional(),
+        referenceId: Joi.number().integer().positive().optional(),
+        dueDate: Joi.date().optional(),
+        notes: Joi.string().optional()
+    }),
+    
+    process: Joi.object({
+        transactionId: Joi.string().max(100).optional()
+    })
+};
+
+// Invoice validation schemas
+const invoiceSchemas = {
+    create: Joi.object({
+        memberId: Joi.number().integer().positive().required()
+            .messages({
+                'number.base': 'Member ID phải là số',
+                'number.positive': 'Member ID phải là số dương',
+                'any.required': 'Member ID là bắt buộc'
+            }),
+        
+        dueDate: Joi.date().min('now').required()
+            .messages({
+                'date.base': 'Ngày đến hạn không hợp lệ',
+                'date.min': 'Ngày đến hạn phải từ hôm nay trở đi',
+                'any.required': 'Ngày đến hạn là bắt buộc'
+            }),
+        
+        items: Joi.array().min(1).items(
+            Joi.object({
+                itemType: Joi.string().valid('membership', 'class', 'service', 'product', 'penalty', 'other').optional(),
+                itemId: Joi.number().integer().positive().optional(),
+                description: Joi.string().min(1).max(255).required()
+                    .messages({
+                        'string.min': 'Mô tả không được để trống',
+                        'any.required': 'Mô tả là bắt buộc'
+                    }),
+                quantity: Joi.number().integer().min(1).required()
+                    .messages({
+                        'number.min': 'Số lượng phải ít nhất là 1',
+                        'any.required': 'Số lượng là bắt buộc'
+                    }),
+                unitPrice: Joi.number().positive().precision(2).required()
+                    .messages({
+                        'number.positive': 'Đơn giá phải lớn hơn 0',
+                        'any.required': 'Đơn giá là bắt buộc'
+                    }),
+                discount: Joi.number().min(0).precision(2).optional(),
+                taxable: Joi.boolean().optional(),
+                taxRate: Joi.number().min(0).max(100).precision(2).optional(),
+                notes: Joi.string().optional()
+            })
+        ).required()
+            .messages({
+                'array.min': 'Hóa đơn phải có ít nhất 1 mục',
+                'any.required': 'Danh sách mục là bắt buộc'
+            }),
+        
+        description: Joi.string().max(255).optional(),
+        notes: Joi.string().optional(),
+        taxRate: Joi.number().min(0).max(100).precision(2).optional(),
+        discountAmount: Joi.number().min(0).precision(2).optional()
+    }),
+    
+    updateStatus: Joi.object({
+        status: Joi.string().valid('draft', 'sent', 'paid', 'overdue', 'cancelled').required()
+            .messages({
+                'any.only': 'Trạng thái hóa đơn không hợp lệ',
+                'any.required': 'Trạng thái là bắt buộc'
+            })
+    })
 };
 
 // Class validation schemas
@@ -150,8 +244,9 @@ const classSchemas = {
         name: Joi.string().min(2).max(100).required()
             .messages({'any.required': 'Tên lớp là bắt buộc'}),
         description: Joi.string().max(1000).allow('').optional(),
-        trainerId: Joi.number().integer().positive().optional(),
-        duration: Joi.number().integer().min(15).max(180).optional(),
+        trainerId: Joi.number().integer().positive().allow(null).optional(),
+        duration: Joi.number().integer().min(15).max(180).required()
+            .messages({'any.required': 'Thời lượng là bắt buộc'}),
         maxParticipants: Joi.number().integer().min(1).max(100).optional(),
         price: Joi.number().min(0).default(0),
         room: Joi.string().max(50).allow('').optional(),
@@ -189,14 +284,18 @@ const classScheduleSchemas = {
                 'any.required': 'Giờ kết thúc là bắt buộc',
                 'string.pattern.base': 'Giờ kết thúc phải có định dạng HH:MM'
             }),
-        trainerId: Joi.number().integer().positive().optional(),
+        trainerId: Joi.number().integer().positive().required()
+            .messages({'any.required': 'Huấn luyện viên là bắt buộc'}),
         maxParticipants: Joi.number().integer().min(1).max(100).optional(),
         room: Joi.string().max(50).allow('').optional(),
         notes: Joi.string().max(500).allow('').optional()
     }),
 
     update: Joi.object({
-        date: Joi.date().optional(),
+        date: Joi.alternatives().try(
+            Joi.date(),
+            Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/)
+        ).optional(),
         startTime: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
         endTime: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
         trainerId: Joi.number().integer().positive().optional(),
@@ -226,9 +325,8 @@ const classTypeSchemas = {
         name: Joi.string().min(2).max(100).required()
             .messages({'any.required': 'Tên loại lớp là bắt buộc'}),
         description: Joi.string().max(1000).allow('').optional(),
-        duration: Joi.number().integer().min(15).max(180).required()
-            .messages({'any.required': 'Thời lượng là bắt buộc'}),
-        maxParticipants: Joi.number().integer().min(1).max(100).default(10),
+        duration: Joi.number().integer().min(15).max(180).optional(),
+        maxParticipants: Joi.number().integer().min(1).max(100).optional(),
         equipment: Joi.array().items(Joi.string()).optional(),
         difficulty: Joi.string().valid('beginner', 'intermediate', 'advanced').default('beginner'),
         color: Joi.string().pattern(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).allow('').optional()
@@ -246,15 +344,31 @@ const classTypeSchemas = {
     })
 };
 
-// Export schemas (ADD TO EXISTING EXPORTS)
+// Export schemas and validation functions
 module.exports = {
     validate,
     validateId,
     memberSchemas,
     membershipSchemas,
     authSchemas,
-    classTypeSchemas,    // UPDATED!
-    classSchemas,        // NEW!
-    classScheduleSchemas, // NEW!
-    enrollmentSchemas    // NEW!
+    classTypeSchemas,
+    classSchemas,
+    classScheduleSchemas,
+    enrollmentSchemas,
+    paymentSchemas,
+    invoiceSchemas,
+    // Convenience validation middleware
+    validateMemberRegister: validate(memberSchemas.register),
+    validateMemberUpdate: validate(memberSchemas.update),
+    validateLogin: validate(authSchemas.login),
+    validateMembership: validate(membershipSchemas.create),
+    validateMembershipUpdate: validate(membershipSchemas.update),
+    validateClassType: validate(classTypeSchemas.create),
+    validateClass: validate(classSchemas.create),
+    validateClassSchedule: validate(classScheduleSchemas.create),
+    validateEnrollment: validate(enrollmentSchemas.enroll),
+    validatePayment: validate(paymentSchemas.create),
+    validatePaymentProcess: validate(paymentSchemas.process),
+    validateInvoice: validate(invoiceSchemas.create),
+    validateInvoiceStatus: validate(invoiceSchemas.updateStatus)
 };

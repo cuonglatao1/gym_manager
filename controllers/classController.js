@@ -1,5 +1,6 @@
 // controllers/classController.js
 const classService = require('../services/classService');
+const PricingService = require('../services/pricingService');
 const asyncHandler = require('../middleware/asyncHandler');
 const { ValidationError, NotFoundError, ConflictError } = require('../middleware/errorHandler');
 
@@ -272,12 +273,18 @@ const classController = {
     getScheduleById: asyncHandler(async (req, res) => {
         const { id } = req.params;
 
-        const schedule = await classService.getScheduleById(id);
+        try {
+            const schedule = await classService.getScheduleById(id);
 
-        res.json({
-            success: true,
-            data: schedule
-        });
+            res.json({
+                success: true,
+                data: schedule
+            });
+        } catch (error) {
+            console.error(`❌ Error getting schedule ${id}:`, error.message);
+            console.error('Stack trace:', error.stack);
+            throw error;
+        }
     }),
 
     // POST /api/classes/:id/schedules (Admin & Trainer)
@@ -324,21 +331,30 @@ const classController = {
         const { id } = req.params;
         const updateData = req.body;
 
-        // Check permissions
-        if (req.user.role === 'trainer') {
-            const schedule = await classService.getScheduleById(id);
-            if (schedule.trainerId !== req.user.userId) {
-                throw new ValidationError('Chỉ có thể sửa lịch của mình');
+        try {
+            console.log(`🔄 Updating schedule ${id} with data:`, JSON.stringify(updateData, null, 2));
+            
+            // Check permissions
+            if (req.user.role === 'trainer') {
+                const schedule = await classService.getScheduleById(id);
+                if (schedule.trainerId !== req.user.userId) {
+                    throw new ValidationError('Chỉ có thể sửa lịch của mình');
+                }
             }
+
+            const schedule = await classService.updateClassSchedule(id, updateData);
+
+            res.json({
+                success: true,
+                message: 'Cập nhật lịch lớp thành công',
+                data: schedule
+            });
+        } catch (error) {
+            console.error(`❌ Error updating schedule ${id}:`, error.message);
+            console.error('Request body:', updateData);
+            console.error('Stack trace:', error.stack);
+            throw error;
         }
-
-        const schedule = await classService.updateClassSchedule(id, updateData);
-
-        res.json({
-            success: true,
-            message: 'Cập nhật lịch lớp thành công',
-            data: schedule
-        });
     }),
 
     // DELETE /api/classes/schedules/:id (Admin & Trainer)
@@ -371,6 +387,14 @@ const classController = {
         console.log('📋 req.user:', req.user);
         console.log('🆔 scheduleId:', scheduleId);
         
+        // Check if user role is allowed to enroll in classes
+        if (req.user.role === 'admin' || req.user.role === 'trainer') {
+            return res.status(403).json({
+                success: false,
+                message: `${req.user.role === 'admin' ? 'Quản trị viên' : 'Huấn luyện viên'} không thể đăng ký lớp học như hội viên`
+            });
+        }
+        
         const userId = req.user.userId || req.user.id;
         console.log('👤 Using userId:', userId);
         
@@ -387,6 +411,69 @@ const classController = {
             success: true,
             message: 'Đăng ký lớp thành công',
             data: enrollment
+        });
+    }),
+
+    // GET /api/classes/:id/pricing - Get class pricing for current user
+    getClassPricing: asyncHandler(async (req, res) => {
+        const { id: classId } = req.params;
+        const userId = req.user.userId || req.user.id;
+
+        if (!userId) {
+            throw new ValidationError('Không tìm thấy thông tin người dùng');
+        }
+
+        // Get member data from user
+        const { Member } = require('../models');
+        const member = await Member.findOne({ where: { userId } });
+        
+        if (!member) {
+            throw new NotFoundError('Không tìm thấy thông tin hội viên');
+        }
+
+        const pricing = await PricingService.calculateClassPrice(classId, member.id);
+        const validation = await PricingService.validateClassBooking(classId, member.id);
+
+        res.json({
+            success: true,
+            data: {
+                ...pricing,
+                canBook: validation.canBook,
+                bookingInfo: validation
+            }
+        });
+    }),
+
+    // POST /api/classes/:id/payment - Create payment for class
+    createClassPayment: asyncHandler(async (req, res) => {
+        const { id: classId } = req.params;
+        const { paymentMethod = 'cash' } = req.body;
+        const userId = req.user.userId || req.user.id;
+
+        if (!userId) {
+            throw new ValidationError('Không tìm thấy thông tin người dùng');
+        }
+
+        // Get member data from user
+        const { Member } = require('../models');
+        const member = await Member.findOne({ where: { userId } });
+        
+        if (!member) {
+            throw new NotFoundError('Không tìm thấy thông tin hội viên');
+        }
+
+        // Validate booking first
+        const validation = await PricingService.validateClassBooking(classId, member.id);
+        if (!validation.canBook) {
+            throw new ValidationError(validation.reason);
+        }
+
+        const paymentData = await PricingService.createClassPayment(classId, member.id, paymentMethod);
+
+        res.status(201).json({
+            success: true,
+            message: 'Tạo thanh toán thành công',
+            data: paymentData
         });
     }),
 
@@ -421,9 +508,29 @@ const classController = {
     // POST /api/classes/schedules/:id/checkin
     checkInToClass: asyncHandler(async (req, res) => {
         const { id: scheduleId } = req.params;
-        const userId = req.user.userId;
+        const { memberId } = req.body;
+        
+        // If memberId is provided and user is admin/trainer, check-in for that member
+        // Otherwise, check-in for the authenticated user
+        let targetUserId;
+        
+        if (memberId && (req.user.role === 'admin' || req.user.role === 'trainer')) {
+            // Admin/Trainer checking in a member
+            const member = await require('../models').Member.findByPk(memberId);
+            if (!member) {
+                throw new ValidationError('Không tìm thấy hội viên');
+            }
+            targetUserId = member.userId;
+            console.log(`👨‍🏫 ${req.user.role} checking in member ${memberId} (userId: ${targetUserId}) for schedule ${scheduleId}`);
+        } else {
+            // Self check-in
+            targetUserId = req.user.userId;
+            console.log(`👤 Self check-in for user ${targetUserId} for schedule ${scheduleId}`);
+        }
 
-        const result = await classService.checkInToClass(scheduleId, userId);
+        // Admin/Trainer can bypass time validation
+        const bypassTimeValidation = memberId && (req.user.role === 'admin' || req.user.role === 'trainer');
+        const result = await classService.checkInToClass(scheduleId, targetUserId, { bypassTimeValidation });
 
         res.json({
             success: true,
@@ -466,7 +573,9 @@ const classController = {
 
         res.json({
             success: true,
-            data: enrollments
+            data: {
+                enrollments: enrollments
+            }
         });
     }),
 

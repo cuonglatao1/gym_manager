@@ -27,7 +27,7 @@ const Class = sequelize.define('Class', {
     },
     trainerId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
         field: 'trainer_id',
         references: {
             model: 'users',

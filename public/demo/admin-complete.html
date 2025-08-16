@@ -103,6 +103,66 @@
         .data-table tr:hover {
             background-color: #f5f5f5;
         }
+
+        /* Billing Tab Styles */
+        .mini-tabs {
+            display: flex;
+            border-bottom: 2px solid #e1e5e9;
+            margin-bottom: 20px;
+        }
+
+        .mini-tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .mini-tab-btn.active {
+            color: #764ba2;
+            border-bottom-color: #764ba2;
+        }
+
+        .billing-tab-content {
+            display: none;
+        }
+
+        .billing-tab-content.active {
+            display: block;
+        }
+
+        .invoice-item, .payment-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .invoice-item:hover, .payment-item:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-paid { background: #d4edda; color: #155724; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-overdue { background: #f8d7da; color: #721c24; }
+        .status-draft { background: #e2e3e5; color: #383d41; }
+        .status-sent { background: #cce7ff; color: #004085; }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-failed { background: #f8d7da; color: #721c24; }
         
         .filter-bar {
             display: flex;
@@ -219,6 +279,19 @@
             color: #333;
         }
         
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
         .form-group {
             margin-bottom: 15px;
         }
@@ -244,6 +317,61 @@
             resize: vertical;
             min-height: 60px;
         }
+        
+        /* Form styles for membership management */
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .form-group small {
+            color: #666;
+            font-size: 0.85em;
+            margin-top: 5px;
+            display: block;
+        }
+        
+        .badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .badge-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .badge-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .badge-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: #138496;
+        }
     </style>
 </head>
 <body>
@@ -267,6 +395,7 @@
             <button class="tab-btn" onclick="switchTab('enrollments')">✅ Đăng ký</button>
             <button class="tab-btn" onclick="switchTab('checkins')">📍 Check-in</button>
             <button class="tab-btn" onclick="switchTab('memberships')">💳 Gói tập</button>
+            <button class="tab-btn" onclick="switchTab('billing')">💰 Thanh toán</button>
             <button class="tab-btn" onclick="switchTab('analytics')">📈 Báo cáo</button>
         </div>
 
@@ -364,9 +493,6 @@
                     <select id="classTypeFilter" onchange="filterClasses()">
                         <option value="">Tất cả loại</option>
                     </select>
-                    <select id="trainerFilter" onchange="filterClasses()">
-                        <option value="">Tất cả HLV</option>
-                    </select>
                     <button class="btn btn-secondary" onclick="loadClasses()">🔄 Tải lại</button>
                 </div>
                 
@@ -383,9 +509,12 @@
                 </div>
                 
                 <div class="filter-bar">
-                    <input type="date" id="scheduleDate" onchange="filterSchedules()">
+                    <input type="date" id="scheduleDate" onchange="filterSchedules()" value="">
                     <select id="scheduleClassFilter" onchange="filterSchedules()">
                         <option value="">Tất cả lớp</option>
+                    </select>
+                    <select id="scheduleTrainerFilter" onchange="filterSchedules()">
+                        <option value="">Tất cả HLV</option>
                     </select>
                     <button class="btn btn-secondary" onclick="loadSchedules()">🔄 Tải lại</button>
                 </div>
@@ -433,6 +562,132 @@
                     <button class="btn btn-primary" onclick="showCreateMembershipModal()">➕ Thêm gói tập</button>
                 </div>
                 <div id="membershipsContent" class="loading">Đang tải...</div>
+            </div>
+        </div>
+
+        <!-- Tab: Billing -->
+        <div id="billing" class="tab-content">
+            <!-- Revenue Stats -->
+            <div class="section-card">
+                <h3>💰 Tổng quan doanh thu</h3>
+                <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                        <div class="stat-number" id="totalRevenue">0đ</div>
+                        <div>Tổng doanh thu</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #17a2b8, #6cb2eb);">
+                        <div class="stat-number" id="monthlyRevenue">0đ</div>
+                        <div>Doanh thu tháng này</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #ffc107, #fd7e14);">
+                        <div class="stat-number" id="pendingPayments">0đ</div>
+                        <div>Chờ thanh toán</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #dc3545, #e74c3c);">
+                        <div class="stat-number" id="overduePayments">0đ</div>
+                        <div>Quá hạn</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Billing Tabs -->
+            <div class="mini-tabs" style="display: flex; margin-bottom: 20px; border-bottom: 2px solid #e1e5e9;">
+                <button class="mini-tab-btn active" onclick="switchBillingTab('invoices')">📄 Hóa đơn</button>
+                <button class="mini-tab-btn" onclick="switchBillingTab('payments')">💳 Thanh toán</button>
+                <button class="mini-tab-btn" onclick="switchBillingTab('revenue')">📊 Báo cáo</button>
+            </div>
+
+            <!-- Invoices Management -->
+            <div id="invoices-billing-tab" class="billing-tab-content active">
+                <div class="section-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>📄 Quản lý hóa đơn</h3>
+                        <div>
+                            <button class="btn btn-primary" onclick="showCreateInvoiceModal()">+ Tạo hóa đơn mới</button>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                        <select id="invoiceStatusFilterAdmin" onchange="filterAdminInvoices()">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="draft">Nháp</option>
+                            <option value="sent">Đã gửi</option>
+                            <option value="paid">Đã thanh toán</option>
+                            <option value="overdue">Quá hạn</option>
+                        </select>
+                        <input type="text" id="memberSearchAdmin" placeholder="Tìm theo tên thành viên" onchange="filterAdminInvoices()" />
+                        <input type="date" id="startDateAdmin" onchange="filterAdminInvoices()" />
+                        <input type="date" id="endDateAdmin" onchange="filterAdminInvoices()" />
+                    </div>
+
+                    <div id="adminInvoicesList" class="loading">Đang tải...</div>
+                </div>
+            </div>
+
+            <!-- Payments Management -->
+            <div id="payments-billing-tab" class="billing-tab-content">
+                <div class="section-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>💳 Quản lý thanh toán</h3>
+                        <div>
+                            <button class="btn btn-primary" onclick="showCreatePaymentModal()">+ Ghi nhận thanh toán</button>
+                            <button class="btn btn-warning" onclick="loadOverduePayments()">⚠️ Thanh toán quá hạn</button>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                        <select id="paymentStatusFilterAdmin" onchange="filterAdminPayments()">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="pending">Chờ xử lý</option>
+                            <option value="completed">Hoàn thành</option>
+                            <option value="failed">Thất bại</option>
+                        </select>
+                        <select id="paymentTypeFilterAdmin" onchange="filterAdminPayments()">
+                            <option value="">Tất cả loại</option>
+                            <option value="membership">Gói tập</option>
+                            <option value="class">Lớp tập</option>
+                            <option value="service">Dịch vụ</option>
+                            <option value="penalty">Phạt</option>
+                        </select>
+                        <input type="date" id="paymentStartDateAdmin" onchange="filterAdminPayments()" />
+                        <input type="date" id="paymentEndDateAdmin" onchange="filterAdminPayments()" />
+                    </div>
+
+                    <div id="adminPaymentsList" class="loading">Đang tải...</div>
+                </div>
+            </div>
+
+            <!-- Revenue Reports -->
+            <div id="revenue-billing-tab" class="billing-tab-content">
+                <div class="section-card">
+                    <h3>📊 Báo cáo doanh thu</h3>
+                    
+                    <!-- Revenue Charts -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                        <div>
+                            <h4>Doanh thu theo loại</h4>
+                            <div id="revenueByTypeChart" style="height: 300px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <p>Biểu đồ doanh thu theo loại</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h4>Doanh thu theo phương thức</h4>
+                            <div id="revenueByMethodChart" style="height: 300px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <p>Biểu đồ doanh thu theo phương thức</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Monthly Revenue -->
+                    <div>
+                        <h4>Doanh thu 12 tháng gần nhất</h4>
+                        <div id="monthlyRevenueChart" style="height: 400px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <p>Biểu đồ doanh thu hàng tháng</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -487,6 +742,137 @@
         let allMembers = []; // Store all members data for filtering
         let allClasses = []; // Store all classes data for filtering
         let allSchedules = []; // Store all schedules data for filtering
+        let lastPaymentCount = 0; // Track number of payments for notifications
+
+        // Helper Functions
+        function formatCurrency(amount) {
+            if (!amount) return '0 VNĐ';
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(amount);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('vi-VN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function getPaymentStatusText(status) {
+            const statusMap = {
+                'pending': 'Chờ xử lý',
+                'completed': 'Hoàn thành',
+                'failed': 'Thất bại',
+                'refunded': 'Hoàn tiền'
+            };
+            return statusMap[status] || status;
+        }
+
+        function getPaymentMethodText(method) {
+            const methodMap = {
+                'cash': 'Tiền mặt',
+                'card': 'Thẻ',
+                'bank_transfer': 'Chuyển khoản',
+                'mobile_payment': 'Ví điện tử'
+            };
+            return methodMap[method] || method;
+        }
+
+        function getPaymentTypeText(type) {
+            const typeMap = {
+                'membership': 'Phí hội viên',
+                'class': 'Lớp học',
+                'service': 'Dịch vụ',
+                'penalty': 'Phạt',
+                'other': 'Khác',
+                'invoice': 'Hóa đơn'
+            };
+            return typeMap[type] || type;
+        }
+
+        function getInvoiceStatusText(status) {
+            const statusMap = {
+                'draft': 'Nháp',
+                'sent': 'Đã gửi',
+                'paid': 'Đã thanh toán',
+                'overdue': 'Quá hạn',
+                'cancelled': 'Đã hủy'
+            };
+            return statusMap[status] || status;
+        }
+
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            // Create toast container if it doesn't exist
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 10000;
+                `;
+                document.body.appendChild(toastContainer);
+            }
+
+            // Create toast element
+            const toast = document.createElement('div');
+            const colors = {
+                'success': '#28a745',
+                'error': '#dc3545',
+                'warning': '#ffc107',
+                'info': '#17a2b8'
+            };
+            
+            toast.style.cssText = `
+                background: ${colors[type] || colors.info};
+                color: white;
+                padding: 12px 20px;
+                margin-bottom: 10px;
+                border-radius: 4px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                animation: slideIn 0.3s ease-out;
+                max-width: 300px;
+                word-wrap: break-word;
+            `;
+            toast.textContent = message;
+
+            // Add slide-in animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            if (!document.querySelector('#toast-animations')) {
+                style.id = 'toast-animations';
+                document.head.appendChild(style);
+            }
+
+            toastContainer.appendChild(toast);
+
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.animation = 'slideIn 0.3s ease-out reverse';
+                    setTimeout(() => {
+                        if (toast.parentNode) {
+                            toast.parentNode.removeChild(toast);
+                        }
+                    }, 300);
+                }
+            }, 3000);
+        }
 
         // API Call Function with Debug
         async function apiCall(endpoint, method = 'GET', body = null) {
@@ -595,9 +981,68 @@
                 case 'memberships':
                     loadMemberships();
                     break;
+                case 'billing':
+                    loadAdminInvoices();
+                    updateRevenueStats();
+                    break;
                 case 'analytics':
                     loadAnalytics();
                     break;
+            }
+        }
+
+        // Auto-refresh admin data every 30 seconds
+        function startAutoRefresh() {
+            setInterval(() => {
+                console.log('🔄 Auto-refreshing admin data...');
+                // Only refresh if user is authenticated and on relevant tabs
+                if (currentUser) {
+                    const activeTab = document.querySelector('.tab.active');
+                    if (activeTab) {
+                        const tabId = activeTab.id;
+                        if (tabId === 'paymentsTab') {
+                            loadAdminPayments();
+                            updateRevenueStats();
+                        } else if (tabId === 'invoicesTab') {
+                            loadAdminInvoices();
+                            updateRevenueStats();
+                        } else if (tabId === 'reportsTab') {
+                            loadRevenueReports();
+                            updateRevenueStats();
+                        }
+                    }
+                    // Always refresh revenue stats regardless of tab
+                    updateRevenueStats();
+                }
+            }, 30000); // 30 seconds
+        }
+
+        // Force refresh all admin data (called when needed)
+        function forceRefreshAdminData() {
+            console.log('🔄 Force refreshing all admin data...');
+            if (currentUser) {
+                loadAdminPayments();
+                loadAdminInvoices();
+                updateRevenueStats();
+                loadRevenueReports();
+                showToast('📊 Dữ liệu đã được cập nhật!', 'info');
+            }
+        }
+
+        // Add manual refresh button functionality
+        function addRefreshButton() {
+            const header = document.querySelector('.header h1');
+            if (header && !document.querySelector('#refreshButton')) {
+                const refreshBtn = document.createElement('button');
+                refreshBtn.id = 'refreshButton';
+                refreshBtn.innerHTML = '🔄 Refresh';
+                refreshBtn.style.cssText = `
+                    margin-left: 20px; padding: 8px 16px; background: #5b86e5;
+                    color: white; border: none; border-radius: 4px; cursor: pointer;
+                    font-size: 14px;
+                `;
+                refreshBtn.onclick = forceRefreshAdminData;
+                header.appendChild(refreshBtn);
             }
         }
 
@@ -605,6 +1050,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             if (checkAuth()) {
                 initDashboard();
+                addRefreshButton(); // Add manual refresh button
+                startAutoRefresh(); // Start auto-refresh
             }
         });
 
@@ -1045,17 +1492,15 @@
             container.innerHTML = '<div class="loading">Đang tải...</div>';
             
             try {
-                const [classesResponse, classTypesResponse, membersResponse] = await Promise.all([
+                const [classesResponse, classTypesResponse, trainersResponse] = await Promise.all([
                     apiCall('/classes'),
                     apiCall('/classes/types'),
-                    apiCall('/members?limit=100')
+                    apiCall('/members/trainers')
                 ]);
                 
                 const classes = classesResponse.data?.classes || [];
                 const classTypes = classTypesResponse.data || [];
-                const trainers = membersResponse.data?.members?.filter(m => 
-                    m.memberCode && m.memberCode.startsWith('TR')
-                ) || [];
+                const trainers = trainersResponse.data || [];
                 
                 // Store data for filtering
                 allClasses = classes;
@@ -1078,12 +1523,6 @@
                 classTypeFilter.innerHTML += `<option value="${type.id}">${type.name}</option>`;
             });
             
-            // Populate trainer filter
-            const trainerFilter = document.getElementById('trainerFilter');
-            trainerFilter.innerHTML = '<option value="">Tất cả HLV</option>';
-            trainers.forEach(trainer => {
-                trainerFilter.innerHTML += `<option value="${trainer.id}">${trainer.fullName}</option>`;
-            });
         }
         
         function displayClasses(classes) {
@@ -1100,7 +1539,6 @@
                         <tr>
                             <th>Tên lớp</th>
                             <th>Loại</th>
-                            <th>HLV</th>
                             <th>Thời lượng</th>
                             <th>Giá</th>
                             <th>Hành động</th>
@@ -1114,9 +1552,8 @@
                     <tr>
                         <td>${cls.name}</td>
                         <td><span style="color: ${cls.classType?.color || '#333'}">${cls.classType?.name || 'N/A'}</span></td>
-                        <td>${cls.trainer?.fullName || 'N/A'}</td>
                         <td>${cls.duration || 0} phút</td>
-                        <td>${cls.price ? parseInt(cls.price).toLocaleString('vi-VN') + 'đ' : 'Miễn phí'}</td>
+                        <td>${cls.price && parseFloat(cls.price) > 0 ? parseFloat(cls.price).toLocaleString('vi-VN') + 'đ' : 'Miễn phí'}</td>
                         <td>
                             <button class="btn btn-sm btn-warning" onclick="editClass(${cls.id})">✏️</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteClass(${cls.id})">🗑️</button>
@@ -1135,40 +1572,75 @@
             container.innerHTML = '<div class="loading">Đang tải...</div>';
             
             try {
-                const [schedulesResponse, classesResponse] = await Promise.all([
-                    apiCall('/classes/schedules'),
-                    apiCall('/classes')
+                const [schedulesResponse, classesResponse, trainersResponse] = await Promise.all([
+                    apiCall('/classes/schedules?limit=100'),
+                    apiCall('/classes'),
+                    apiCall('/members/trainers')
                 ]);
                 
                 const schedules = schedulesResponse.data?.schedules || [];
                 const classes = classesResponse.data?.classes || [];
+                const trainers = trainersResponse.data || [];
+                
+                console.log('🔍 loadSchedules - API returned:', schedules.length, 'schedules');
+                
+                // Load enrollment counts for each schedule
+                const schedulesWithEnrollments = await Promise.all(
+                    schedules.map(async (schedule) => {
+                        try {
+                            const enrollmentResponse = await apiCall(`/classes/schedules/${schedule.id}/enrollments`);
+                            const enrollments = enrollmentResponse.data || [];
+                            // Count only active enrollments (not cancelled)
+                            const activeEnrollments = enrollments.filter(e => e.status !== 'cancelled');
+                            return {
+                                ...schedule,
+                                actualEnrollmentCount: activeEnrollments.length
+                            };
+                        } catch (error) {
+                            console.log(`⚠️ Could not load enrollments for schedule ${schedule.id}`);
+                            return {
+                                ...schedule,
+                                actualEnrollmentCount: schedule.currentParticipants || 0
+                            };
+                        }
+                    })
+                );
                 
                 // Store data for filtering
-                allSchedules = schedules;
+                allSchedules = schedulesWithEnrollments;
                 
                 // Populate schedule filter dropdown
-                populateScheduleFilters(classes);
+                populateScheduleFilters(classes, trainers);
                 
-                displaySchedules(schedules);
+                displaySchedules(schedulesWithEnrollments);
                 
             } catch (error) {
                 container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
             }
         }
         
-        function populateScheduleFilters(classes) {
+        function populateScheduleFilters(classes, trainers) {
             // Populate schedule class filter
             const scheduleClassFilter = document.getElementById('scheduleClassFilter');
             scheduleClassFilter.innerHTML = '<option value="">Tất cả lớp</option>';
             classes.forEach(cls => {
                 scheduleClassFilter.innerHTML += `<option value="${cls.id}">${cls.name}</option>`;
             });
+            
+            // Populate schedule trainer filter
+            const scheduleTrainerFilter = document.getElementById('scheduleTrainerFilter');
+            scheduleTrainerFilter.innerHTML = '<option value="">Tất cả HLV</option>';
+            trainers.forEach(trainer => {
+                scheduleTrainerFilter.innerHTML += `<option value="${trainer.id}">${trainer.fullName}</option>`;
+            });
         }
         
         function displaySchedules(schedules) {
+            console.log('🔍 displaySchedules called with:', schedules.length, 'schedules');
             const container = document.getElementById('schedulesContent');
             
             if (schedules.length === 0) {
+                console.log('⚠️ No schedules to display');
                 container.innerHTML = '<p>Không có lịch tập nào.</p>';
                 return;
             }
@@ -1180,6 +1652,7 @@
                             <th>Lớp học</th>
                             <th>Ngày</th>
                             <th>Thời gian</th>
+                            <th>HLV</th>
                             <th>Phòng</th>
                             <th>Số người</th>
                             <th>Hành động</th>
@@ -1197,12 +1670,13 @@
                         <td>${schedule.class?.name || 'N/A'}</td>
                         <td>${startTime.toLocaleDateString('vi-VN')}</td>
                         <td>${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}</td>
+                        <td>${schedule.trainer?.fullName || 'N/A'}</td>
                         <td>${schedule.room || 'N/A'}</td>
-                        <td>${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0}</td>
+                        <td>${schedule.actualEnrollmentCount || 0}/${schedule.maxParticipants || 0}</td>
                         <td>
-                            <button class="btn btn-sm btn-info" onclick="viewEnrollments(${schedule.id})">👥</button>
-                            <button class="btn btn-sm btn-warning" onclick="editSchedule(${schedule.id})">✏️</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${schedule.id})">🗑️</button>
+                            <button class="btn btn-sm btn-info" onclick="viewEnrollments(${schedule.id})" title="Xem danh sách đăng ký">👥 Đăng ký</button>
+                            <button class="btn btn-sm btn-warning" onclick="editSchedule(${schedule.id})" title="Chỉnh sửa lịch tập">✏️</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${schedule.id})" title="Xóa lịch tập">🗑️</button>
                         </td>
                     </tr>
                 `;
@@ -1214,12 +1688,20 @@
 
         // Enrollments Functions
         async function loadEnrollments() {
+            console.log('🔍 loadEnrollments called');
             const container = document.getElementById('enrollmentsContent');
             container.innerHTML = '<div class="loading">Đang tải...</div>';
             
             try {
-                const response = await apiCall('/classes/enrollments');
+                const response = await apiCall('/classes/enrollments?status=all&limit=100');
+                console.log('🔍 loadEnrollments - Full API response:', response);
                 const enrollments = response.data?.enrollments || [];
+                console.log('🔍 loadEnrollments - API returned:', enrollments.length, 'enrollments');
+                
+                if (enrollments.length === 0) {
+                    container.innerHTML = '<p>Không có đăng ký nào.</p>';
+                    return;
+                }
                 
                 let html = `
                     <table class="data-table">
@@ -1258,6 +1740,7 @@
                 container.innerHTML = html;
                 
             } catch (error) {
+                console.error('🔴 loadEnrollments error:', error);
                 container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
             }
         }
@@ -1275,7 +1758,7 @@
             try {
                 const date = dateInput.value;
                 const response = await apiCall(`/classes/checkins/${date}`);
-                const checkIns = response.data?.checkIns || [];
+                const checkIns = response.data || [];
                 
                 let html = `
                     <table class="data-table">
@@ -1284,7 +1767,6 @@
                                 <th>Thành viên</th>
                                 <th>Lớp học</th>
                                 <th>Thời gian check-in</th>
-                                <th>Thời gian check-out</th>
                                 <th>Trạng thái</th>
                             </tr>
                         </thead>
@@ -1292,13 +1774,19 @@
                 `;
                 
                 checkIns.forEach(checkIn => {
+                    const checkinDate = new Date(checkIn.checkinTime);
+                    const formattedTime = checkinDate.toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    }) + ' ' + checkinDate.toLocaleDateString('vi-VN');
+                    
                     html += `
                         <tr>
                             <td>${checkIn.member?.fullName || 'N/A'}</td>
                             <td>${checkIn.classSchedule?.class?.name || 'N/A'}</td>
-                            <td>${new Date(checkIn.checkinTime).toLocaleString('vi-VN')}</td>
-                            <td>${checkIn.checkoutTime ? new Date(checkIn.checkoutTime).toLocaleString('vi-VN') : 'Chưa check-out'}</td>
-                            <td>${checkIn.checkoutTime ? '✅ Hoàn thành' : '🔄 Đang tham gia'}</td>
+                            <td>${formattedTime}</td>
+                            <td>✅ Đã tham gia</td>
                         </tr>
                     `;
                 });
@@ -1327,6 +1815,8 @@
                                 <th>Tên gói</th>
                                 <th>Thời hạn</th>
                                 <th>Giá</th>
+                                <th>Giảm giá lớp</th>
+                                <th>Lớp tối đa</th>
                                 <th>Mô tả</th>
                                 <th>Hành động</th>
                             </tr>
@@ -1335,13 +1825,25 @@
                 `;
                 
                 memberships.forEach(membership => {
+                    const discountPercent = parseFloat(membership.classDiscountPercent || 0);
+                    const maxClasses = membership.maxClasses ? membership.maxClasses : 'Không giới hạn';
                     html += `
                         <tr>
-                            <td>${membership.name}</td>
+                            <td>
+                                <strong>${membership.name}</strong>
+                                ${membership.isActive ? '<span class="badge badge-success">Hoạt động</span>' : '<span class="badge badge-danger">Tạm dừng</span>'}
+                            </td>
                             <td>${membership.duration} ngày</td>
-                            <td>${parseInt(membership.price).toLocaleString('vi-VN')}đ</td>
+                            <td><strong>${parseInt(membership.price).toLocaleString('vi-VN')}đ</strong></td>
+                            <td>
+                                <span class="badge ${discountPercent > 0 ? 'badge-warning' : 'badge-secondary'}">
+                                    ${discountPercent}% giảm
+                                </span>
+                            </td>
+                            <td>${maxClasses} lớp/tháng</td>
                             <td>${membership.description || 'N/A'}</td>
                             <td>
+                                <button class="btn btn-sm btn-info" onclick="viewMembershipDetails(${membership.id})">👁️</button>
                                 <button class="btn btn-sm btn-warning" onclick="editMembership(${membership.id})">✏️</button>
                                 <button class="btn btn-sm btn-danger" onclick="deleteMembership(${membership.id})">🗑️</button>
                             </td>
@@ -1416,6 +1918,10 @@
                         <input type="password" name="password" required minlength="6" placeholder="Tối thiểu 6 ký tự">
                     </div>
                     <div class="form-group">
+                        <label>Xác nhận mật khẩu *</label>
+                        <input type="password" name="confirmPassword" required minlength="6" placeholder="Nhập lại mật khẩu">
+                    </div>
+                    <div class="form-group">
                         <label>Ngày sinh</label>
                         <input type="date" name="dateOfBirth">
                     </div>
@@ -1450,6 +1956,15 @@
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData.entries());
+                
+                // Validate password confirmation
+                if (data.password !== data.confirmPassword) {
+                    document.getElementById('createMemberResult').innerHTML = '<div class="error">❌ Mật khẩu xác nhận không khớp</div>';
+                    return;
+                }
+                
+                // Remove confirmPassword from data (not needed for API)
+                delete data.confirmPassword;
                 
                 // Remove empty optional fields instead of setting to null
                 Object.keys(data).forEach(key => {
@@ -1495,6 +2010,10 @@
                         <input type="password" name="password" required minlength="6" placeholder="Tối thiểu 6 ký tự">
                     </div>
                     <div class="form-group">
+                        <label>Xác nhận mật khẩu *</label>
+                        <input type="password" name="confirmPassword" required minlength="6" placeholder="Nhập lại mật khẩu">
+                    </div>
+                    <div class="form-group">
                         <label>Ngày sinh</label>
                         <input type="date" name="dateOfBirth">
                     </div>
@@ -1521,6 +2040,15 @@
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData.entries());
+                
+                // Validate password confirmation
+                if (data.password !== data.confirmPassword) {
+                    document.getElementById('createTrainerResult').innerHTML = '<div class="error">❌ Mật khẩu xác nhận không khớp</div>';
+                    return;
+                }
+                
+                // Remove confirmPassword from data (not needed for API)
+                delete data.confirmPassword;
                 
                 // Remove empty optional fields instead of setting to null
                 Object.keys(data).forEach(key => {
@@ -1554,14 +2082,6 @@
                     <div class="form-group">
                         <label>Mô tả</label>
                         <textarea name="description" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Thời lượng (phút) *</label>
-                        <input type="number" name="duration" min="15" max="180" value="60" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Số người tối đa *</label>
-                        <input type="number" name="maxParticipants" min="1" max="50" value="20" required>
                     </div>
                     <div class="form-group">
                         <label>Độ khó</label>
@@ -1603,12 +2123,10 @@
             // First, load class types and trainers for dropdowns
             Promise.all([
                 apiCall('/classes/types'),
-                apiCall('/members')
-            ]).then(([classTypesResponse, membersResponse]) => {
+                apiCall('/members/trainers')
+            ]).then(([classTypesResponse, trainersResponse]) => {
                 const classTypes = classTypesResponse.data || [];
-                const trainers = membersResponse.data?.members?.filter(m => 
-                    m.memberCode && m.memberCode.startsWith('TR')
-                ) || [];
+                const trainers = trainersResponse.data || [];
                 
                 const content = `
                     <form id="createClassForm">
@@ -1624,19 +2142,12 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Huấn luyện viên</label>
-                            <select name="trainerId">
-                                <option value="">Chọn HLV (tùy chọn)</option>
-                                ${trainers.map(trainer => `<option value="${trainer.id}">${trainer.fullName}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="form-group">
                             <label>Mô tả</label>
                             <textarea name="description"></textarea>
                         </div>
                         <div class="form-group">
-                            <label>Thời lượng (phút)</label>
-                            <input type="number" name="duration" min="15" max="180">
+                            <label>Thời lượng (phút) *</label>
+                            <input type="number" name="duration" min="15" max="180" required>
                         </div>
                         <div class="form-group">
                             <label>Số lượng tối đa</label>
@@ -1661,16 +2172,35 @@
                     const formData = new FormData(e.target);
                     const data = Object.fromEntries(formData.entries());
                     
-                    // Convert string numbers to integers
-                    if (data.classTypeId) data.classTypeId = parseInt(data.classTypeId);
-                    if (data.trainerId) data.trainerId = parseInt(data.trainerId);
-                    if (data.duration) data.duration = parseInt(data.duration);
-                    if (data.maxParticipants) data.maxParticipants = parseInt(data.maxParticipants);
-                    if (data.price) data.price = parseFloat(data.price);
+                    // Validate required fields
+                    if (!data.classTypeId || data.classTypeId === '') {
+                        document.getElementById('createClassResult').innerHTML = '<div class="error">❌ Vui lòng chọn loại lớp</div>';
+                        return;
+                    }
                     
-                    // Remove empty fields
+                    if (!data.name || data.name.trim() === '') {
+                        document.getElementById('createClassResult').innerHTML = '<div class="error">❌ Vui lòng nhập tên lớp</div>';
+                        return;
+                    }
+                    
+                    
+                    if (!data.duration || data.duration === '') {
+                        document.getElementById('createClassResult').innerHTML = '<div class="error">❌ Vui lòng nhập thời lượng</div>';
+                        return;
+                    }
+                    
+                    // Convert string numbers to integers (required fields)
+                    data.classTypeId = parseInt(data.classTypeId);
+                    data.trainerId = parseInt(data.trainerId);
+                    data.duration = parseInt(data.duration);
+                    
+                    // Convert optional fields
+                    if (data.maxParticipants && data.maxParticipants !== '') data.maxParticipants = parseInt(data.maxParticipants);
+                    if (data.price && data.price !== '') data.price = parseFloat(data.price);
+                    
+                    // Remove empty fields (except required ones)
                     Object.keys(data).forEach(key => {
-                        if (data[key] === '' || data[key] === 'null') {
+                        if (key !== 'classTypeId' && key !== 'name' && key !== 'trainerId' && key !== 'duration' && (data[key] === '' || data[key] === 'null')) {
                             delete data[key];
                         }
                     });
@@ -1694,21 +2224,48 @@
         function showCreateMembershipModal() {
             const content = `
                 <form id="createMembershipForm">
-                    <div class="form-group">
-                        <label>Tên gói *</label>
-                        <input type="text" name="name" required>
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;">
+                            <label>Tên gói *</label>
+                            <input type="text" name="name" required placeholder="VD: Premium Monthly">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Thời hạn (ngày) *</label>
+                            <input type="number" name="duration" required min="1" placeholder="30">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Thời hạn (ngày) *</label>
-                        <input type="number" name="duration" required min="1">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Giá (VNĐ) *</label>
+                            <input type="number" name="price" required min="0" placeholder="800000">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Giảm giá lớp (%) *</label>
+                            <input type="number" name="classDiscountPercent" required min="0" max="100" value="0" placeholder="15">
+                            <small>Phần trăm giảm giá khi đăng ký lớp</small>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Giá (VNĐ) *</label>
-                        <input type="number" name="price" required min="0">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Số lớp tối đa/tháng</label>
+                            <input type="number" name="maxClasses" min="0" placeholder="Để trống = không giới hạn">
+                            <small>Để trống nếu không giới hạn</small>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Có huấn luyện viên riêng</label>
+                            <select name="hasPersonalTrainer">
+                                <option value="false">Không</option>
+                                <option value="true">Có</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>Mô tả</label>
-                        <textarea name="description" rows="3"></textarea>
+                        <textarea name="description" rows="3" placeholder="Mô tả về gói tập này..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Quyền lợi (mỗi dòng một quyền lợi)</label>
+                        <textarea name="benefits" rows="4" placeholder="Sử dụng thiết bị gym&#10;Khu vực cardio&#10;Tham gia tất cả lớp tập&#10;Hỗ trợ huấn luyện viên"></textarea>
                     </div>
                     <button type="submit" class="btn btn-primary">Tạo gói tập</button>
                 </form>
@@ -1720,8 +2277,26 @@
                 e.preventDefault();
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData.entries());
+                
+                // Convert types
                 data.price = parseFloat(data.price);
                 data.duration = parseInt(data.duration);
+                data.classDiscountPercent = parseFloat(data.classDiscountPercent);
+                data.hasPersonalTrainer = data.hasPersonalTrainer === 'true';
+                
+                // Handle maxClasses (null if empty)
+                if (data.maxClasses && data.maxClasses.trim()) {
+                    data.maxClasses = parseInt(data.maxClasses);
+                } else {
+                    data.maxClasses = null;
+                }
+                
+                // Process benefits
+                if (data.benefits && data.benefits.trim()) {
+                    data.benefits = data.benefits.split('\n').map(b => b.trim()).filter(b => b);
+                } else {
+                    data.benefits = [];
+                }
                 
                 try {
                     await apiCall('/members/memberships', 'POST', data);
@@ -1734,6 +2309,83 @@
                     document.getElementById('createMembershipResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
                 }
             };
+        }
+
+        async function viewMembershipDetails(id) {
+            try {
+                const response = await apiCall(`/members/memberships/${id}`);
+                const membership = response.data;
+                
+                const benefits = Array.isArray(membership.benefits) ? membership.benefits : [];
+                const maxClasses = membership.maxClasses ? `${membership.maxClasses} lớp/tháng` : 'Không giới hạn';
+                const discountPercent = parseFloat(membership.classDiscountPercent || 0);
+                
+                const content = `
+                    <div style="padding: 20px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label><strong>Tên gói:</strong></label>
+                                <p style="font-size: 18px; font-weight: bold; color: #764ba2;">${membership.name}</p>
+                            </div>
+                            <div class="form-group">
+                                <label><strong>Trạng thái:</strong></label>
+                                <p>${membership.isActive ? '<span class="badge badge-success">Hoạt động</span>' : '<span class="badge badge-danger">Tạm dừng</span>'}</p>
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label><strong>Thời hạn:</strong></label>
+                                <p>${membership.duration} ngày</p>
+                            </div>
+                            <div class="form-group">
+                                <label><strong>Giá:</strong></label>
+                                <p style="font-size: 18px; font-weight: bold; color: #28a745;">${parseInt(membership.price).toLocaleString('vi-VN')}đ</p>
+                            </div>
+                            <div class="form-group">
+                                <label><strong>Giảm giá lớp:</strong></label>
+                                <p><span class="badge ${discountPercent > 0 ? 'badge-warning' : 'badge-secondary'}">${discountPercent}% giảm</span></p>
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label><strong>Số lớp tối đa:</strong></label>
+                                <p>${maxClasses}</p>
+                            </div>
+                            <div class="form-group">
+                                <label><strong>Huấn luyện viên riêng:</strong></label>
+                                <p>${membership.hasPersonalTrainer ? '✅ Có' : '❌ Không'}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label><strong>Mô tả:</strong></label>
+                            <p style="background: #f8f9fa; padding: 10px; border-radius: 5px;">${membership.description || 'Không có mô tả'}</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><strong>Quyền lợi:</strong></label>
+                            ${benefits.length > 0 ? 
+                                '<ul style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">' + 
+                                benefits.map(benefit => `<li style="margin: 5px 0;">✅ ${benefit}</li>`).join('') + 
+                                '</ul>' 
+                                : '<p style="color: #666;">Chưa có quyền lợi nào được định nghĩa</p>'
+                            }
+                        </div>
+                        
+                        <div style="margin-top: 20px; text-align: center;">
+                            <button class="btn btn-warning" onclick="editMembership(${membership.id}); closeModal();">✏️ Chỉnh sửa</button>
+                            <button class="btn btn-secondary" onclick="closeModal();">Đóng</button>
+                        </div>
+                    </div>
+                `;
+                
+                showModal(`Chi tiết gói tập: ${membership.name}`, content);
+                
+            } catch (error) {
+                alert(`❌ Lỗi: ${error.message}`);
+            }
         }
 
         // Member CRUD operations
@@ -1833,7 +2485,7 @@
                 const response = await apiCall(`/members/${id}`);
                 const member = response.data;
                 
-                if(confirm(`Xóa hội viên "${member.fullName}" (${member.memberCode})?\n\nHành động này không thể hoàn tác!`)) {
+                if(confirm(`⚠️ XÓA HOÀN TOÀN HỘI VIÊN "${member.fullName}" (${member.memberCode})?\n\n🗑️ Sẽ xóa tất cả:\n• Tài khoản đăng nhập\n• Tất cả đăng ký lớp học\n• Lịch sử thành viên\n• Tất cả dữ liệu liên quan\n\n⚠️ HÀNH ĐỘNG NÀY KHÔNG THỂ HOÀN TÁC!\n\nBạn có chắc chắn?`)) {
                     await apiCall(`/members/${id}`, 'DELETE');
                     alert('✅ Đã xóa thành viên thành công!');
                     loadMembers();
@@ -1967,7 +2619,7 @@
                 const response = await apiCall(`/members/${id}`);
                 const trainer = response.data;
                 
-                if(confirm(`Xóa huấn luyện viên "${trainer.fullName}" (${trainer.memberCode})?\n\nHành động này không thể hoàn tác!`)) {
+                if(confirm(`⚠️ XÓA HOÀN TOÀN HUẤN LUYỆN VIÊN "${trainer.fullName}" (${trainer.memberCode})?\n\n🗑️ Sẽ xóa tất cả:\n• Tài khoản đăng nhập\n• Tất cả lịch tập HLV này dạy\n• Tất cả đăng ký của lịch tập đó\n• Lịch sử và dữ liệu liên quan\n\n⚠️ HÀNH ĐỘNG NÀY KHÔNG THỂ HOÀN TÁC!\n\nBạn có chắc chắn?`)) {
                     // Delete member record only
                     await apiCall(`/members/${id}`, 'DELETE');
                     alert('✅ Đã xóa huấn luyện viên thành công!');
@@ -1992,14 +2644,6 @@
                         <div class="form-group">
                             <label>Mô tả</label>
                             <textarea name="description">${classType.description || ''}</textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Thời lượng (phút) *</label>
-                            <input type="number" name="duration" value="${classType.duration}" required min="15" max="180">
-                        </div>
-                        <div class="form-group">
-                            <label>Số lượng tối đa *</label>
-                            <input type="number" name="maxParticipants" value="${classType.maxParticipants}" required min="1" max="100">
                         </div>
                         <div class="form-group">
                             <label>Độ khó</label>
@@ -2030,8 +2674,6 @@
                     e.preventDefault();
                     const formData = new FormData(e.target);
                     const data = Object.fromEntries(formData.entries());
-                    data.duration = parseInt(data.duration);
-                    data.maxParticipants = parseInt(data.maxParticipants);
                     data.isActive = data.isActive === 'true';
                     
                     try {
@@ -2068,15 +2710,15 @@
         async function editClass(id) {
             try {
                 // Load class data, class types, and trainers
-                const [classResponse, classTypesResponse, membersResponse] = await Promise.all([
+                const [classResponse, classTypesResponse, trainersResponse] = await Promise.all([
                     apiCall(`/classes/${id}`),
                     apiCall('/classes/types'),
-                    apiCall('/members?limit=100')
+                    apiCall('/members/trainers')
                 ]);
                 
                 const classData = classResponse.data;
-                const classTypes = classTypesResponse.data?.classTypes || [];
-                const trainers = membersResponse.data?.members?.filter(m => m.user?.role === 'trainer') || [];
+                const classTypes = classTypesResponse.data || [];
+                const trainers = trainersResponse.data || [];
                 
                 const content = `
                     <form id="editClassForm">
@@ -2392,17 +3034,21 @@
             }
         }
         function showCreateScheduleModal() {
-            // Load classes for dropdown
-            apiCall('/classes').then(response => {
-                const classes = response.data?.classes || [];
+            // Load classes and trainers for dropdown
+            Promise.all([
+                apiCall('/classes'),
+                apiCall('/members/trainers')
+            ]).then(([classesResponse, trainersResponse]) => {
+                const classes = classesResponse.data?.classes || [];
+                const trainers = trainersResponse.data || [];
                 
                 const content = `
                     <form id="createScheduleForm">
                         <div class="form-group">
                             <label>Lớp học *</label>
-                            <select name="classId" required>
+                            <select name="classId" required onchange="updateScheduleDetails()">
                                 <option value="">Chọn lớp học</option>
-                                ${classes.map(cls => `<option value="${cls.id}">${cls.name} (${cls.classType.name})</option>`).join('')}
+                                ${classes.map(cls => `<option value="${cls.id}" data-duration="${cls.duration}" data-room="${cls.room || ''}">${cls.name} (${cls.classType.name})</option>`).join('')}
                             </select>
                         </div>
                         <div class="form-group">
@@ -2411,15 +3057,27 @@
                         </div>
                         <div class="form-group">
                             <label>Giờ bắt đầu *</label>
-                            <input type="time" name="startTime" required>
+                            <input type="time" name="startTime" required onchange="calculateEndTime()">
                         </div>
                         <div class="form-group">
-                            <label>Giờ kết thúc *</label>
-                            <input type="time" name="endTime" required>
+                            <label>Giờ kết thúc (tự động tính)</label>
+                            <input type="time" name="endTime" readonly style="background-color: #f5f5f5;">
+                            <small style="color: #666;">Được tính tự động từ thời lượng lớp học</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Thời lượng (phút)</label>
+                            <input type="number" name="duration" readonly style="background-color: #f5f5f5;" placeholder="Được lấy từ lớp học">
                         </div>
                         <div class="form-group">
                             <label>Phòng tập</label>
-                            <input type="text" name="room" placeholder="VD: Studio A, Phòng tập 1">
+                            <input type="text" name="room" placeholder="Được lấy từ lớp học hoặc nhập thủ công">
+                        </div>
+                        <div class="form-group">
+                            <label>Huấn luyện viên *</label>
+                            <select name="trainerId" required>
+                                <option value="">Chọn huấn luyện viên</option>
+                                ${trainers.map(trainer => `<option value="${trainer.id}">${trainer.fullName}</option>`).join('')}
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Ghi chú</label>
@@ -2431,12 +3089,89 @@
                 `;
                 showModal('Thêm lịch tập mới', content);
                 
+                // Functions to handle auto-calculation
+                window.updateScheduleDetails = function() {
+                    const classSelect = document.querySelector('select[name="classId"]');
+                    const selectedOption = classSelect.options[classSelect.selectedIndex];
+                    
+                    if (selectedOption.value) {
+                        const duration = selectedOption.dataset.duration;
+                        const room = selectedOption.dataset.room;
+                        
+                        // Update duration field
+                        document.querySelector('input[name="duration"]').value = duration || '';
+                        
+                        // Update room field
+                        document.querySelector('input[name="room"]').value = room || '';
+                        
+                        // Recalculate end time if start time is already set
+                        calculateEndTime();
+                    }
+                };
+                
+                window.calculateEndTime = function() {
+                    const startTimeInput = document.querySelector('input[name="startTime"]');
+                    const endTimeInput = document.querySelector('input[name="endTime"]');
+                    const durationInput = document.querySelector('input[name="duration"]');
+                    
+                    if (startTimeInput.value && durationInput.value) {
+                        const startTime = startTimeInput.value;
+                        const duration = parseInt(durationInput.value);
+                        
+                        // Parse start time
+                        const [hours, minutes] = startTime.split(':').map(Number);
+                        
+                        // Calculate end time
+                        const startDate = new Date();
+                        startDate.setHours(hours, minutes, 0, 0);
+                        
+                        const endDate = new Date(startDate.getTime() + duration * 60000); // Add duration in milliseconds
+                        
+                        // Format end time as HH:MM
+                        const endHours = endDate.getHours().toString().padStart(2, '0');
+                        const endMinutes = endDate.getMinutes().toString().padStart(2, '0');
+                        const endTime = `${endHours}:${endMinutes}`;
+                        
+                        endTimeInput.value = endTime;
+                    }
+                };
+                
                 document.getElementById('createScheduleForm').onsubmit = async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.target);
                     const data = Object.fromEntries(formData.entries());
                     
-                    // Keep time in HH:MM format as API expects
+                    // Validate required fields
+                    if (!data.classId) {
+                        document.getElementById('createScheduleResult').innerHTML = '<div class="error">❌ Vui lòng chọn lớp học</div>';
+                        return;
+                    }
+                    
+                    if (!data.startTime) {
+                        document.getElementById('createScheduleResult').innerHTML = '<div class="error">❌ Vui lòng chọn giờ bắt đầu</div>';
+                        return;
+                    }
+                    
+                    if (!data.trainerId) {
+                        document.getElementById('createScheduleResult').innerHTML = '<div class="error">❌ Vui lòng chọn huấn luyện viên</div>';
+                        return;
+                    }
+                    
+                    // Ensure end time is calculated
+                    if (!data.endTime) {
+                        calculateEndTime();
+                        data.endTime = document.querySelector('input[name="endTime"]').value;
+                    }
+                    
+                    // Remove duration from data (not needed for API)
+                    delete data.duration;
+                    
+                    // Remove empty fields
+                    Object.keys(data).forEach(key => {
+                        if (data[key] === '') {
+                            delete data[key];
+                        }
+                    });
                     
                     try {
                         const classId = data.classId;
@@ -2447,6 +3182,9 @@
                         setTimeout(() => {
                             closeModal();
                             loadSchedules();
+                            // Đảm bảo ở lại tab schedules
+                            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                            document.querySelector('[onclick="switchTab(\'schedules\')"]').classList.add('active');
                         }, 2000);
                     } catch (error) {
                         document.getElementById('createScheduleResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
@@ -2456,11 +3194,132 @@
         }
 
         function viewMemberDetails(id) { alert('Chức năng xem chi tiết sẽ được phát triển'); }
-        function viewEnrollments(id) { alert('Chức năng xem đăng ký sẽ được phát triển'); }
+        
+        // Xem danh sách đăng ký của một lịch tập
+        async function viewEnrollments(scheduleId) {
+            try {
+                const [scheduleResponse, enrollmentsResponse] = await Promise.all([
+                    apiCall(`/classes/schedules/${scheduleId}`),
+                    apiCall(`/classes/schedules/${scheduleId}/enrollments`)
+                ]);
+                
+                const schedule = scheduleResponse.data;
+                const allEnrollments = enrollmentsResponse.data || [];
+                // Filter out cancelled enrollments for display count
+                const enrollments = allEnrollments.filter(e => e.status !== 'cancelled');
+                const activeCount = enrollments.length;
+                
+                const startTime = new Date(schedule.startTime);
+                const endTime = new Date(schedule.endTime);
+                
+                let enrollmentHtml = '';
+                // Show all enrollments (including cancelled) for admin to see full history
+                const displayEnrollments = allEnrollments;
+                if (displayEnrollments.length === 0) {
+                    enrollmentHtml = '<p style="text-align: center; color: #666; margin: 20px;">Chưa có ai đăng ký lịch tập này</p>';
+                } else {
+                    enrollmentHtml = `
+                        <table class="data-table" style="margin-top: 15px;">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Mã HV</th>
+                                    <th>Họ tên</th>
+                                    <th>Điện thoại</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày đăng ký</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    displayEnrollments.forEach((enrollment, index) => {
+                        const member = enrollment.member || {};
+                        const enrollDate = new Date(enrollment.enrollmentDate);
+                        const statusText = {
+                            'enrolled': 'Đã đăng ký',
+                            'attended': 'Đã tham gia',
+                            'cancelled': 'Đã hủy',
+                            'no_show': 'Vắng mặt'
+                        }[enrollment.status] || enrollment.status;
+                        
+                        const statusColor = {
+                            'enrolled': '#17a2b8',
+                            'attended': '#28a745',
+                            'cancelled': '#dc3545',
+                            'no_show': '#ffc107'
+                        }[enrollment.status] || '#6c757d';
+                        
+                        enrollmentHtml += `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${member.memberCode || 'N/A'}</td>
+                                <td>${member.fullName || 'N/A'}</td>
+                                <td>${member.phone || 'N/A'}</td>
+                                <td><span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></td>
+                                <td>${enrollDate.toLocaleDateString('vi-VN')}</td>
+                                <td>
+                                    ${enrollment.status === 'enrolled' ? 
+                                        `<button class="btn btn-sm btn-danger" onclick="cancelScheduleEnrollment(${enrollment.id})">❌ Hủy</button>` :
+                                        '<span style="color: #999;">-</span>'
+                                    }
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    enrollmentHtml += '</tbody></table>';
+                }
+                
+                const content = `
+                    <div class="schedule-enrollment-details">
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <h4 style="margin-bottom: 10px; color: #333;">📅 Thông tin lịch tập</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div><strong>Lớp học:</strong> ${schedule.class?.name || 'N/A'}</div>
+                                <div><strong>Ngày:</strong> ${startTime.toLocaleDateString('vi-VN')}</div>
+                                <div><strong>Thời gian:</strong> ${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}</div>
+                                <div><strong>HLV:</strong> ${schedule.trainer?.fullName || 'N/A'}</div>
+                                <div><strong>Phòng:</strong> ${schedule.room || 'N/A'}</div>
+                                <div><strong>Số lượng:</strong> ${activeCount}/${schedule.maxParticipants || 0} người</div>
+                            </div>
+                        </div>
+                        
+                        <h4 style="margin-bottom: 15px; color: #333;">👥 Danh sách đăng ký (${displayEnrollments.length} người, ${activeCount} đang hoạt động)</h4>
+                        ${enrollmentHtml}
+                    </div>
+                `;
+                
+                showModal('Danh sách đăng ký lịch tập', content);
+                
+            } catch (error) {
+                alert(`❌ Lỗi tải danh sách đăng ký: ${error.message}`);
+            }
+        }
+        
+        // Hủy đăng ký của một học viên trong lịch tập
+        async function cancelScheduleEnrollment(enrollmentId) {
+            if (!confirm('Bạn có chắc muốn hủy đăng ký này?')) return;
+            
+            try {
+                await apiCall(`/classes/enrollments/${enrollmentId}`, 'DELETE');
+                alert('✅ Đã hủy đăng ký thành công!');
+                // Reload modal hiện tại (tìm scheduleId từ modal đang mở)
+                const modal = document.getElementById('modalContainer');
+                if (modal && modal.style.display !== 'none') {
+                    // Đóng modal và tải lại danh sách schedules
+                    closeModal();
+                    loadSchedules();
+                }
+            } catch (error) {
+                alert(`❌ Lỗi hủy đăng ký: ${error.message}`);
+            }
+        }
+        
         function cancelEnrollment(id) { if(confirm('Hủy đăng ký này?')) alert('Chức năng hủy sẽ được phát triển'); }
         function filterClasses() {
             const classTypeFilter = document.getElementById('classTypeFilter').value;
-            const trainerFilter = document.getElementById('trainerFilter').value;
             
             let filteredClasses = allClasses;
             
@@ -2470,23 +3329,23 @@
                 );
             }
             
-            if (trainerFilter) {
-                filteredClasses = filteredClasses.filter(cls => 
-                    cls.trainerId == trainerFilter
-                );
-            }
-            
             displayClasses(filteredClasses);
         }
         function filterSchedules() {
             const dateFilter = document.getElementById('scheduleDate').value;
             const classFilter = document.getElementById('scheduleClassFilter').value;
+            const trainerFilter = document.getElementById('scheduleTrainerFilter').value;
+            
+            console.log('🔍 filterSchedules - Filters:', {dateFilter, classFilter, trainerFilter});
+            console.log('🔍 filterSchedules - Total schedules:', allSchedules.length);
             
             let filteredSchedules = allSchedules;
             
             if (dateFilter) {
                 filteredSchedules = filteredSchedules.filter(schedule => {
-                    const scheduleDate = new Date(schedule.startTime).toISOString().split('T')[0];
+                    // Sử dụng field date thay vì startTime
+                    const scheduleDate = schedule.date;
+                    console.log('🔍 Comparing:', scheduleDate, 'vs', dateFilter);
                     return scheduleDate === dateFilter;
                 });
             }
@@ -2497,6 +3356,13 @@
                 );
             }
             
+            if (trainerFilter) {
+                filteredSchedules = filteredSchedules.filter(schedule => 
+                    schedule.trainerId == trainerFilter
+                );
+            }
+            
+            console.log('🔍 filterSchedules - Final count:', filteredSchedules.length);
             displaySchedules(filteredSchedules);
         }
         function filterEnrollments() { loadEnrollments(); }
@@ -2551,6 +3417,639 @@
             localStorage.removeItem('gym_auth_token');
             localStorage.removeItem('gym_user_info');
             window.location.href = 'index.html';
+        }
+
+        // Billing Functions
+        function switchBillingTab(tabName) {
+            // Hide all billing tab contents
+            document.querySelectorAll('.billing-tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all mini tab buttons
+            document.querySelectorAll('.mini-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab and add active class to button
+            document.getElementById(tabName + '-billing-tab').classList.add('active');
+            event.target.classList.add('active');
+
+            // Load data based on tab
+            if (tabName === 'invoices') {
+                loadAdminInvoices();
+            } else if (tabName === 'payments') {
+                loadAdminPayments();
+            } else if (tabName === 'revenue') {
+                loadRevenueReports();
+            }
+        }
+
+        // Load admin invoices
+        async function loadAdminInvoices() {
+            try {
+                const response = await fetch('/api/invoices', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayAdminInvoices(data.data.invoices);
+                } else {
+                    document.getElementById('adminInvoicesList').innerHTML = '<p>Không thể tải danh sách hóa đơn</p>';
+                }
+            } catch (error) {
+                console.error('Error loading admin invoices:', error);
+                document.getElementById('adminInvoicesList').innerHTML = '<p>Lỗi khi tải danh sách hóa đơn</p>';
+            }
+        }
+
+        // Load admin payments
+        async function loadAdminPayments() {
+            try {
+                const response = await fetch('/api/payments', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const payments = data.data.payments;
+                    
+                    // Check for new payments
+                    if (lastPaymentCount > 0 && payments.length > lastPaymentCount) {
+                        showToast('💰 Có thanh toán mới!', 'success');
+                        updateRevenueStats(); // Refresh revenue immediately
+                    }
+                    lastPaymentCount = payments.length;
+                    
+                    displayAdminPayments(payments);
+                } else {
+                    document.getElementById('adminPaymentsList').innerHTML = '<p>Không thể tải danh sách thanh toán</p>';
+                }
+            } catch (error) {
+                console.error('Error loading admin payments:', error);
+                document.getElementById('adminPaymentsList').innerHTML = '<p>Lỗi khi tải danh sách thanh toán</p>';
+            }
+        }
+
+        // Load revenue reports
+        async function loadRevenueReports() {
+            try {
+                const response = await fetch('/api/payments/revenue', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayRevenueReports(data.data);
+                    updateRevenueStats(data.data);
+                } else {
+                    console.error('Failed to load revenue reports');
+                }
+            } catch (error) {
+                console.error('Error loading revenue reports:', error);
+            }
+        }
+
+        // Display admin invoices
+        function displayAdminInvoices(invoices) {
+            const container = document.getElementById('adminInvoicesList');
+            
+            if (!invoices || invoices.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; margin: 40px 0;">Chưa có hóa đơn nào</p>';
+                return;
+            }
+
+            // Sort invoices by status priority and time
+            const statusPriority = {
+                'paid': 1,      // Đã thanh toán - ưu tiên cao nhất
+                'sent': 2,      // Đã gửi
+                'overdue': 2,   // Quá hạn (cùng mức với đã gửi)
+                'draft': 3,     // Nháp - ưu tiên thấp nhất
+                'cancelled': 4  // Đã hủy - cuối cùng
+            };
+
+            invoices.sort((a, b) => {
+                // Sort by status priority first
+                const priorityDiff = statusPriority[a.status] - statusPriority[b.status];
+                if (priorityDiff !== 0) return priorityDiff;
+                
+                // Within same status, sort by time (newest first for paid, newest first for others)
+                if (a.status === 'paid') {
+                    return new Date(b.updatedAt) - new Date(a.updatedAt); // Newest paid first
+                } else {
+                    return new Date(b.createdAt) - new Date(a.createdAt); // Newest created first
+                }
+            });
+
+            container.innerHTML = invoices.map(invoice => `
+                <div class="invoice-item">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <div>
+                            <h4 style="margin: 0; color: #333;">#${invoice.invoiceNumber}</h4>
+                            <p style="margin: 5px 0; color: #666;">Khách hàng: ${invoice.member?.fullName || 'N/A'}</p>
+                            <p style="margin: 5px 0; color: #666;">${invoice.description || 'Hóa đơn thanh toán'}</p>
+                        </div>
+                        <span class="status-badge status-${invoice.status}">${getInvoiceStatusText(invoice.status)}</span>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; margin-bottom: 15px;">
+                        <div>
+                            <strong>Tổng tiền:</strong><br>
+                            <span style="font-size: 18px; color: #5b86e5; font-weight: bold;">${formatCurrency(invoice.totalAmount)}</span>
+                        </div>
+                        <div>
+                            <strong>Đã thanh toán:</strong><br>
+                            <span style="color: #28a745;">${formatCurrency(invoice.paidAmount || 0)}</span>
+                        </div>
+                        <div>
+                            <strong>Ngày phát hành:</strong><br>
+                            ${formatDate(invoice.issueDate)}
+                        </div>
+                        <div>
+                            <strong>Hạn thanh toán:</strong><br>
+                            <span style="color: ${new Date(invoice.dueDate) < new Date() ? '#dc3545' : '#666'};">
+                                ${formatDate(invoice.dueDate)}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px; text-align: right;">
+                        ${invoice.status === 'draft' ? `
+                            <button class="btn btn-primary" onclick="sendInvoice(${invoice.id})">📧 Gửi hóa đơn</button>
+                            <button class="btn btn-secondary" onclick="editInvoice(${invoice.id})">✏️ Chỉnh sửa</button>
+                        ` : ''}
+                        ${invoice.status === 'sent' || invoice.status === 'overdue' ? `
+                            <button class="btn btn-success" onclick="markInvoiceAsPaid(${invoice.id})">✅ Đánh dấu đã thanh toán</button>
+                        ` : ''}
+                        <button class="btn btn-info" onclick="viewInvoiceDetails(${invoice.id})">👁️ Xem chi tiết</button>
+                        <button class="btn btn-danger" onclick="cancelInvoice(${invoice.id})">❌ Hủy</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Display admin payments
+        function displayAdminPayments(payments) {
+            const container = document.getElementById('adminPaymentsList');
+            
+            if (!payments || payments.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; margin: 40px 0;">Chưa có thanh toán nào</p>';
+                return;
+            }
+
+            container.innerHTML = payments.map(payment => `
+                <div class="payment-item">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <div>
+                            <h4 style="margin: 0; color: #333;">${payment.description || getPaymentTypeText(payment.paymentType)}</h4>
+                            <p style="margin: 5px 0; color: #666;">Khách hàng: ${payment.member?.fullName || 'N/A'}</p>
+                            <p style="margin: 5px 0; color: #666;">Mã thanh toán: #${payment.id}</p>
+                        </div>
+                        <span class="status-badge status-${payment.paymentStatus}">${getPaymentStatusText(payment.paymentStatus)}</span>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; margin-bottom: 15px;">
+                        <div>
+                            <strong>Số tiền:</strong><br>
+                            <span style="font-size: 18px; color: #28a745; font-weight: bold;">${formatCurrency(payment.amount)}</span>
+                        </div>
+                        <div>
+                            <strong>Phương thức:</strong><br>
+                            ${getPaymentMethodText(payment.paymentMethod)}
+                        </div>
+                        <div>
+                            <strong>Ngày tạo:</strong><br>
+                            ${formatDate(payment.createdAt)}
+                        </div>
+                        <div>
+                            <strong>Ngày thanh toán:</strong><br>
+                            ${payment.paymentDate ? formatDate(payment.paymentDate) : 'Chưa thanh toán'}
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px; text-align: right;">
+                        ${payment.paymentStatus === 'pending' ? `
+                            <button class="btn btn-success" onclick="processPayment(${payment.id})">✅ Xác nhận thanh toán</button>
+                            <button class="btn btn-warning" onclick="sendPaymentReminder(${payment.id})">📧 Nhắc nhở</button>
+                        ` : ''}
+                        <button class="btn btn-info" onclick="viewPaymentDetails(${payment.id})">👁️ Chi tiết</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update revenue stats
+        async function updateRevenueStats() {
+            try {
+                console.log('📊 Updating revenue stats...');
+                const response = await fetch('/api/payments/revenue', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const stats = data.data;
+                    console.log('📊 Revenue stats received:', stats);
+
+                    document.getElementById('totalRevenue').textContent = formatCurrency(stats.totalRevenue || 0);
+                    
+                    // Calculate monthly revenue (current month)
+                    const currentMonth = stats.monthlyRevenue?.find(m => 
+                        m.month === new Date().toISOString().slice(0, 7)
+                    );
+                    document.getElementById('monthlyRevenue').textContent = 
+                        formatCurrency(currentMonth?.totalAmount || 0);
+
+                    // Get pending and overdue from invoices
+                    const invoicesResponse = await fetch('/api/invoices', {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                    });
+                    
+                    if (invoicesResponse.ok) {
+                        const invoicesData = await invoicesResponse.json();
+                        const invoices = invoicesData.data.invoices;
+                        
+                        const pending = invoices
+                            .filter(inv => inv.status === 'sent')
+                            .reduce((sum, inv) => sum + parseFloat(inv.totalAmount), 0);
+                        
+                        const overdue = invoices
+                            .filter(inv => inv.status === 'overdue')
+                            .reduce((sum, inv) => sum + parseFloat(inv.totalAmount), 0);
+
+                        document.getElementById('pendingPayments').textContent = formatCurrency(pending);
+                        document.getElementById('overduePayments').textContent = formatCurrency(overdue);
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating revenue stats:', error);
+            }
+        }
+
+        // Display revenue reports
+        function displayRevenueReports(data) {
+            // Simple text display for now - you can integrate charts here
+            const typeChart = document.getElementById('revenueByTypeChart');
+            if (data.revenueByType && data.revenueByType.length > 0) {
+                typeChart.innerHTML = `
+                    <div style="padding: 20px;">
+                        <h5>Doanh thu theo loại thanh toán:</h5>
+                        ${data.revenueByType.map(item => `
+                            <p><strong>${getPaymentTypeText(item.paymentType)}:</strong> ${formatCurrency(item.totalAmount)} (${item.count} giao dịch)</p>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            const methodChart = document.getElementById('revenueByMethodChart');
+            if (data.revenueByMethod && data.revenueByMethod.length > 0) {
+                methodChart.innerHTML = `
+                    <div style="padding: 20px;">
+                        <h5>Doanh thu theo phương thức:</h5>
+                        ${data.revenueByMethod.map(item => `
+                            <p><strong>${getPaymentMethodText(item.paymentMethod)}:</strong> ${formatCurrency(item.totalAmount)} (${item.count} giao dịch)</p>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            const monthlyChart = document.getElementById('monthlyRevenueChart');
+            if (data.monthlyRevenue && data.monthlyRevenue.length > 0) {
+                monthlyChart.innerHTML = `
+                    <div style="padding: 20px;">
+                        <h5>Doanh thu hàng tháng:</h5>
+                        ${data.monthlyRevenue.map(item => `
+                            <p><strong>Tháng ${item.month}:</strong> ${formatCurrency(item.totalAmount)} (${item.count} giao dịch)</p>
+                        `).join('')}
+                    </div>
+                `;
+            }
+        }
+
+        // Helper functions for payment status, method, type texts (reuse from member interface)
+        function getInvoiceStatusText(status) {
+            const statusMap = {
+                'draft': 'Nháp',
+                'sent': 'Đã gửi',
+                'paid': 'Đã thanh toán',
+                'overdue': 'Quá hạn',
+                'cancelled': 'Đã hủy'
+            };
+            return statusMap[status] || status;
+        }
+
+        function getPaymentStatusText(status) {
+            const statusMap = {
+                'pending': 'Chờ xử lý',
+                'completed': 'Hoàn thành',
+                'failed': 'Thất bại',
+                'refunded': 'Đã hoàn tiền'
+            };
+            return statusMap[status] || status;
+        }
+
+        function getPaymentMethodText(method) {
+            const methodMap = {
+                'cash': 'Tiền mặt',
+                'card': 'Thẻ',
+                'bank_transfer': 'Chuyển khoản',
+                'mobile_payment': 'Ví điện tử'
+            };
+            return methodMap[method] || method;
+        }
+
+        function getPaymentTypeText(type) {
+            const typeMap = {
+                'membership': 'Phí gói tập',
+                'class': 'Phí lớp tập',
+                'service': 'Dịch vụ',
+                'penalty': 'Phí phạt',
+                'other': 'Khác'
+            };
+            return typeMap[type] || type;
+        }
+
+        // Action functions (placeholders)
+        function showCreateInvoiceModal() {
+            showToast('🔧 Chức năng tạo hóa đơn đang được phát triển...', 'info');
+        }
+
+        function showCreatePaymentModal() {
+            showToast('🔧 Chức năng ghi nhận thanh toán đang được phát triển...', 'info');
+        }
+
+        async function sendInvoice(invoiceId) {
+            try {
+                const response = await fetch(`/api/invoices/${invoiceId}/send`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+
+                if (response.ok) {
+                    showToast('✅ Đã gửi hóa đơn thành công!', 'success');
+                    loadAdminInvoices(); // Reload to show updated status
+                } else {
+                    const error = await response.json();
+                    showToast(`❌ Lỗi: ${error.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error sending invoice:', error);
+                showToast('❌ Lỗi khi gửi hóa đơn', 'error');
+            }
+        }
+
+        async function markInvoiceAsPaid(invoiceId) {
+            if (!confirm('Xác nhận đánh dấu hóa đơn này đã được thanh toán?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/invoices/${invoiceId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}`
+                    },
+                    body: JSON.stringify({ status: 'paid' })
+                });
+
+                if (response.ok) {
+                    showToast('✅ Đã đánh dấu hóa đơn đã thanh toán!', 'success');
+                    loadAdminInvoices(); // Reload to show updated status
+                    updateRevenueStats(); // Update revenue stats
+                } else {
+                    const error = await response.json();
+                    showToast(`❌ Lỗi: ${error.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error marking invoice as paid:', error);
+                showToast('❌ Lỗi khi cập nhật trạng thái hóa đơn', 'error');
+            }
+        }
+
+        async function processPayment(paymentId) {
+            if (!confirm('Xác nhận phê duyệt thanh toán này?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/payments/${paymentId}/process`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}`
+                    },
+                    body: JSON.stringify({
+                        transactionId: `ADM${Date.now()}`
+                    })
+                });
+
+                if (response.ok) {
+                    showToast('✅ Đã phê duyệt thanh toán!', 'success');
+                    loadAdminPayments(); // Reload to show updated status
+                    updateRevenueStats(); // Update revenue stats
+                } else {
+                    const error = await response.json();
+                    showToast(`❌ Lỗi: ${error.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error processing payment:', error);
+                showToast('❌ Lỗi khi xử lý thanh toán', 'error');
+            }
+        }
+
+        async function viewInvoiceDetails(invoiceId) {
+            try {
+                const response = await fetch(`/api/invoices/${invoiceId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const invoice = data.data;
+                    
+                    // Get payment info
+                    const completedPayments = invoice.payments?.filter(p => p.paymentStatus === 'completed') || [];
+                    const latestPayment = completedPayments.length > 0 ? 
+                        completedPayments.sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))[0] : null;
+
+                    const detailsHtml = `
+                        <div style="padding: 20px;">
+                            <h3>Chi tiết hóa đơn ${invoice.invoiceNumber}</h3>
+                            <p><strong>Khách hàng:</strong> ${invoice.member?.fullName || 'N/A'}</p>
+                            <p><strong>Ngày tạo:</strong> ${formatDate(invoice.issueDate)}</p>
+                            <p><strong>Hạn thanh toán:</strong> ${formatDate(invoice.dueDate)}</p>
+                            <p><strong>Tổng tiền:</strong> ${formatCurrency(invoice.totalAmount)}</p>
+                            <p><strong>Đã thanh toán:</strong> ${formatCurrency(invoice.paidAmount)}</p>
+                            <p><strong>Còn lại:</strong> ${formatCurrency(invoice.totalAmount - invoice.paidAmount)}</p>
+                            <p><strong>Trạng thái:</strong> ${getInvoiceStatusText(invoice.status)}</p>
+                            ${latestPayment ? `<p><strong>Thời gian thanh toán:</strong> ${formatDate(latestPayment.paymentDate)}</p>` : ''}
+                            ${latestPayment ? `<p><strong>Phương thức thanh toán:</strong> ${getPaymentMethodText(latestPayment.paymentMethod)}</p>` : ''}
+                            <p><strong>Mô tả:</strong> ${invoice.description || 'Không có'}</p>
+                            <p><strong>Ghi chú:</strong> ${invoice.notes || 'Không có'}</p>
+                            ${completedPayments.length > 0 ? `
+                                <div style="margin-top: 20px;">
+                                    <h4>Lịch sử thanh toán:</h4>
+                                    ${completedPayments.map(payment => `
+                                        <div style="background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 4px;">
+                                            <strong>${formatCurrency(payment.amount)}</strong> - 
+                                            ${getPaymentMethodText(payment.paymentMethod)} - 
+                                            ${formatDate(payment.paymentDate)}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+
+                    // Create modal
+                    const modal = document.createElement('div');
+                    modal.style.cssText = `
+                        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                        background: rgba(0,0,0,0.5); z-index: 1000; 
+                        display: flex; align-items: center; justify-content: center;
+                    `;
+                    
+                    const content = document.createElement('div');
+                    content.style.cssText = `
+                        background: white; border-radius: 8px; max-width: 500px; width: 90%;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    `;
+                    content.innerHTML = detailsHtml + `
+                        <div style="padding: 0 20px 20px; text-align: right;">
+                            <button onclick="this.closest('.modal').remove()" 
+                                style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                                Đóng
+                            </button>
+                        </div>
+                    `;
+                    
+                    modal.className = 'modal';
+                    modal.appendChild(content);
+                    document.body.appendChild(modal);
+                    
+                    // Close on background click
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) modal.remove();
+                    });
+                } else {
+                    showToast('❌ Không thể tải chi tiết hóa đơn', 'error');
+                }
+            } catch (error) {
+                console.error('Error viewing invoice details:', error);
+                showToast('❌ Lỗi khi tải chi tiết hóa đơn', 'error');
+            }
+        }
+
+        function editInvoice(invoiceId) {
+            showToast('🔧 Chức năng chỉnh sửa hóa đơn đang được phát triển...', 'info');
+        }
+
+        async function cancelInvoice(invoiceId) {
+            const reason = prompt('Nhập lý do hủy hóa đơn:');
+            if (!reason) return;
+
+            try {
+                const response = await fetch(`/api/invoices/${invoiceId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}`
+                    },
+                    body: JSON.stringify({ reason })
+                });
+
+                if (response.ok) {
+                    showToast('✅ Đã hủy hóa đơn!', 'success');
+                    loadAdminInvoices(); // Reload to show updated status
+                } else {
+                    const error = await response.json();
+                    showToast(`❌ Lỗi: ${error.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error cancelling invoice:', error);
+                showToast('❌ Lỗi khi hủy hóa đơn', 'error');
+            }
+        }
+
+        function sendPaymentReminder(paymentId) {
+            showToast('📧 Chức năng nhắc nhở thanh toán đang được phát triển...', 'info');
+        }
+
+        async function viewPaymentDetails(paymentId) {
+            try {
+                const response = await fetch(`/api/payments/${paymentId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const payment = data.data;
+                    
+                    const detailsHtml = `
+                        <div style="padding: 20px;">
+                            <h3>Chi tiết thanh toán #${payment.id}</h3>
+                            <p><strong>Khách hàng:</strong> ${payment.member?.fullName || 'N/A'}</p>
+                            <p><strong>Số tiền:</strong> ${formatCurrency(payment.amount)}</p>
+                            <p><strong>Phương thức:</strong> ${getPaymentMethodText(payment.paymentMethod)}</p>
+                            <p><strong>Loại thanh toán:</strong> ${getPaymentTypeText(payment.paymentType)}</p>
+                            <p><strong>Trạng thái:</strong> ${getPaymentStatusText(payment.paymentStatus)}</p>
+                            <p><strong>Ngày tạo:</strong> ${formatDate(payment.createdAt)}</p>
+                            <p><strong>Ngày thanh toán:</strong> ${payment.paymentDate ? formatDate(payment.paymentDate) : 'Chưa thanh toán'}</p>
+                            <p><strong>Mã giao dịch:</strong> ${payment.transactionId || 'N/A'}</p>
+                            <p><strong>Mô tả:</strong> ${payment.description || 'Không có'}</p>
+                            <p><strong>Ghi chú:</strong> ${payment.notes || 'Không có'}</p>
+                            ${payment.processor ? `<p><strong>Xử lý bởi:</strong> ${payment.processor.fullName}</p>` : ''}
+                        </div>
+                    `;
+
+                    // Create modal
+                    const modal = document.createElement('div');
+                    modal.style.cssText = `
+                        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                        background: rgba(0,0,0,0.5); z-index: 1000; 
+                        display: flex; align-items: center; justify-content: center;
+                    `;
+                    
+                    const content = document.createElement('div');
+                    content.style.cssText = `
+                        background: white; border-radius: 8px; max-width: 500px; width: 90%;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    `;
+                    content.innerHTML = detailsHtml + `
+                        <div style="padding: 0 20px 20px; text-align: right;">
+                            <button onclick="this.closest('.modal').remove()" 
+                                style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                                Đóng
+                            </button>
+                        </div>
+                    `;
+                    
+                    modal.className = 'modal';
+                    modal.appendChild(content);
+                    document.body.appendChild(modal);
+                    
+                    // Close on background click
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) modal.remove();
+                    });
+                } else {
+                    showToast('❌ Không thể tải chi tiết thanh toán', 'error');
+                }
+            } catch (error) {
+                console.error('Error viewing payment details:', error);
+                showToast('❌ Lỗi khi tải chi tiết thanh toán', 'error');
+            }
+        }
+
+        // Filter functions
+        function filterAdminInvoices() {
+            loadAdminInvoices(); // Reload with filters
+        }
+
+        function filterAdminPayments() {
+            loadAdminPayments(); // Reload with filters
         }
     </script>
 </body>

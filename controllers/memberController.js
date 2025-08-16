@@ -54,6 +54,16 @@ const memberController = {
         });
     }),
 
+    // GET /api/members/trainers - Get all trainers (public endpoint for dropdowns)
+    getTrainers: asyncHandler(async (req, res) => {
+        const trainers = await memberService.getTrainers();
+        
+        res.json({
+            success: true,
+            data: trainers
+        });
+    }),
+
     // GET /api/members - Get all members with pagination
     getAll: asyncHandler(async (req, res) => {
         const {

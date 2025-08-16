@@ -102,10 +102,25 @@ class AuthService {
         // Tạo tokens
         const tokens = await this.generateTokens(user);
 
-        return {
+        const result = {
             user: user.toJSON(),
             ...tokens
         };
+
+        // Thêm thông tin member nếu có
+        if (user.role === 'member' || user.role === 'trainer') {
+            try {
+                const { Member } = require('../models');
+                const member = await Member.findOne({ where: { userId: user.id } });
+                if (member) {
+                    result.user.member = member.toJSON();
+                }
+            } catch (error) {
+                console.warn('Warning: Could not load member info for user:', user.id);
+            }
+        }
+
+        return result;
     }
 
     // Tạo token pair
@@ -287,6 +302,27 @@ class AuthService {
             email: email ? email.toLowerCase() : user.email,
             phone: phone !== undefined ? phone : user.phone
         });
+
+        // Also update Member table if user is a member or trainer
+        if (user.role === 'member' || user.role === 'trainer') {
+            const { Member } = require('../models');
+            // Try to find member/trainer by userId first, then by email as fallback
+            let member = await Member.findOne({ where: { userId: userId } });
+            if (!member) {
+                member = await Member.findOne({ where: { email: user.email } });
+            }
+            
+            if (member) {
+                await member.update({
+                    fullName: fullName || member.fullName,
+                    email: email ? email.toLowerCase() : member.email,
+                    phone: phone !== undefined ? phone : member.phone
+                });
+                console.log(`✅ ${user.role === 'trainer' ? 'Trainer' : 'Member'} ${member.memberCode} synced with User data`);
+            } else {
+                console.log(`⚠️ ${user.role === 'trainer' ? 'Trainer' : 'Member'} record not found for User ID ${userId}`);
+            }
+        }
 
         // Return updated user without sensitive data
         return {

@@ -19,13 +19,12 @@ const ClassType = sequelize.define('ClassType', {
     },
     duration: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
         comment: 'Duration in minutes'
     },
     maxParticipants: {
         type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 10,
+        allowNull: true,
         field: 'max_participants'
     },
     equipment: {

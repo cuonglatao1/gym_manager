@@ -131,7 +131,7 @@ const authController = {
     getProfile: async (req, res) => {
         try {
             // req.user được set bởi auth middleware
-            const { User } = require('../models');
+            const { User, Member } = require('../models');
             const user = await User.findByPk(req.user.userId);
 
             if (!user) {
@@ -141,9 +141,23 @@ const authController = {
                 });
             }
 
+            const userData = user.toJSON();
+
+            // Thêm thông tin member nếu có
+            if (user.role === 'member' || user.role === 'trainer') {
+                try {
+                    const member = await Member.findOne({ where: { userId: user.id } });
+                    if (member) {
+                        userData.member = member.toJSON();
+                    }
+                } catch (error) {
+                    console.warn('Warning: Could not load member info for user:', user.id);
+                }
+            }
+
             res.json({
                 success: true,
-                data: user.toJSON()
+                data: userData
             });
 
         } catch (error) {
