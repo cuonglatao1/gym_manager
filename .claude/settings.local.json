@@ -30,12 +30,14 @@
       "Bash(npm run lint)",
       "Bash(npm run:*)",
       "Bash(touch:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
-      "D:\\d D:"
+      "D:\\d D:",
+      "D:\\"
     ]
   }
 }

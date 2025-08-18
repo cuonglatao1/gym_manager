@@ -114,6 +114,11 @@ const membershipController = {
             }
         }
 
+        // Handle empty string fields
+        if (updateData.maxClasses === '') {
+            updateData.maxClasses = null;
+        }
+
         await membership.update(updateData);
 
         res.json({
@@ -172,6 +177,37 @@ const membershipController = {
             throw new NotFoundError('Member not found');
         }
 
+        // Check for pending MEMBERSHIP invoices before allowing membership purchase
+        const { Invoice } = require('../models');
+        const pendingMembershipInvoices = await Invoice.findAll({
+            where: {
+                memberId: member.id,
+                status: 'pending',
+                description: {
+                    [require('sequelize').Op.like]: '%Membership%'
+                }
+            }
+        });
+        
+        console.log(`🔍 [MEMBERSHIP VALIDATION] Member ID: ${member.id} has ${pendingMembershipInvoices.length} pending membership invoices`);
+        
+        if (pendingMembershipInvoices.length > 0) {
+            console.log(`❌ [MEMBERSHIP BLOCKED] Preventing membership purchase due to pending membership invoices`);
+            return res.status(400).json({
+                success: false,
+                message: `Bạn cần thanh toán ${pendingMembershipInvoices.length} hóa đơn membership chưa thanh toán trước khi đổi gói membership.`,
+                pendingInvoices: pendingMembershipInvoices.map(inv => ({
+                    id: inv.id,
+                    invoiceNumber: inv.invoiceNumber,
+                    totalAmount: inv.totalAmount,
+                    description: inv.description,
+                    dueDate: inv.dueDate
+                }))
+            });
+        }
+        
+        console.log(`✅ [MEMBERSHIP ALLOWED] No pending invoices, proceeding`);
+
         // Get membership
         const membership = await Membership.findByPk(membershipId);
         if (!membership || !membership.isActive) {
@@ -200,35 +236,41 @@ const membershipController = {
             membershipId: membership.id,
             startDate,
             endDate,
-            status: 'active',
-            price: membership.price
+            status: 'pending', // Changed from 'active' to 'pending'
+            price: membership.price,
+            paymentStatus: 'pending' // Add paymentStatus field
         });
 
-        // Create payment record
-        const { Payment } = require('../models');
-        const payment = await Payment.create({
-            memberId: member.id,
-            amount: membership.price,
-            paymentMethod,
-            paymentType: 'membership',
-            referenceId: membershipHistory.id,
-            description: `Membership purchase: ${membership.name}`,
-            paymentStatus: 'completed',
-            paymentDate: new Date()
+        // Create invoice instead of auto-completed payment
+        const invoiceService = require('../services/invoiceService');
+        const invoice = await invoiceService.generateMembershipInvoice(member.id, {
+            membershipId: membership.id,
+            duration: membership.duration,
+            price: membership.price,
+            startDate: startDate
+        });
+
+        // Update membership history with invoice reference
+        await membershipHistory.update({
+            notes: `Invoice: ${invoice.invoiceNumber}`
         });
 
         res.status(201).json({
             success: true,
-            message: 'Membership purchased successfully',
+            message: invoice ? 
+                'Đăng ký gói membership thành công! Vui lòng thanh toán hóa đơn.' : 
+                'Đăng ký gói membership thành công!',
             data: {
                 membershipHistory,
-                payment,
+                invoice,
                 membership: {
                     name: membership.name,
                     discountPercent: membership.classDiscountPercent,
                     validUntil: endDate
                 }
-            }
+            },
+            redirectToPayment: !!invoice,
+            invoiceId: invoice?.id
         });
     }),
 

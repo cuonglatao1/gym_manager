@@ -813,6 +813,7 @@
                             <select id="invoiceStatusFilter" onchange="filterInvoices()" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; margin-right: 10px;">
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="draft">Nháp</option>
+                                <option value="pending">Chờ thanh toán</option>
                                 <option value="sent">Đã gửi</option>
                                 <option value="paid">Đã thanh toán</option>
                                 <option value="overdue">Quá hạn</option>
@@ -1024,11 +1025,24 @@
 
         async function initDashboard() {
             try {
+                // Wait for core data first
                 await Promise.all([
                     loadStats(),
                     loadUpcomingSchedules(),
                     loadClassTypes()
                 ]);
+                
+                // Then load payment data (needs auth token)
+                setTimeout(async () => {
+                    try {
+                        await updatePaymentSummary();
+                        loadMemberInvoices();
+                        loadMemberPayments();
+                    } catch (error) {
+                        console.error('Error loading payment data:', error);
+                    }
+                }, 100); // Small delay to ensure auth is ready
+                
             } catch (error) {
                 console.error('Error initializing dashboard:', error);
             }
@@ -2883,7 +2897,7 @@
                         </div>
                     ` : ''}
 
-                    ${invoice.status === 'sent' || invoice.status === 'overdue' ? `
+                    ${(invoice.status === 'pending' || invoice.status === 'sent' || invoice.status === 'overdue') ? `
                         <div style="margin-top: 15px; text-align: right;">
                             <button class="btn btn-primary" onclick="payInvoice(${invoice.id})">💳 Thanh toán ngay</button>
                         </div>
@@ -2932,8 +2946,13 @@
         // Update payment summary
         async function updatePaymentSummary() {
             try {
+                console.log('💰 Updating payment summary...');
                 const memberId = await getMemberId();
-                if (!memberId) return;
+                console.log('🆔 Member ID:', memberId);
+                if (!memberId) {
+                    console.warn('❌ No member ID found, skipping payment summary');
+                    return;
+                }
 
                 // Get all invoices and payments for this member
                 const [invoicesResponse, paymentsResponse] = await Promise.all([
@@ -2957,22 +2976,45 @@
                 if (invoicesResponse.ok) {
                     const invoicesData = await invoicesResponse.json();
                     const invoices = invoicesData.data.invoices;
+                    console.log('📄 Invoices received:', invoices.length);
+                    
+                    // Calculate from invoices for more accuracy
+                    totalPaid = invoices
+                        .filter(inv => inv.status === 'paid')
+                        .reduce((sum, inv) => sum + parseFloat(inv.totalAmount), 0);
                     
                     totalPending = invoices
-                        .filter(inv => inv.status === 'sent')
+                        .filter(inv => inv.status === 'pending' || inv.status === 'sent')
                         .reduce((sum, inv) => sum + parseFloat(inv.totalAmount), 0);
                     
                     totalOverdue = invoices
                         .filter(inv => inv.status === 'overdue')
                         .reduce((sum, inv) => sum + parseFloat(inv.totalAmount), 0);
+                        
+                    console.log('💰 Calculated totals:', { totalPaid, totalPending, totalOverdue });
+                } else {
+                    console.error('❌ Failed to load invoices:', invoicesResponse.status);
                 }
 
-                document.getElementById('totalPaid').textContent = formatCurrency(totalPaid);
-                document.getElementById('totalPending').textContent = formatCurrency(totalPending);
-                document.getElementById('totalOverdue').textContent = formatCurrency(totalOverdue);
+                console.log('🎯 Updating DOM elements...');
+                const paidElement = document.getElementById('totalPaid');
+                const pendingElement = document.getElementById('totalPending');
+                const overdueElement = document.getElementById('totalOverdue');
+                
+                console.log('🔍 DOM elements found:', { 
+                    paidElement: !!paidElement, 
+                    pendingElement: !!pendingElement, 
+                    overdueElement: !!overdueElement 
+                });
+                
+                if (paidElement) paidElement.textContent = formatCurrency(totalPaid);
+                if (pendingElement) pendingElement.textContent = formatCurrency(totalPending);
+                if (overdueElement) overdueElement.textContent = formatCurrency(totalOverdue);
+                
+                console.log('✅ Payment summary updated successfully');
 
             } catch (error) {
-                console.error('Error updating payment summary:', error);
+                console.error('❌ Error updating payment summary:', error);
             }
         }
 
@@ -2980,6 +3022,7 @@
         function getInvoiceStatusText(status) {
             const statusMap = {
                 'draft': 'Nháp',
+                'pending': 'Chờ thanh toán',
                 'sent': 'Đã gửi',
                 'paid': 'Đã thanh toán',
                 'overdue': 'Quá hạn',

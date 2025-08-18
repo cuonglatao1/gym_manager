@@ -3671,7 +3671,7 @@
                         const invoices = invoicesData.data.invoices;
                         
                         const pending = invoices
-                            .filter(inv => inv.status === 'sent')
+                            .filter(inv => inv.status === 'pending' || inv.status === 'sent')
                             .reduce((sum, inv) => sum + parseFloat(inv.totalAmount), 0);
                         
                         const overdue = invoices

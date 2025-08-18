@@ -78,9 +78,9 @@ const Invoice = sequelize.define('Invoice', {
         }
     },
     status: {
-        type: DataTypes.ENUM('draft', 'sent', 'paid', 'overdue', 'cancelled'),
+        type: DataTypes.ENUM('pending', 'paid', 'overdue', 'cancelled'),
         allowNull: false,
-        defaultValue: 'draft'
+        defaultValue: 'pending'
     },
     description: {
         type: DataTypes.TEXT,
@@ -204,10 +204,43 @@ Invoice.prototype.addPayment = async function(amount) {
     const newPaidAmount = parseFloat(this.paidAmount) + parseFloat(amount);
     const status = newPaidAmount >= parseFloat(this.totalAmount) ? 'paid' : this.status;
     
-    return await this.update({
+    const result = await this.update({
         paidAmount: newPaidAmount,
         status: status
     });
+    
+    // If invoice is fully paid, activate related membership if any
+    if (status === 'paid' && this.description?.includes('Membership')) {
+        try {
+            const { MembershipHistory } = require('./index');
+            const membershipHistory = await MembershipHistory.findOne({
+                where: {
+                    memberId: this.memberId,
+                    notes: { [require('sequelize').Op.like]: `%Invoice: ${this.invoiceNumber}%` },
+                    status: 'pending'
+                },
+                include: [{
+                    model: require('./index').Membership,
+                    as: 'membership'
+                }]
+            });
+            
+            if (membershipHistory) {
+                await membershipHistory.update({
+                    status: 'active',
+                    paymentStatus: 'paid'
+                });
+                console.log(`✅ Activated membership for member ${this.memberId} after invoice ${this.invoiceNumber} payment`);
+                
+                // Update pending class enrollment invoices with new membership discount
+                await this.updatePendingClassInvoicesWithDiscount(this.memberId, membershipHistory.membership);
+            }
+        } catch (error) {
+            console.error('❌ Error activating membership after payment:', error);
+        }
+    }
+    
+    return result;
 };
 
 Invoice.prototype.updateStatus = async function() {
@@ -225,7 +258,7 @@ Invoice.getOverdueInvoices = async function() {
                 [sequelize.Sequelize.Op.lt]: new Date()
             },
             status: {
-                [sequelize.Sequelize.Op.notIn]: ['paid', 'cancelled']
+                [sequelize.Sequelize.Op.in]: ['pending', 'overdue']
             }
         },
         order: [['dueDate', 'ASC']]
@@ -253,6 +286,50 @@ Invoice.getTotalRevenue = async function(startDate = null, endDate = null) {
     
     const result = await this.sum('totalAmount', { where: whereClause });
     return result || 0;
+};
+
+// Update pending class enrollment invoices with new membership discount
+Invoice.prototype.updatePendingClassInvoicesWithDiscount = async function(memberId, membership) {
+    try {
+        console.log(`🔄 [DISCOUNT UPDATE] Updating pending class invoices for member ${memberId} with new membership discount`);
+        
+        // Find pending class enrollment invoices
+        const { InvoiceItem } = require('./index');
+        const pendingClassInvoices = await Invoice.findAll({
+            where: {
+                memberId: memberId,
+                status: 'pending',
+                description: {
+                    [require('sequelize').Op.like]: '%Class Enrollment%'
+                }
+            },
+            include: [{
+                model: InvoiceItem,
+                as: 'items'
+            }]
+        });
+
+        console.log(`🔍 [DISCOUNT UPDATE] Found ${pendingClassInvoices.length} pending class invoices to update`);
+
+        for (const invoice of pendingClassInvoices) {
+            // Recalculate with new membership discount
+            const discountPercent = parseFloat(membership.classDiscountPercent) || 0;
+            const originalSubtotal = parseFloat(invoice.subtotal);
+            const discountAmount = (originalSubtotal * discountPercent) / 100;
+            const newTotalAmount = originalSubtotal - discountAmount;
+
+            await invoice.update({
+                discountAmount: discountAmount,
+                totalAmount: newTotalAmount
+            });
+
+            console.log(`✅ [DISCOUNT UPDATE] Updated invoice ${invoice.invoiceNumber}: ${originalSubtotal}₫ -> ${newTotalAmount}₫ (${discountPercent}% discount)`);
+        }
+
+        console.log(`🎉 [DISCOUNT UPDATE] Successfully updated ${pendingClassInvoices.length} pending class invoices`);
+    } catch (error) {
+        console.error('❌ [DISCOUNT UPDATE] Error updating pending class invoices:', error);
+    }
 };
 
 module.exports = Invoice;

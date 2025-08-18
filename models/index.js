@@ -22,6 +22,12 @@ const InvoiceItem = require('./InvoiceItem');
 const Promotion = require('./Promotion');
 const PromotionUsage = require('./PromotionUsage');
 
+// Import equipment models
+const Equipment = require('./Equipment');
+const EquipmentMaintenance = require('./EquipmentMaintenance');
+const MaintenanceSchedule = require('./MaintenanceSchedule');
+const MaintenanceHistory = require('./MaintenanceHistory');
+
 // ===== EXISTING ASSOCIATIONS =====
 // User & RefreshToken
 User.hasMany(RefreshToken, {
@@ -293,6 +299,104 @@ PromotionUsage.belongsTo(Payment, {
     as: 'payment'
 });
 
+// ===== EQUIPMENT ASSOCIATIONS =====
+
+// Equipment & EquipmentMaintenance
+Equipment.hasMany(EquipmentMaintenance, {
+    foreignKey: 'equipmentId',
+    as: 'maintenanceRecords',
+    onDelete: 'CASCADE'
+});
+
+EquipmentMaintenance.belongsTo(Equipment, {
+    foreignKey: 'equipmentId',
+    as: 'equipment'
+});
+
+// User (Staff) & EquipmentMaintenance (assigned to)
+User.hasMany(EquipmentMaintenance, {
+    foreignKey: 'assignedTo',
+    as: 'assignedMaintenance',
+    onDelete: 'SET NULL'
+});
+
+EquipmentMaintenance.belongsTo(User, {
+    foreignKey: 'assignedTo',
+    as: 'assignee'
+});
+
+// User (Staff) & EquipmentMaintenance (reported by)
+User.hasMany(EquipmentMaintenance, {
+    foreignKey: 'reportedBy',
+    as: 'reportedMaintenance',
+    onDelete: 'SET NULL'
+});
+
+EquipmentMaintenance.belongsTo(User, {
+    foreignKey: 'reportedBy',
+    as: 'reporter'
+});
+
+// Equipment & MaintenanceSchedule
+Equipment.hasMany(MaintenanceSchedule, {
+    foreignKey: 'equipmentId',
+    as: 'maintenanceSchedules',
+    onDelete: 'CASCADE'
+});
+
+MaintenanceSchedule.belongsTo(Equipment, {
+    foreignKey: 'equipmentId',
+    as: 'equipment'
+});
+
+// Equipment & MaintenanceHistory
+Equipment.hasMany(MaintenanceHistory, {
+    foreignKey: 'equipmentId',
+    as: 'maintenanceHistory',
+    onDelete: 'CASCADE'
+});
+
+MaintenanceHistory.belongsTo(Equipment, {
+    foreignKey: 'equipmentId',
+    as: 'equipment'
+});
+
+// EquipmentMaintenance & MaintenanceHistory
+EquipmentMaintenance.hasOne(MaintenanceHistory, {
+    foreignKey: 'maintenanceId',
+    as: 'history',
+    onDelete: 'SET NULL'
+});
+
+MaintenanceHistory.belongsTo(EquipmentMaintenance, {
+    foreignKey: 'maintenanceId',
+    as: 'maintenance'
+});
+
+// MaintenanceSchedule & MaintenanceHistory
+MaintenanceSchedule.hasMany(MaintenanceHistory, {
+    foreignKey: 'scheduleId',
+    as: 'history',
+    onDelete: 'SET NULL'
+});
+
+MaintenanceHistory.belongsTo(MaintenanceSchedule, {
+    foreignKey: 'scheduleId',
+    as: 'schedule'
+});
+
+// User & MaintenanceHistory (performed by)
+User.hasMany(MaintenanceHistory, {
+    foreignKey: 'performedBy',
+    as: 'performedMaintenance',
+    onDelete: 'SET NULL'
+});
+
+MaintenanceHistory.belongsTo(User, {
+    foreignKey: 'performedBy',
+    as: 'performer'
+});
+
 // ===== HELPER METHODS =====
 
 // Helper method to get active membership for a member
@@ -300,13 +404,14 @@ Member.prototype.getActiveMembership = async function() {
     return await MembershipHistory.findOne({
         where: {
             memberId: this.id,
-            status: 'active'
+            status: 'active',
+            endDate: { [require('sequelize').Op.gte]: new Date() }
         },
         include: [{
             model: Membership,
             as: 'membership'
         }],
-        order: [['createdAt', 'DESC']] // Get the most recently purchased membership
+        order: [['endDate', 'DESC']] // Get the most recently active (by end date)
     });
 };
 
@@ -385,5 +490,9 @@ module.exports = {
     Invoice,
     InvoiceItem,
     Promotion,
-    PromotionUsage
+    PromotionUsage,
+    Equipment,
+    EquipmentMaintenance,
+    MaintenanceSchedule,
+    MaintenanceHistory
 };

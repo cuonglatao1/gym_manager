@@ -17,8 +17,6 @@ router.post('/', authorize('admin', 'staff'), validateInvoice, invoiceController
 router.get('/', authorize('admin', 'staff'), invoiceController.getAllInvoices);
 router.get('/stats', authorize('admin', 'staff'), invoiceController.getInvoiceStats);
 router.get('/overdue', authorize('admin', 'staff'), invoiceController.getOverdueInvoices);
-router.post('/membership', authorize('admin', 'staff'), invoiceController.generateMembershipInvoice);
-router.post('/class', authorize('admin', 'staff'), invoiceController.generateClassInvoice);
 router.get('/:id', invoiceController.getInvoiceById);
 router.put('/:id/status', authorize('admin', 'staff'), validateInvoiceStatus, invoiceController.updateInvoiceStatus);
 router.post('/:id/send', authorize('admin', 'staff'), invoiceController.sendInvoice);

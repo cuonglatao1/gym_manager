@@ -151,6 +151,7 @@ const memberController = {
         });
     }),
 
+
     // POST /api/members/my/membership - Member tự mua gói membership
     purchaseMyMembership: asyncHandler(async (req, res) => {
         const { membershipId, startDate } = req.body;
@@ -165,6 +166,37 @@ const memberController = {
             throw new NotFoundError('Không tìm thấy thông tin member');
         }
 
+        // Check for pending MEMBERSHIP invoices before allowing membership purchase
+        const { Invoice } = require('../models');
+        const pendingMembershipInvoices = await Invoice.findAll({
+            where: {
+                memberId: member.id,
+                status: 'pending',
+                description: {
+                    [require('sequelize').Op.like]: '%Membership%'
+                }
+            }
+        });
+        
+        console.log(`🔍 [VALIDATION] Member ID: ${member.id} (${member.fullName}) has ${pendingMembershipInvoices.length} pending membership invoices`);
+        
+        if (pendingMembershipInvoices.length > 0) {
+            console.log(`❌ [BLOCKED] Preventing membership purchase due to pending membership invoices:`, pendingMembershipInvoices.map(inv => inv.invoiceNumber));
+            return res.status(400).json({
+                success: false,
+                message: `Bạn cần thanh toán ${pendingMembershipInvoices.length} hóa đơn membership chưa thanh toán trước khi đổi gói membership.`,
+                pendingInvoices: pendingMembershipInvoices.map(inv => ({
+                    id: inv.id,
+                    invoiceNumber: inv.invoiceNumber,
+                    totalAmount: inv.totalAmount,
+                    description: inv.description,
+                    dueDate: inv.dueDate
+                }))
+            });
+        }
+        
+        console.log(`✅ [ALLOWED] No pending invoices, proceeding with membership purchase`);
+
         const membershipHistory = await memberService.purchaseMembership(
             member.id, 
             membershipId, 
@@ -173,8 +205,12 @@ const memberController = {
 
         res.status(201).json({
             success: true,
-            message: 'Đăng ký gói membership thành công! Vui lòng thanh toán tại quầy để kích hoạt.',
-            data: membershipHistory
+            message: membershipHistory.invoice ? 
+                'Đăng ký gói membership thành công! Vui lòng thanh toán hóa đơn.' : 
+                'Đăng ký gói membership thành công!',
+            data: membershipHistory,
+            redirectToPayment: !!membershipHistory.invoice,
+            invoiceId: membershipHistory.invoice?.id
         });
     }),
 

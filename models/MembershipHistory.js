@@ -41,8 +41,8 @@ const MembershipHistory = sequelize.define('MembershipHistory', {
         comment: 'Price at time of purchase'
     },
     status: {
-        type: DataTypes.ENUM('active', 'expired', 'cancelled'),
-        defaultValue: 'active'
+        type: DataTypes.ENUM('pending', 'active', 'expired', 'cancelled'),
+        defaultValue: 'pending'
     },
     paymentStatus: {
         type: DataTypes.ENUM('pending', 'paid', 'refunded'),

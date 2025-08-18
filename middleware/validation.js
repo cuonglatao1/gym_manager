@@ -96,6 +96,8 @@ const membershipSchemas = {
             .messages({'any.required': 'Thời hạn là bắt buộc'}),
         price: Joi.number().positive().required()
             .messages({'any.required': 'Giá là bắt buộc'}),
+        classDiscountPercent: Joi.number().min(0).max(100).default(0)
+            .messages({'number.min': 'Giảm giá phải từ 0%', 'number.max': 'Giảm giá không thể vượt quá 100%'}),
         benefits: Joi.array().items(Joi.string()).optional(),
         features: Joi.string().max(1000).allow('').optional(),
         maxClasses: Joi.number().integer().min(0).allow(null).optional(),
@@ -107,9 +109,14 @@ const membershipSchemas = {
         description: Joi.string().max(1000).allow('').optional(),
         duration: Joi.number().integer().min(1).max(365).optional(),
         price: Joi.number().positive().optional(),
+        classDiscountPercent: Joi.number().min(0).max(100).optional()
+            .messages({'number.min': 'Giảm giá phải từ 0%', 'number.max': 'Giảm giá không thể vượt quá 100%'}),
         benefits: Joi.array().items(Joi.string()).optional(),
         features: Joi.string().max(1000).allow('').optional(),
-        maxClasses: Joi.number().integer().min(0).allow(null).optional(),
+        maxClasses: Joi.alternatives().try(
+            Joi.number().integer().min(0),
+            Joi.string().allow('').valid('')
+        ).allow(null).optional(),
         hasPersonalTrainer: Joi.boolean().optional(),
         isActive: Joi.boolean().optional()
     })
@@ -151,7 +158,7 @@ const paymentSchemas = {
                 'any.required': 'Số tiền là bắt buộc'
             }),
         
-        paymentMethod: Joi.string().valid('cash', 'card', 'bank_transfer', 'mobile_payment').required()
+        paymentMethod: Joi.string().valid('cash', 'card', 'bank_transfer', 'mobile_payment', 'transfer').required()
             .messages({
                 'any.only': 'Phương thức thanh toán không hợp lệ',
                 'any.required': 'Phương thức thanh toán là bắt buộc'
@@ -228,7 +235,7 @@ const invoiceSchemas = {
     }),
     
     updateStatus: Joi.object({
-        status: Joi.string().valid('draft', 'sent', 'paid', 'overdue', 'cancelled').required()
+        status: Joi.string().valid('pending', 'paid', 'overdue', 'cancelled').required()
             .messages({
                 'any.only': 'Trạng thái hóa đơn không hợp lệ',
                 'any.required': 'Trạng thái là bắt buộc'

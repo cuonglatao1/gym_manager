@@ -165,48 +165,6 @@ const invoiceController = {
         });
     }),
 
-    // POST /api/invoices/membership
-    generateMembershipInvoice: asyncHandler(async (req, res) => {
-        const { memberId, membershipId, duration, price, startDate } = req.body;
-
-        if (!memberId || !membershipId || !duration || !price || !startDate) {
-            throw new ValidationError('All membership details are required');
-        }
-
-        const invoice = await invoiceService.generateMembershipInvoice(memberId, {
-            membershipId,
-            duration,
-            price,
-            startDate
-        });
-
-        res.status(201).json({
-            success: true,
-            message: 'Membership invoice generated successfully',
-            data: invoice
-        });
-    }),
-
-    // POST /api/invoices/class
-    generateClassInvoice: asyncHandler(async (req, res) => {
-        const { memberId, classId, className, sessionCount } = req.body;
-
-        if (!memberId || !classId || !className) {
-            throw new ValidationError('Member ID, class ID, and class name are required');
-        }
-
-        const invoice = await invoiceService.generateClassInvoice(memberId, {
-            classId,
-            className,
-            sessionCount
-        });
-
-        res.status(201).json({
-            success: true,
-            message: 'Class invoice generated successfully with member discount applied',
-            data: invoice
-        });
-    }),
 
     // GET /api/invoices/overdue
     getOverdueInvoices: asyncHandler(async (req, res) => {

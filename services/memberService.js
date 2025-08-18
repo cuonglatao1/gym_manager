@@ -231,6 +231,27 @@ class MemberService {
     async purchaseMembership(memberId, membershipId, options = {}) {
         const { startDate = null, promotionCode = null, createdBy = null } = options;
         
+        // CRITICAL: Check for pending MEMBERSHIP invoices before allowing membership purchase
+        const { Invoice } = require('../models');
+        const pendingMembershipInvoices = await Invoice.findAll({
+            where: {
+                memberId: memberId,
+                status: 'pending',
+                description: {
+                    [require('sequelize').Op.like]: '%Membership%'
+                }
+            }
+        });
+        
+        console.log(`🔍 [SERVICE VALIDATION] Member ID: ${memberId} has ${pendingMembershipInvoices.length} pending membership invoices`);
+        
+        if (pendingMembershipInvoices.length > 0) {
+            console.log(`❌ [SERVICE BLOCKED] Preventing membership purchase due to pending membership invoices`);
+            throw new Error(`Bạn cần thanh toán ${pendingMembershipInvoices.length} hóa đơn membership chưa thanh toán trước khi đổi gói membership.`);
+        }
+        
+        console.log(`✅ [SERVICE ALLOWED] No pending invoices, proceeding with membership purchase`);
+        
         // Validate member exists
         const member = await Member.findByPk(memberId);
         if (!member) {
@@ -256,6 +277,23 @@ class MemberService {
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 7);
 
+        // IMPORTANT: Cancel old active memberships when buying new one
+        await MembershipHistory.update(
+            { 
+                status: 'cancelled',
+                endDate: new Date() // End immediately
+            },
+            {
+                where: {
+                    memberId: memberId,
+                    status: 'active',
+                    endDate: { [Op.gt]: new Date() } // Only active future memberships
+                }
+            }
+        );
+
+        console.log(`✅ [MEMBERSHIP REPLACEMENT] Cancelled old active memberships for member ${memberId}`);
+
         // Create membership history with pending payment status
         const membershipHistory = await MembershipHistory.create({
             memberId,
@@ -267,23 +305,14 @@ class MemberService {
         });
 
         try {
-            // Create invoice automatically
-            const invoice = await invoiceService.createInvoice({
-                memberId: memberId,
-                dueDate: dueDate,
-                items: [{
-                    description: `Gói tập: ${membership.name}`,
-                    quantity: 1,
-                    unitPrice: parseFloat(membership.price),
-                    itemType: 'membership',
-                    itemId: membershipId,
-                    notes: `Thời hạn: ${membership.duration} ngày (${start.toLocaleDateString()} - ${endDate.toLocaleDateString()})`
-                }],
-                description: `Hóa đơn gói tập ${membership.name}`,
-                notes: `Đăng ký gói tập cho hội viên ${member.fullName} (${member.memberCode})`,
-                createdBy: createdBy,
-                applicableFor: 'membership',
-                promotionCode: promotionCode
+            // Create invoice automatically for immediate payment
+            const invoiceService = require('./invoiceService');
+            
+            const invoice = await invoiceService.generateMembershipInvoice(memberId, {
+                membershipId,
+                duration: membership.duration,
+                price: membership.price,
+                startDate: start
             });
 
             // Update membership history with invoice reference
@@ -300,7 +329,7 @@ class MemberService {
                     }]
                 }),
                 invoice: invoice,
-                promotionApplied: invoice.notes?.includes('khuyến mãi') || false
+                promotionApplied: false
             };
 
         } catch (error) {
@@ -315,7 +344,7 @@ class MemberService {
                     }]
                 }),
                 invoice: null,
-                error: 'Không thể tạo hóa đơn tự động. Vui lòng tạo hóa đơn thủ công.'
+                error: 'Không thể tạo hóa đơn. Vui lòng liên hệ admin.'
             };
         }
     }

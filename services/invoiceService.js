@@ -87,7 +87,7 @@ const invoiceService = {
                 `${notes || ''}\nÁp dụng khuyến mãi: ${appliedPromotion.code} (${appliedPromotion.name})` : 
                 notes,
             createdBy,
-            status: 'draft'
+            status: 'pending'
         });
 
         // Create invoice items
@@ -158,7 +158,7 @@ const invoiceService = {
 
     // Get invoices for a member
     async getMemberInvoices(memberId, options = {}) {
-        const { page = 1, limit = 10, status } = options;
+        const { page = 1, limit = 50, status } = options;
 
         const whereClause = { memberId };
 
@@ -256,7 +256,7 @@ const invoiceService = {
             throw new NotFoundError('Invoice not found');
         }
 
-        const validStatuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
+        const validStatuses = ['pending', 'paid', 'overdue', 'cancelled'];
         if (!validStatuses.includes(status)) {
             throw new ValidationError('Invalid invoice status');
         }

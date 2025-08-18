@@ -22,6 +22,18 @@ app.use((req, res, next) => {
     }
     next();
 });
+
+// GLOBAL MEMBERSHIP DEBUG MIDDLEWARE
+app.use((req, res, next) => {
+    if (req.url.includes('membership') || req.body?.membershipId || req.params?.membershipId) {
+        console.log(`🔍 [MEMBERSHIP REQUEST] ${req.method} ${req.url}`);
+        console.log(`🔍 [MEMBERSHIP BODY]`, req.body);
+        console.log(`🔍 [MEMBERSHIP PARAMS]`, req.params);
+        console.log(`🔍 [MEMBERSHIP USER]`, req.user?.userId, req.user?.role);
+        console.log(`🔍 [MEMBERSHIP HEADERS]`, req.headers.authorization ? 'Has Auth' : 'No Auth');
+    }
+    next();
+});
 app.use(cors({
     origin: ['http://localhost:3000', 'http://127.0.0.1:5500', 'http://localhost:5500'],
     credentials: true
@@ -190,12 +202,24 @@ try {
     const classRoutes = require('./routes/classRoutes');
     const paymentRoutes = require('./routes/paymentRoutes');
     const invoiceRoutes = require('./routes/invoiceRoutes');
+    const equipmentRoutes = require('./routes/equipmentRoutes');
+    const equipmentMaintenanceRoutes = require('./routes/equipmentMaintenanceRoutes');
+    const maintenanceScheduleRoutes = require('./routes/maintenanceScheduleRoutes');
+    const maintenanceHistoryRoutes = require('./routes/maintenanceHistoryRoutes');
+    const maintenanceSchedulerRoutes = require('./routes/maintenanceSchedulerRoutes');
+    const notificationRoutes = require('./routes/notificationRoutes');
     
     app.use('/api/auth', authRoutes);
     app.use('/api/members', memberRoutes);
     app.use('/api/classes', classRoutes);
     app.use('/api/payments', paymentRoutes);
     app.use('/api/invoices', invoiceRoutes);
+    app.use('/api/equipment', equipmentRoutes);
+    app.use('/api/equipment-maintenance', equipmentMaintenanceRoutes);
+    app.use('/api/maintenance-schedules', maintenanceScheduleRoutes);
+    app.use('/api/maintenance-history', maintenanceHistoryRoutes);
+    app.use('/api/maintenance-scheduler', maintenanceSchedulerRoutes);
+    app.use('/api/notifications', notificationRoutes);
     
     console.log('✅ Routes loaded successfully!');
 } catch (error) {
