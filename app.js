@@ -436,8 +436,8 @@ const startServer = async () => {
             console.log(`📊 Found ${existingUsers} users and ${existingClasses} classes`);
         }
         
-        // Update trainer assignments to diversify (trainers should now have sequential IDs)
-        await updateScheduleTrainerAssignments();
+        // Fix trainer assignments to match their original classes
+        await fixScheduleTrainerAssignments();
         
         const PORT = process.env.PORT || 3000;
         const server = app.listen(PORT, () => {
@@ -1287,52 +1287,41 @@ async function resetTrainersWithSequentialIDs() {
     }
 }
 
-// Update trainer assignments for existing schedules
-async function updateScheduleTrainerAssignments() {
+// Fix trainer assignments for existing schedules - restore correct trainer from class
+async function fixScheduleTrainerAssignments() {
     try {
-        console.log('🔧 Updating trainer assignments for schedules...');
+        console.log('🔧 Fixing trainer assignments for schedules...');
         
-        const { ClassSchedule, User } = require('./models');
+        const { ClassSchedule, Class } = require('./models');
         
-        // Get only trainers (exclude admin)
-        const trainers = await User.findAll({
-            where: { 
-                role: 'trainer'
-            },
-            logging: false
-        });
-        
-        if (trainers.length === 0) {
-            console.log('⚠️  No trainers found to assign to schedules');
-            return;
-        }
-        
-        // Get some schedules to update
+        // Get all schedules with their associated classes
         const schedules = await ClassSchedule.findAll({
-            limit: 20,
+            include: [{
+                model: Class,
+                as: 'class',
+                required: true
+            }],
             logging: false
         });
         
-        let updatedCount = 0;
-        for (let i = 0; i < schedules.length; i++) {
-            const schedule = schedules[i];
-            // Assign trainers in round-robin fashion
-            const trainerIndex = i % trainers.length;
-            const newTrainerId = trainers[trainerIndex].id;
+        let fixedCount = 0;
+        for (const schedule of schedules) {
+            const correctTrainerId = schedule.class.trainerId;
             
-            if (schedule.trainerId !== newTrainerId) {
+            // Only update if the schedule has wrong trainerId
+            if (schedule.trainerId !== correctTrainerId) {
                 await schedule.update({ 
-                    trainerId: newTrainerId 
+                    trainerId: correctTrainerId 
                 }, { logging: false });
-                updatedCount++;
+                fixedCount++;
             }
         }
         
-        console.log(`✅ Updated trainer assignments for ${updatedCount} schedules`);
-        console.log(`👨‍🏫 Available trainers: ${trainers.map(t => `${t.fullName} (ID: ${t.id})`).join(', ')}`);
+        console.log(`✅ Fixed trainer assignments for ${fixedCount} schedules`);
+        console.log('🎯 All schedules now have correct trainers matching their classes');
         
     } catch (error) {
-        console.error('⚠️  Failed to update trainer assignments:', error.message);
+        console.error('⚠️  Failed to fix trainer assignments:', error.message);
     }
 }
 

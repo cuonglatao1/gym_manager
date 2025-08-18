@@ -53,6 +53,151 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
+
+        /* Enhanced Schedule Styles */
+        .schedule-header {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .schedule-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-group label {
+            font-weight: bold;
+            color: #495057;
+            font-size: 14px;
+        }
+        
+        .schedule-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .enhanced-schedules-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .schedule-day-group {
+            margin-bottom: 25px;
+        }
+        
+        .day-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px 8px 0 0;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .day-count {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .schedule-card {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 0 0 8px 8px;
+            padding: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .schedule-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .schedule-time {
+            font-size: 18px;
+            font-weight: bold;
+            color: #f5576c;
+            margin-bottom: 8px;
+        }
+        
+        .schedule-class {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .schedule-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .detail-tag {
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #495057;
+        }
+        
+        .schedule-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
         
         .stats-grid {
             display: grid;
@@ -367,28 +512,51 @@
 
         <!-- Tab: Schedules -->
         <div id="schedules" class="tab-content">
-            <!-- Today's Schedules -->
+            <!-- Enhanced Schedule Display -->
             <div class="section-card">
-                <h3>📅 Lịch tập hôm nay</h3>
-                <div id="todaySchedulesList" class="loading">Đang tải...</div>
-            </div>
-
-            <!-- Upcoming Schedules -->
-            <div class="section-card">
-                <h3>⏰ Lịch tập sắp tới (7 ngày tới)</h3>
-                <div id="upcomingSchedulesList" class="loading">Đang tải...</div>
-            </div>
-
-            <!-- All Schedules by Date -->
-            <div class="section-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3>📊 Xem lịch theo ngày</h3>
-                    <div>
-                        <input type="date" id="scheduleDate" onchange="loadSchedulesByDate()" style="margin-right: 10px;">
-                        <button class="btn btn-secondary" onclick="loadSchedulesByDate()">🔍 Xem</button>
+                <div class="schedule-header">
+                    <h3>📅 Quản lý lịch tập</h3>
+                    <div class="schedule-filters">
+                        <div class="filter-group">
+                            <label>📅 Xem theo:</label>
+                            <select id="scheduleViewType" onchange="handleScheduleViewChange()" class="form-control">
+                                <option value="today">Hôm nay</option>
+                                <option value="week" selected>Tuần này</option>
+                                <option value="month">Tháng này</option>
+                                <option value="date">Chọn ngày cụ thể</option>
+                                <option value="all">Tất cả từ hôm nay</option>
+                            </select>
+                        </div>
+                        <div class="filter-group" id="specificDateGroup" style="display: none;">
+                            <input type="date" id="specificDate" onchange="loadSchedulesByFilter()" class="form-control">
+                        </div>
+                        <div class="filter-group">
+                            <button class="btn btn-primary" onclick="loadSchedulesByFilter()">🔍 Xem lịch</button>
+                            <button class="btn btn-secondary" onclick="refreshSchedules()">🔄 Tải lại</button>
+                        </div>
                     </div>
                 </div>
-                <div id="schedulesByDateList">Chọn ngày để xem lịch tập</div>
+                
+                <!-- Schedule Statistics -->
+                <div class="schedule-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">📊 Tổng số buổi:</span>
+                        <span class="stat-value" id="filteredScheduleCount">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">👥 Tổng học viên:</span>
+                        <span class="stat-value" id="filteredStudentCount">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">📅 Khoảng thời gian:</span>
+                        <span class="stat-value" id="dateRangeDisplay">-</span>
+                    </div>
+                </div>
+
+                <!-- Schedule Display -->
+                <div id="enhancedSchedulesList" class="enhanced-schedules-container">
+                    <div class="loading">Đang tải...</div>
+                </div>
             </div>
         </div>
 
@@ -411,10 +579,14 @@
             <div class="section-card">
                 <h3>✅ Đăng ký lớp học</h3>
                 <div class="filter-bar">
-                    <input type="date" id="enrollmentDate" onchange="loadEnrollments()">
-                    <select id="enrollmentClassFilter" onchange="loadEnrollments()">
-                        <option value="">Tất cả lớp</option>
+                    <input type="date" id="enrollmentDate" onchange="loadEnrollments()" placeholder="Chọn ngày">
+                    <select id="enrollmentStatusFilter" onchange="loadEnrollments()">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="attended">✅ Đã tham gia</option>
+                        <option value="registered">⏳ Chỉ đăng ký</option>
                     </select>
+                    <input type="text" id="enrollmentMemberSearch" placeholder="Tìm học viên..." onkeyup="loadEnrollments()">
+                    <button class="btn btn-secondary" onclick="clearEnrollmentFilters()">🗑️ Xóa bộ lọc</button>
                     <button class="btn btn-secondary" onclick="loadEnrollments()">🔄 Tải lại</button>
                 </div>
                 <div id="enrollmentsList" class="loading">Đang tải...</div>
@@ -427,9 +599,6 @@
                 <h3>👤 Học viên của tôi</h3>
                 <div class="filter-bar">
                     <input type="text" id="memberSearch" placeholder="Tìm kiếm học viên..." onkeyup="searchMembers()">
-                    <select id="memberClassFilter" onchange="filterMembers()">
-                        <option value="">Tất cả lớp</option>
-                    </select>
                     <button class="btn btn-secondary" onclick="loadMembers()">🔄 Tải lại</button>
                 </div>
                 <div id="membersList" class="loading">Đang tải...</div>
@@ -577,6 +746,9 @@
             document.getElementById(tabName).classList.add('active');
             event.target.classList.add('active');
             
+            // Refresh stats when switching tabs to ensure accuracy
+            loadStats();
+            
             // Load data for the selected tab
             switch(tabName) {
                 case 'overview':
@@ -654,22 +826,37 @@
                 const userId = currentUser.userId || currentUser.id;
                 logApiDebug(`🔍 Loading stats for trainer userId: ${userId}`, 'info');
                 
-                // Load my schedules count (buổi học) instead of classes (loại lớp)
-                const allSchedulesResponse = await apiCall('/classes/trainer/schedules');
-                const totalSchedules = allSchedulesResponse.data?.total || allSchedulesResponse.data?.schedules?.length || 0;
-                logApiDebug(`📚 Total schedules found: ${totalSchedules}`, 'info');
+                // Load my schedules count (buổi học) - get all without pagination limit
+                const allSchedulesResponse = await apiCall('/classes/trainer/schedules?limit=1000');
+                const allSchedules = allSchedulesResponse.data?.schedules || [];
                 
-                // Load today's schedules
+                // Get today's date
                 const today = new Date().toISOString().split('T')[0];
-                const schedulesResponse = await apiCall(`/classes/trainer/schedules?startDate=${today}&endDate=${today}`);
-                const todaySchedules = schedulesResponse.data?.schedules?.length || 0;
-                logApiDebug(`📅 Today schedules found: ${todaySchedules}`, 'info');
-                
-                // Load upcoming schedules (next 7 days)
                 const nextWeek = new Date();
                 nextWeek.setDate(nextWeek.getDate() + 7);
-                const upcomingResponse = await apiCall(`/classes/trainer/schedules?startDate=${today}&endDate=${nextWeek.toISOString().split('T')[0]}`);
-                const upcomingSchedules = upcomingResponse.data?.schedules?.length || 0;
+                const nextWeekDate = nextWeek.toISOString().split('T')[0];
+                
+                // Filter schedules for the next 7 days (including today)
+                const next7DaysSchedules = allSchedules.filter(schedule => {
+                    const scheduleDate = new Date(schedule.date).toISOString().split('T')[0];
+                    return scheduleDate >= today && scheduleDate <= nextWeekDate;
+                });
+                const totalSchedules = next7DaysSchedules.length;
+                console.log(`📚 Total schedules (next 7 days including today): ${totalSchedules}`, next7DaysSchedules);
+                console.log(`📋 All schedules in DB: ${allSchedules.length}`);
+                
+                // Load today's schedules  
+                const todaySchedules = next7DaysSchedules.filter(schedule => {
+                    const scheduleDate = new Date(schedule.date).toISOString().split('T')[0];
+                    return scheduleDate === today;
+                }).length;
+                console.log(`📅 Today schedules found: ${todaySchedules}`);
+                
+                // Load upcoming schedules (next 7 days, excluding today)  
+                const upcomingSchedules = next7DaysSchedules.filter(schedule => {
+                    const scheduleDate = new Date(schedule.date).toISOString().split('T')[0];
+                    return scheduleDate > today && scheduleDate <= nextWeekDate;
+                }).length;
                 logApiDebug(`⏰ Upcoming schedules found: ${upcomingSchedules}`, 'info');
                 
                 // Load enrollments to count students
@@ -845,7 +1032,13 @@
                 const response = await apiCall(`/classes?trainerId=${userId}`);
                 myClasses = response.data?.classes || [];
                 
+                console.log(`📚 My classes loaded: ${myClasses.length}`);
+                console.log(`📋 Response structure:`, response);
+                console.log(`📊 Raw myClasses:`, myClasses);
+                
                 logApiDebug(`📚 My classes loaded: ${myClasses.length}`, 'info');
+                logApiDebug(`📋 Response structure:`, 'info', response);
+                logApiDebug(`📊 Raw myClasses:`, 'info', myClasses);
                 
                 if (myClasses.length === 0) {
                     container.innerHTML = `
@@ -895,109 +1088,105 @@
 
         // Load All Schedules Tab
         async function loadAllSchedules() {
-            await Promise.all([
-                loadTodaySchedules(),
-                loadUpcomingSchedules()
-            ]);
+            initializeEnhancedSchedules();
         }
 
-        // Load Today's Schedules
-        async function loadTodaySchedules() {
-            const container = document.getElementById('todaySchedulesList');
+        // Handle Schedule View Change
+        function handleScheduleViewChange() {
+            const viewType = document.getElementById('scheduleViewType').value;
+            const specificDateGroup = document.getElementById('specificDateGroup');
+            
+            if (viewType === 'date') {
+                specificDateGroup.style.display = 'flex';
+                document.getElementById('specificDate').value = new Date().toISOString().split('T')[0];
+            } else {
+                specificDateGroup.style.display = 'none';
+            }
+            
+            loadSchedulesByFilter();
+        }
+
+        // Load Schedules by Filter
+        async function loadSchedulesByFilter() {
+            const container = document.getElementById('enhancedSchedulesList');
             container.innerHTML = '<div class="loading">Đang tải...</div>';
             
             try {
-                const today = new Date().toISOString().split('T')[0];
-                const response = await apiCall(`/classes/trainer/schedules?startDate=${today}&endDate=${today}`);
-                const todaySchedules = response.data?.schedules || [];
+                const viewType = document.getElementById('scheduleViewType').value;
+                const response = await apiCall('/classes/trainer/schedules?limit=1000');
+                const allSchedules = response.data?.schedules || [];
                 
-                if (todaySchedules.length === 0) {
+                let filteredSchedules = [];
+                let dateRange = '';
+                
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+                
+                switch (viewType) {
+                    case 'today':
+                        filteredSchedules = allSchedules.filter(schedule => {
+                            const scheduleDate = new Date(schedule.date).toISOString().split('T')[0];
+                            return scheduleDate === todayStr;
+                        });
+                        dateRange = 'Hôm nay';
+                        break;
+                    
+                    case 'week':
+                        const nextWeek = new Date(today);
+                        nextWeek.setDate(today.getDate() + 7);
+                        const nextWeekStr = nextWeek.toISOString().split('T')[0];
+                        
+                        filteredSchedules = allSchedules.filter(schedule => {
+                            const scheduleDate = new Date(schedule.date).toISOString().split('T')[0];
+                            return scheduleDate >= todayStr && scheduleDate <= nextWeekStr;
+                        });
+                        dateRange = 'Tuần này (7 ngày tới)';
+                        break;
+                    
+                    case 'month':
+                        const nextMonth = new Date(today);
+                        nextMonth.setDate(today.getDate() + 30);
+                        const nextMonthStr = nextMonth.toISOString().split('T')[0];
+                        
+                        filteredSchedules = allSchedules.filter(schedule => {
+                            const scheduleDate = new Date(schedule.date).toISOString().split('T')[0];
+                            return scheduleDate >= todayStr && scheduleDate <= nextMonthStr;
+                        });
+                        dateRange = 'Tháng này (30 ngày tới)';
+                        break;
+                    
+                    case 'date':
+                        const specificDate = document.getElementById('specificDate').value;
+                        if (specificDate) {
+                            filteredSchedules = allSchedules.filter(schedule => {
+                                const scheduleDate = new Date(schedule.date).toISOString().split('T')[0];
+                                return scheduleDate === specificDate;
+                            });
+                            dateRange = new Date(specificDate + 'T00:00:00').toLocaleDateString('vi-VN');
+                        }
+                        break;
+                    
+                    case 'all':
+                        filteredSchedules = allSchedules.filter(schedule => {
+                            const scheduleDate = new Date(schedule.date).toISOString().split('T')[0];
+                            return scheduleDate >= todayStr;
+                        });
+                        dateRange = 'Tất cả từ hôm nay';
+                        break;
+                }
+                
+                // Sort by date and time
+                filteredSchedules.sort((a, b) => new Date(a.date + ' ' + a.startTime) - new Date(b.date + ' ' + b.startTime));
+                
+                // Update statistics
+                updateScheduleStats(filteredSchedules, dateRange);
+                
+                if (filteredSchedules.length === 0) {
                     container.innerHTML = `
                         <div class="empty-state">
                             <div class="icon" style="font-size: 48px; opacity: 0.5; margin-bottom: 12px;">📅</div>
-                            <h4>Không có lịch tập hôm nay</h4>
-                            <p>Bạn có thể nghỉ ngơi hoặc tạo lịch mới!</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                let html = '';
-                todaySchedules.forEach(schedule => {
-                    const cls = schedule.class || {};
-                    const classType = cls.classType || {};
-                    const startTime = new Date(schedule.startTime);
-                    const endTime = new Date(schedule.endTime);
-                    const now = new Date();
-                    const canCheckin = now >= startTime;
-                    const isCompleted = schedule.status === 'completed';
-                    const hoursUntilStart = (startTime - now) / (1000 * 60 * 60);
-                    const canEdit = hoursUntilStart >= 3;
-                    
-                    html += `
-                        <div class="item-card ${canCheckin && !isCompleted ? 'checkin-card' : ''}">
-                            <div class="item-header">
-                                <div>
-                                    <div class="item-title">${cls.name}</div>
-                                    <div class="item-meta">
-                                        <strong>${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - 
-                                        ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}</strong>
-                                        • <span style="color: ${classType.color || '#666'}; font-weight: bold;">${classType.name}</span>
-                                        • ${schedule.room || 'Chưa có phòng'}
-                                        • ${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0} người
-                                    </div>
-                                </div>
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-success" onclick="viewAttendance(${schedule.id})" 
-                                            ${!canCheckin ? 'disabled' : ''} title="Điểm danh lớp học">
-                                        👥 ${canCheckin ? 'Điểm danh' : 'Chưa đến giờ'}
-                                    </button>
-                                    <button class="btn btn-sm btn-info" onclick="viewScheduleEnrollments(${schedule.id})" title="Xem danh sách đăng ký">📋</button>
-                                    ${canEdit ? 
-                                        `<button class="btn btn-sm btn-warning" onclick="editSchedule(${schedule.id})" title="Sửa lịch (còn ${hoursUntilStart.toFixed(1)}h)">✏️</button>` :
-                                        `<button class="btn btn-sm btn-secondary" disabled title="Chỉ sửa được khi còn ≥3h (còn ${hoursUntilStart.toFixed(1)}h)">🔒</button>`
-                                    }
-                                </div>
-                            </div>
-                            ${schedule.notes ? `<div style="margin-top: 10px; color: #666; font-style: italic;">📝 ${schedule.notes}</div>` : ''}
-                            ${isCompleted ? '<div style="margin-top: 10px; color: #28a745; font-weight: bold;">✅ Đã hoàn thành</div>' : 
-                              canCheckin ? '<div style="margin-top: 10px; color: #28a745; font-weight: bold;">🔥 Có thể điểm danh ngay!</div>' : 
-                              '<div style="margin-top: 10px; color: #ffc107; font-weight: bold;">⏰ Chưa đến giờ</div>'}
-                        </div>
-                    `;
-                });
-                
-                container.innerHTML = html;
-                
-            } catch (error) {
-                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
-            }
-        }
-
-        // Load Upcoming Schedules (Next 7 days)
-        async function loadUpcomingSchedules() {
-            const container = document.getElementById('upcomingSchedulesList');
-            container.innerHTML = '<div class="loading">Đang tải...</div>';
-            
-            try {
-                const today = new Date();
-                const tomorrow = new Date(today);
-                tomorrow.setDate(today.getDate() + 1);
-                const nextWeek = new Date(today);
-                nextWeek.setDate(today.getDate() + 7);
-                
-                const startDate = tomorrow.toISOString().split('T')[0];
-                const endDate = nextWeek.toISOString().split('T')[0];
-                
-                const response = await apiCall(`/classes/trainer/schedules?startDate=${startDate}&endDate=${endDate}`);
-                const upcomingSchedules = response.data?.schedules || [];
-                
-                if (upcomingSchedules.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="icon" style="font-size: 48px; opacity: 0.5; margin-bottom: 12px;">⏰</div>
-                            <h4>Không có lịch tập sắp tới</h4>
-                            <p>Hãy tạo thêm lịch tập cho tuần này!</p>
+                            <h4>Không có lịch tập nào</h4>
+                            <p>Trong khoảng thời gian đã chọn</p>
                         </div>
                     `;
                     return;
@@ -1005,7 +1194,7 @@
 
                 // Group schedules by date
                 const schedulesByDate = {};
-                upcomingSchedules.forEach(schedule => {
+                filteredSchedules.forEach(schedule => {
                     const date = new Date(schedule.date).toDateString();
                     if (!schedulesByDate[date]) {
                         schedulesByDate[date] = [];
@@ -1013,11 +1202,12 @@
                     schedulesByDate[date].push(schedule);
                 });
 
+                // Render new enhanced UI
                 let html = '';
                 Object.keys(schedulesByDate).sort((a, b) => new Date(a) - new Date(b)).forEach(dateStr => {
                     const schedules = schedulesByDate[dateStr];
-                    const date = new Date(dateStr);
-                    const dateDisplay = date.toLocaleDateString('vi-VN', { 
+                    const displayDate = new Date(dateStr);
+                    const vietnameseDate = displayDate.toLocaleDateString('vi-VN', { 
                         weekday: 'long', 
                         year: 'numeric', 
                         month: 'long', 
@@ -1025,10 +1215,12 @@
                     });
                     
                     html += `
-                        <div style="margin-bottom: 25px;">
-                            <h4 style="color: #f5576c; border-bottom: 2px solid #f5576c; padding-bottom: 5px; margin-bottom: 15px;">
-                                📅 ${dateDisplay}
-                            </h4>
+                        <div class="schedule-day-group">
+                            <div class="day-header">
+                                <span>📅 ${vietnameseDate}</span>
+                                <span class="day-count">${schedules.length} buổi</span>
+                            </div>
+                            <div class="schedule-grid">
                     `;
                     
                     schedules.forEach(schedule => {
@@ -1036,122 +1228,74 @@
                         const classType = cls.classType || {};
                         const startTime = new Date(schedule.startTime);
                         const endTime = new Date(schedule.endTime);
+                        const now = new Date();
+                        const isToday = new Date(schedule.date).toDateString() === now.toDateString();
+                        const canCheckin = isToday && now >= startTime;
                         
                         html += `
-                            <div class="item-card" style="margin-bottom: 10px;">
-                                <div class="item-header">
-                                    <div>
-                                        <div class="item-title">${cls.name}</div>
-                                        <div class="item-meta">
-                                            <strong>${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - 
-                                            ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}</strong>
-                                            • <span style="color: ${classType.color || '#666'}; font-weight: bold;">${classType.name}</span>
-                                            • ${schedule.room || 'Chưa có phòng'}
-                                            • ${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0} người
-                                        </div>
-                                    </div>
-                                    <div class="btn-group">
-                                        <button class="btn btn-sm btn-info" onclick="viewScheduleEnrollments(${schedule.id})" title="Xem danh sách đăng ký">📋 ĐK</button>
-                                        <button class="btn btn-sm btn-warning" onclick="editSchedule(${schedule.id})" title="Chỉnh sửa">✏️</button>
-                                        <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${schedule.id})" title="Xóa lịch">🗑️</button>
-                                    </div>
+                            <div class="schedule-card">
+                                <div class="schedule-time">
+                                    ${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - 
+                                    ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}
                                 </div>
-                                ${schedule.notes ? `<div style="margin-top: 8px; color: #666; font-style: italic; font-size: 14px;">📝 ${schedule.notes}</div>` : ''}
+                                <div class="schedule-class">${cls.name || 'N/A'}</div>
+                                <div class="schedule-details">
+                                    <span class="detail-tag" style="background-color: ${classType.color || '#e9ecef'}20; color: ${classType.color || '#495057'};">
+                                        ${classType.name || 'N/A'}
+                                    </span>
+                                    <span class="detail-tag">👥 ${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0}</span>
+                                    <span class="detail-tag">📍 ${schedule.room || 'N/A'}</span>
+                                    ${canCheckin ? '<span class="detail-tag" style="background: #28a74520; color: #28a745;">🔥 Có thể điểm danh</span>' : ''}
+                                </div>
+                                ${schedule.notes ? `<div style="margin: 8px 0; color: #666; font-size: 12px; font-style: italic;">📝 ${schedule.notes}</div>` : ''}
+                                <div class="schedule-actions">
+                                    ${canCheckin ? `<button class="btn btn-sm btn-success" onclick="viewAttendance(${schedule.id})">👥 Điểm danh</button>` : ''}
+                                    <button class="btn btn-sm btn-info" onclick="viewScheduleEnrollments(${schedule.id})">📋 Đăng ký</button>
+                                    <button class="btn btn-sm btn-warning" onclick="editSchedule(${schedule.id})">✏️ Sửa</button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${schedule.id})">🗑️ Xóa</button>
+                                </div>
                             </div>
                         `;
                     });
                     
-                    html += '</div>';
+                    html += '</div></div>';
                 });
                 
                 container.innerHTML = html;
                 
             } catch (error) {
+                console.error('Error loading schedules:', error);
                 container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
             }
         }
 
-        // Load Schedules by Selected Date
-        async function loadSchedulesByDate() {
-            const container = document.getElementById('schedulesByDateList');
-            const dateInput = document.getElementById('scheduleDate');
-            
-            if (!dateInput.value) {
-                container.innerHTML = '<p style="color: #666; text-align: center;">Vui lòng chọn ngày để xem lịch tập</p>';
-                return;
-            }
-            
-            container.innerHTML = '<div class="loading">Đang tải...</div>';
-            
-            try {
-                const selectedDate = dateInput.value;
-                const response = await apiCall(`/classes/trainer/schedules?startDate=${selectedDate}&endDate=${selectedDate}`);
-                const schedules = response.data?.schedules || [];
-                
-                const selectedDateObj = new Date(selectedDate + 'T00:00:00');
-                const dateDisplay = selectedDateObj.toLocaleDateString('vi-VN', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                });
-                
-                if (schedules.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="icon" style="font-size: 48px; opacity: 0.5; margin-bottom: 12px;">📅</div>
-                            <h4>Không có lịch tập</h4>
-                            <p>Ngày ${dateDisplay} không có lịch tập nào</p>
-                        </div>
-                    `;
-                    return;
+        // Update Schedule Statistics
+        function updateScheduleStats(schedules, dateRange) {
+            const uniqueStudents = new Set();
+            schedules.forEach(schedule => {
+                if (schedule.enrollments) {
+                    schedule.enrollments.forEach(enrollment => {
+                        uniqueStudents.add(enrollment.memberId);
+                    });
                 }
+            });
 
-                let html = `<h4 style="color: #f5576c; margin-bottom: 15px;">📅 Lịch tập ngày ${dateDisplay}</h4>`;
-                
-                schedules.forEach(schedule => {
-                    const cls = schedule.class || {};
-                    const classType = cls.classType || {};
-                    const startTime = new Date(schedule.startTime);
-                    const endTime = new Date(schedule.endTime);
-                    const now = new Date();
-                    const canCheckin = now >= startTime && selectedDate === new Date().toISOString().split('T')[0];
-                    
-                    html += `
-                        <div class="item-card ${canCheckin ? 'checkin-card' : ''}">
-                            <div class="item-header">
-                                <div>
-                                    <div class="item-title">${cls.name}</div>
-                                    <div class="item-meta">
-                                        <strong>${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - 
-                                        ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}</strong>
-                                        • <span style="color: ${classType.color || '#666'}; font-weight: bold;">${classType.name}</span>
-                                        • ${schedule.room || 'Chưa có phòng'}
-                                        • ${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0} người
-                                    </div>
-                                </div>
-                                <div class="btn-group">
-                                    ${canCheckin ? `<button class="btn btn-sm btn-success" onclick="viewAttendance(${schedule.id})">👥 Điểm danh</button>` : ''}
-                                    <button class="btn btn-sm btn-info" onclick="viewScheduleEnrollments(${schedule.id})">📋 Đăng ký</button>
-                                    ${hoursUntilStart >= 3 ? 
-                                        `<button class="btn btn-sm btn-warning" onclick="editSchedule(${schedule.id})" title="Sửa lịch (còn ${hoursUntilStart.toFixed(1)}h)">✏️ Sửa</button>` :
-                                        `<button class="btn btn-sm btn-secondary" disabled title="Chỉ sửa được khi còn ≥3h (còn ${hoursUntilStart.toFixed(1)}h)">🔒 Sửa</button>`
-                                    }
-                                    <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${schedule.id})">🗑️ Xóa</button>
-                                </div>
-                            </div>
-                            ${schedule.notes ? `<div style="margin-top: 10px; color: #666; font-style: italic;">📝 ${schedule.notes}</div>` : ''}
-                            ${canCheckin ? '<div style="margin-top: 10px; color: #28a745; font-weight: bold;">🔥 Có thể điểm danh ngay!</div>' : ''}
-                        </div>
-                    `;
-                });
-                
-                container.innerHTML = html;
-                
-            } catch (error) {
-                container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
-            }
+            document.getElementById('filteredScheduleCount').textContent = schedules.length;
+            document.getElementById('filteredStudentCount').textContent = uniqueStudents.size || '-';
+            document.getElementById('dateRangeDisplay').textContent = dateRange;
         }
+
+        // Refresh Schedules (reload current filter)
+        function refreshSchedules() {
+            loadSchedulesByFilter();
+        }
+
+        // Initialize enhanced schedule view when schedules tab is loaded
+        function initializeEnhancedSchedules() {
+            // Set default view and load
+            handleScheduleViewChange();
+        }
+
 
         // Load Attendance
         async function loadAttendance() {
@@ -1235,7 +1379,7 @@
                 }
                 
                 // Filter to only my classes
-                const myEnrollments = allEnrollments.filter(enrollment => {
+                let myEnrollments = allEnrollments.filter(enrollment => {
                     if (!enrollment.classSchedule) return false;
                     
                     // Check if enrollment's class trainer matches current user
@@ -1245,8 +1389,61 @@
                     return classTrainerId === userId;
                 });
                 
+                // Apply all filters
+                const selectedStatus = document.getElementById('enrollmentStatusFilter').value;
+                const selectedDate = document.getElementById('enrollmentDate').value;
+                const memberSearch = document.getElementById('enrollmentMemberSearch').value.toLowerCase().trim();
+                
+                // Filter by status
+                if (selectedStatus) {
+                    myEnrollments = myEnrollments.filter(enrollment => {
+                        if (selectedStatus === 'attended') {
+                            return enrollment.checkinTime; // Has checkin time
+                        } else if (selectedStatus === 'registered') {
+                            return !enrollment.checkinTime; // No checkin time
+                        }
+                        return true;
+                    });
+                }
+                
+                // Filter by date
+                if (selectedDate) {
+                    myEnrollments = myEnrollments.filter(enrollment => {
+                        const scheduleDate = enrollment.classSchedule?.date;
+                        if (!scheduleDate) return false;
+                        
+                        // Compare only the date part (YYYY-MM-DD)
+                        const enrollmentDateStr = new Date(scheduleDate).toISOString().split('T')[0];
+                        return enrollmentDateStr === selectedDate;
+                    });
+                }
+                
+                // Filter by member search
+                if (memberSearch) {
+                    myEnrollments = myEnrollments.filter(enrollment => {
+                        const member = enrollment.member;
+                        if (!member) return false;
+                        
+                        const searchFields = [
+                            member.fullName || '',
+                            member.memberCode || '',
+                            member.email || '',
+                            member.phone || ''
+                        ];
+                        
+                        return searchFields.some(field => 
+                            field.toLowerCase().includes(memberSearch)
+                        );
+                    });
+                }
+                
                 if (myEnrollments.length === 0) {
-                    container.innerHTML = '<p>Không có đăng ký nào cho lớp của bạn.</p>';
+                    const hasFilters = selectedStatus || selectedDate || memberSearch;
+                    if (hasFilters) {
+                        container.innerHTML = '<p>Không tìm thấy đăng ký nào phù hợp với bộ lọc. <button onclick="clearEnrollmentFilters()">Xóa bộ lọc</button></p>';
+                    } else {
+                        container.innerHTML = '<p>Không có đăng ký nào cho lớp của bạn.</p>';
+                    }
                     return;
                 }
                 
@@ -1285,6 +1482,14 @@
             } catch (error) {
                 container.innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
             }
+        }
+
+        // Clear enrollment filters
+        function clearEnrollmentFilters() {
+            document.getElementById('enrollmentDate').value = '';
+            document.getElementById('enrollmentStatusFilter').value = '';
+            document.getElementById('enrollmentMemberSearch').value = '';
+            loadEnrollments();
         }
 
         // Global variable to store all members data for filtering
@@ -1339,9 +1544,8 @@
         function displayMembers() {
             const container = document.getElementById('membersList');
             const searchTerm = document.getElementById('memberSearch').value.toLowerCase().trim();
-            const selectedClassId = document.getElementById('memberClassFilter').value;
             
-            // Filter members based on search and class filter
+            // Filter members based on search only
             let filteredMembers = allMembersData;
             
             // Apply name search filter
@@ -1351,15 +1555,6 @@
                     (member.memberCode || '').toLowerCase().includes(searchTerm) ||
                     (member.email || '').toLowerCase().includes(searchTerm) ||
                     (member.phone || '').toLowerCase().includes(searchTerm)
-                );
-            }
-            
-            // Apply class filter
-            if (selectedClassId) {
-                filteredMembers = filteredMembers.filter(member => 
-                    member.enrollments.some(enrollment => 
-                        enrollment.classSchedule?.class?.id == selectedClassId
-                    )
                 );
             }
             
@@ -1437,32 +1632,21 @@
 
         // Update Class Selects
         function updateClassSelects() {
-            const selects = ['quickClassSelect', 'enrollmentClassFilter'];
-            
-            selects.forEach(selectId => {
-                const select = document.getElementById(selectId);
-                if (!select) return;
-                
-                select.innerHTML = '<option value="">Chọn lớp tập</option>';
+            // Update quick class select
+            const quickClassSelect = document.getElementById('quickClassSelect');
+            if (quickClassSelect) {
+                quickClassSelect.innerHTML = '<option value="">Chọn lớp tập</option>';
                 myClasses.forEach(cls => {
                     const option = document.createElement('option');
                     option.value = cls.id;
                     option.textContent = `${cls.name} (${cls.classType?.name || 'N/A'})`;
-                    select.appendChild(option);
-                });
-            });
-
-            // Update member class filter with proper labels
-            const memberClassFilter = document.getElementById('memberClassFilter');
-            if (memberClassFilter) {
-                memberClassFilter.innerHTML = '<option value="">Tất cả lớp</option>';
-                myClasses.forEach(cls => {
-                    const option = document.createElement('option');
-                    option.value = cls.id;
-                    option.textContent = `${cls.name} (${cls.classType?.name || 'N/A'})`;
-                    memberClassFilter.appendChild(option);
+                    quickClassSelect.appendChild(option);
                 });
             }
+
+            // enrollmentClassFilter removed - no longer needed
+
+            // memberClassFilter removed - no longer needed
         }
 
         // Form Handlers
@@ -1520,7 +1704,8 @@
                         startTime: startTime,
                         endTime: endDateTime.toTimeString().slice(0, 5),
                         room: formData.get('room'),
-                        notes: formData.get('notes')
+                        notes: formData.get('notes'),
+                        trainerId: currentUser.userId || currentUser.id
                     };
                     
                     try {
@@ -1697,7 +1882,8 @@
                     startTime: startTime,
                     endTime: endDateTime.toTimeString().slice(0, 5),
                     room: formData.get('room'),
-                    notes: formData.get('notes')
+                    notes: formData.get('notes'),
+                    trainerId: currentUser.userId || currentUser.id
                 };
                 
                 try {
@@ -1788,7 +1974,7 @@
 
         function viewClassEnrollments(classId) {
             switchTab('enrollments');
-            document.getElementById('enrollmentClassFilter').value = classId;
+            // Class filter removed - show all enrollments for trainer
             loadEnrollments();
         }
 
@@ -2096,13 +2282,7 @@
             }
         }
         
-        function filterMembers() { 
-            if (allMembersData.length > 0) {
-                displayMembers(); 
-            } else {
-                loadMembers();
-            }
-        }
+        // filterMembers function removed - no longer needed
 
         // Load Profile
         async function loadProfile() {

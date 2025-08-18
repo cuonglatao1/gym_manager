@@ -1225,7 +1225,7 @@
                                     <div class="class-meta">
                                         <span style="color: ${schedule.class?.classType?.color || '#666'}">${schedule.class?.classType?.name || 'N/A'}</span>
                                         • ${schedule.room || 'Chưa có phòng'}
-                                        • HLV: ${schedule.class?.trainer?.fullName || 'N/A'}
+                                        • HLV: ${schedule.trainer?.fullName || 'N/A'}
                                     </div>
                                 </div>
                                 <div class="btn-group">
@@ -1409,18 +1409,42 @@
                 const typeFilter = document.getElementById('exploreTypeFilter')?.value;
                 const searchFilter = document.getElementById('exploreSearch')?.value.toLowerCase().trim();
                 
+                // Get user's enrolled schedule IDs to filter out
+                let enrolledScheduleIds = [];
+                try {
+                    const enrolledResponse = await apiCall('/classes/my/schedules?limit=100');
+                    enrolledScheduleIds = (enrolledResponse.data || []).map(schedule => schedule.id);
+                } catch (error) {
+                    console.log('Could not fetch enrolled classes:', error);
+                }
+                
                 let endpoint = '/classes/schedules';
                 const params = ['limit=100']; // Tăng limit lên 100
                 
                 if (dateFilter) {
                     params.push(`startDate=${dateFilter}`);
                     params.push(`endDate=${dateFilter}`);
+                } else {
+                    // If no specific date filter, only show future classes
+                    const today = new Date().toISOString().split('T')[0];
+                    params.push(`startDate=${today}`);
                 }
                 
                 endpoint += '?' + params.join('&');
                 
                 const response = await apiCall(endpoint);
                 let schedules = response.data?.schedules || [];
+                
+                // Filter out past classes and enrolled classes
+                const now = new Date();
+                schedules = schedules.filter(schedule => {
+                    const startTime = new Date(schedule.startTime);
+                    const isPast = startTime < now;
+                    const isEnrolled = enrolledScheduleIds.includes(schedule.id);
+                    
+                    // Only show future classes that the member is not already enrolled in
+                    return !isPast && !isEnrolled;
+                });
                 
                 // Filter by class type if selected
                 if (typeFilter) {
@@ -1434,7 +1458,7 @@
                     schedules = schedules.filter(schedule => {
                         const className = (schedule.class?.name || '').toLowerCase();
                         const classTypeName = (schedule.class?.classType?.name || '').toLowerCase();
-                        const trainerName = (schedule.class?.trainer?.fullName || '').toLowerCase();
+                        const trainerName = (schedule.trainer?.fullName || '').toLowerCase();
                         const room = (schedule.room || '').toLowerCase();
                         
                         return className.includes(searchFilter) || 
@@ -1459,12 +1483,10 @@
                 schedules.forEach(schedule => {
                     const startTime = new Date(schedule.startTime);
                     const endTime = new Date(schedule.endTime);
-                    const now = new Date();
-                    const isPast = endTime < now;
                     const isFull = (schedule.currentParticipants || 0) >= (schedule.maxParticipants || 0);
                     
                     html += `
-                        <div class="class-card ${isPast ? 'past' : ''}">
+                        <div class="class-card">
                             <div class="class-header">
                                 <div>
                                     <div class="class-title">${schedule.class?.name || 'N/A'}</div>
@@ -1476,16 +1498,16 @@
                                     <div class="class-meta">
                                         <span style="color: ${schedule.class?.classType?.color || '#666'}">${schedule.class?.classType?.name || 'N/A'}</span>
                                         • ${schedule.room || 'Chưa có phòng'}
-                                        • HLV: ${schedule.class?.trainer?.fullName || 'N/A'}
+                                        • HLV: ${schedule.trainer?.fullName || 'N/A'}
                                         • ${schedule.currentParticipants || 0}/${schedule.maxParticipants || 0} người
                                         ${schedule.class?.price ? ` • ${parseInt(schedule.class.price).toLocaleString('vi-VN')}đ` : ''}
                                     </div>
                                 </div>
                                 <div class="btn-group">
                                     <button class="btn btn-sm btn-info" onclick="viewClassDetails(${schedule.class?.id})">👁️ Chi tiết</button>
-                                    ${!isPast && !isFull ? 
+                                    ${!isFull ? 
                                         `<button class="btn btn-sm btn-success" onclick="enrollInClass(${schedule.id})">✅ Đăng ký</button>` :
-                                        `<span class="btn btn-sm btn-secondary disabled">${isPast ? 'Đã qua' : 'Đã đầy'}</span>`
+                                        `<span class="btn btn-sm btn-secondary disabled">Đã đầy</span>`
                                     }
                                 </div>
                             </div>
@@ -2315,7 +2337,7 @@
                 if (response.success) {
                     alert('✅ Hủy đăng ký thành công!');
                     loadUpcomingSchedules();
-                    loadUpcomingSchedules();
+                    loadAvailableClasses(); // Refresh available classes after cancellation
                     loadStats();
                 }
             } catch (error) {

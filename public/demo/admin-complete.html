@@ -698,8 +698,7 @@
             <div class="mini-tabs" style="display: flex; margin-bottom: 20px; border-bottom: 2px solid #e1e5e9;">
                 <button class="mini-tab-btn active" onclick="switchEquipmentTab('dashboard')">📊 Dashboard</button>
                 <button class="mini-tab-btn" onclick="switchEquipmentTab('list')">🏋️‍♂️ Danh sách</button>
-                <button class="mini-tab-btn" onclick="switchEquipmentTab('maintenance')">🔧 Bảo trì</button>
-                <button class="mini-tab-btn" onclick="switchEquipmentTab('reports')">📈 Báo cáo</button>
+                <button class="mini-tab-btn" onclick="switchEquipmentTab('notifications')">🔔 Thông báo</button>
             </div>
 
             <!-- Equipment Dashboard -->
@@ -801,38 +800,29 @@
                 </div>
             </div>
 
-            <!-- Equipment Maintenance -->
-            <div id="equipment-maintenance-tab" class="equipment-tab-content" style="display: none;">
+            <!-- Equipment Notifications -->
+            <div id="equipment-notifications-tab" class="equipment-tab-content" style="display: none;">
                 <div class="section-card">
-                    <h3>🔧 Quản lý Bảo trì</h3>
-                    <div id="maintenance-list">
-                        <div class="loading">Đang tải danh sách bảo trì...</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Equipment Reports -->
-            <div id="equipment-reports-tab" class="equipment-tab-content" style="display: none;">
-                <div class="section-card">
-                    <h3>📈 Báo cáo Thiết bị</h3>
-                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
-                        <h4>🏋️ Tính năng Quản lý Thiết bị:</h4>
-                        <ul style="margin: 15px 0; padding-left: 20px;">
-                            <li>✅ <strong>Quản lý thiết bị</strong>: Thêm, sửa, xóa thiết bị gym</li>
-                            <li>✅ <strong>Tự động tạo lịch bảo trì</strong> theo mức độ ưu tiên:
-                                <ul style="margin: 10px 0; padding-left: 20px;">
-                                    <li>🔴 <strong>Cao</strong>: Vệ sinh hàng ngày, kiểm tra mỗi tuần, bảo dưỡng hàng tháng</li>
-                                    <li>🟡 <strong>Trung bình</strong>: Vệ sinh 3 ngày/lần, kiểm tra 2 tuần/lần, bảo dưỡng 2 tháng/lần</li>
-                                    <li>🟢 <strong>Thấp</strong>: Vệ sinh tuần/lần, kiểm tra tháng/lần, bảo dưỡng 3 tháng/lần</li>
-                                </ul>
-                            </li>
-                            <li>✅ <strong>Theo dõi công việc bảo trì</strong>: Lịch sử, trạng thái, chi phí</li>
-                            <li>✅ <strong>Thông báo tự động</strong>: Nhắc nhở khi thiết bị cần bảo trì</li>
-                            <li>✅ <strong>Báo cáo thống kê</strong>: Chi phí bảo trì, độ tin cậy thiết bị</li>
-                        </ul>
-                        <div style="background: white; padding: 15px; border-radius: 5px; margin-top: 15px;">
-                            <strong>💡 Lưu ý:</strong> Hệ thống sẽ tự động tạo lịch bảo trì theo đúng quy tắc khi bạn thêm thiết bị mới!
+                    <h3>🔔 Thông báo Bảo trì Thiết bị</h3>
+                    
+                    <!-- Quick Stats -->
+                    <div class="stats-grid" style="margin-bottom: 20px;">
+                        <div class="stat-card" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white;">
+                            <div class="stat-number" id="equipment-overdue-count">-</div>
+                            <div class="stat-label">⚠️ Quá hạn</div>
                         </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%); color: white;">
+                            <div class="stat-number" id="equipment-today-count">-</div>
+                            <div class="stat-label">📅 Hôm nay</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%); color: white;">
+                            <div class="stat-number" id="equipment-upcoming-count">-</div>
+                            <div class="stat-label">⏰ Sắp tới</div>
+                        </div>
+                    </div>
+                    
+                    <div id="equipment-notifications-list">
+                        <div class="loading">Đang tải thông báo...</div>
                     </div>
                 </div>
             </div>
@@ -1843,10 +1833,19 @@
             container.innerHTML = '<div class="loading">Đang tải...</div>';
             
             try {
-                const response = await apiCall('/classes/enrollments?status=all&limit=100');
-                console.log('🔍 loadEnrollments - Full API response:', response);
-                const enrollments = response.data?.enrollments || [];
+                // Load enrollments and classes data
+                const [enrollmentResponse, classResponse] = await Promise.all([
+                    apiCall('/classes/enrollments?status=all&limit=100'),
+                    apiCall('/classes')
+                ]);
+                
+                console.log('🔍 loadEnrollments - Full API response:', enrollmentResponse);
+                const enrollments = enrollmentResponse.data?.enrollments || [];
+                const classes = classResponse.data?.classes || [];
                 console.log('🔍 loadEnrollments - API returned:', enrollments.length, 'enrollments');
+                
+                // Populate class filter dropdown
+                populateClassFilter(classes);
                 
                 if (enrollments.length === 0) {
                     container.innerHTML = '<p>Không có đăng ký nào.</p>';
@@ -3515,7 +3514,110 @@
             console.log('🔍 filterSchedules - Final count:', filteredSchedules.length);
             displaySchedules(filteredSchedules);
         }
-        function filterEnrollments() { loadEnrollments(); }
+        // Populate class filter dropdown
+        function populateClassFilter(classes) {
+            const classFilter = document.getElementById('enrollmentClassFilter');
+            
+            // Clear existing options except "Tất cả lớp"
+            classFilter.innerHTML = '<option value="">Tất cả lớp</option>';
+            
+            // Add classes to dropdown
+            classes.forEach(cls => {
+                const option = document.createElement('option');
+                option.value = cls.id;
+                option.textContent = cls.name;
+                classFilter.appendChild(option);
+            });
+        }
+
+        // Filter enrollments based on selected filters
+        async function filterEnrollments() {
+            console.log('🔍 filterEnrollments called');
+            const container = document.getElementById('enrollmentsContent');
+            container.innerHTML = '<div class="loading">Đang tải...</div>';
+            
+            try {
+                const selectedDate = document.getElementById('enrollmentDate').value;
+                const selectedClass = document.getElementById('enrollmentClassFilter').value;
+                
+                // If no filters applied, just reload normally
+                if (!selectedDate && !selectedClass) {
+                    loadEnrollments();
+                    return;
+                }
+                
+                // Get all enrollments (API doesn't support classId filter)
+                const response = await apiCall('/classes/enrollments?status=all&limit=100');
+                let enrollments = response.data?.enrollments || [];
+                
+                // Apply client-side filtering
+                if (selectedDate) {
+                    enrollments = enrollments.filter(enrollment => {
+                        const schedule = enrollment.classSchedule;
+                        if (!schedule || !schedule.date) return false;
+                        const scheduleDate = new Date(schedule.date).toISOString().split('T')[0];
+                        return scheduleDate === selectedDate;
+                    });
+                }
+                
+                if (selectedClass) {
+                    enrollments = enrollments.filter(enrollment => {
+                        const schedule = enrollment.classSchedule;
+                        return schedule && schedule.class && schedule.class.id == selectedClass;
+                    });
+                }
+                
+                if (enrollments.length === 0) {
+                    container.innerHTML = '<p>Không tìm thấy đăng ký nào phù hợp với bộ lọc.</p>';
+                    return;
+                }
+                
+                let html = `
+                    <div style="margin-bottom: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px;">
+                        <strong>🔍 Kết quả lọc:</strong> ${enrollments.length} đăng ký
+                        ${selectedDate ? ` | 📅 Ngày: ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('vi-VN')}` : ''}
+                        ${selectedClass ? ` | 📚 Lớp: ${document.getElementById('enrollmentClassFilter').selectedOptions[0]?.text}` : ''}
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Thành viên</th>
+                                <th>Lớp học</th>
+                                <th>Thời gian</th>
+                                <th>Trạng thái</th>
+                                <th>Đăng ký lúc</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                enrollments.forEach(enrollment => {
+                    const schedule = enrollment.classSchedule;
+                    const startTime = schedule ? new Date(schedule.startTime) : null;
+                    
+                    html += `
+                        <tr>
+                            <td>${enrollment.member?.fullName || 'N/A'}</td>
+                            <td>${schedule?.class?.name || 'N/A'}</td>
+                            <td>${startTime ? `${startTime.toLocaleDateString('vi-VN')} ${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}` : 'N/A'}</td>
+                            <td>${enrollment.checkinTime ? '✅ Đã tham gia' : '⏳ Chưa tham gia'}</td>
+                            <td>${new Date(enrollment.createdAt).toLocaleString('vi-VN')}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="cancelEnrollment(${enrollment.id})">❌ Hủy</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error('🔴 filterEnrollments error:', error);
+                container.innerHTML = `<div class="error">❌ Lỗi lọc dữ liệu: ${error.message}</div>`;
+            }
+        }
         function filterCheckIns() { loadCheckIns(); }
 
         // Modal Functions
@@ -4228,11 +4330,8 @@
                 case 'list':
                     loadEquipmentList();
                     break;
-                case 'maintenance':
-                    loadEquipmentMaintenance();
-                    break;
-                case 'reports':
-                    // Reports tab just shows static info
+                case 'notifications':
+                    loadEquipmentNotifications();
                     break;
             }
         }
@@ -4430,22 +4529,96 @@
         }
 
         // Load equipment maintenance
-        async function loadEquipmentMaintenance() {
+        // Load equipment notifications
+        async function loadEquipmentNotifications() {
             try {
-                const response = await fetch('/api/equipment-maintenance', {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const maintenance = data.data || [];
-                    displayMaintenanceList(maintenance);
-                } else {
-                    throw new Error('Failed to load maintenance data');
-                }
+                console.log('Loading equipment notifications...');
+                
+                // Mock notification data (since API doesn't exist yet)
+                const mockStats = {
+                    overdue: 2,
+                    dueToday: 3,
+                    upcoming: 5
+                };
+                
+                // Update stats
+                document.getElementById('equipment-overdue-count').textContent = mockStats.overdue;
+                document.getElementById('equipment-today-count').textContent = mockStats.dueToday;
+                document.getElementById('equipment-upcoming-count').textContent = mockStats.upcoming;
+                
+                // Load notifications list
+                const listContainer = document.getElementById('equipment-notifications-list');
+                listContainer.innerHTML = `
+                    <div style="border: 1px solid #e1e5e9; border-radius: 8px; margin-bottom: 15px; padding: 15px; border-left: 4px solid #dc3545; background: #f8f9fa;">
+                        <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 20px; margin-right: 10px;">⚠️</span>
+                            <strong style="color: #dc3545;">Bảo trì quá hạn</strong>
+                            <span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 10px;">KHẨN CẤP</span>
+                        </div>
+                        <div style="color: #666; margin-bottom: 10px;">
+                            Máy chạy bộ TM-001 cần bảo dưỡng định kỳ đã quá hạn 3 ngày
+                        </div>
+                        <div style="font-size: 12px; color: #999;">
+                            📍 Máy chạy bộ TM-001 • 🕒 ${new Date(Date.now() - 3*24*60*60*1000).toLocaleString('vi-VN')}
+                        </div>
+                    </div>
+                    
+                    <div style="border: 1px solid #e1e5e9; border-radius: 8px; margin-bottom: 15px; padding: 15px; border-left: 4px solid #ffc107;">
+                        <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 20px; margin-right: 10px;">📅</span>
+                            <strong style="color: #ffc107;">Bảo trì hôm nay</strong>
+                        </div>
+                        <div style="color: #666; margin-bottom: 10px;">
+                            3 thiết bị cần vệ sinh và kiểm tra định kỳ hôm nay
+                        </div>
+                        <div style="font-size: 12px; color: #999;">
+                            📍 Tạ đa năng, Xe đạp tập, Máy rowing • 🕒 Hôm nay
+                        </div>
+                    </div>
+                    
+                    <div style="border: 1px solid #e1e5e9; border-radius: 8px; margin-bottom: 15px; padding: 15px; border-left: 4px solid #28a745;">
+                        <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 20px; margin-right: 10px;">⏰</span>
+                            <strong style="color: #28a745;">Sắp tới</strong>
+                        </div>
+                        <div style="color: #666; margin-bottom: 10px;">
+                            5 thiết bị có lịch bảo trì trong 7 ngày tới
+                        </div>
+                        <div style="font-size: 12px; color: #999;">
+                            📍 Nhiều thiết bị • 🕒 Trong tuần này
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <h4>📋 Quản lý chi tiết</h4>
+                        <p style="margin-bottom: 15px;">Xem và quản lý tất cả thông báo bảo trì thiết bị</p>
+                        <a href="admin-equipment.html" class="btn btn-primary" style="text-decoration: none; padding: 10px 20px; border-radius: 5px; display: inline-block;">
+                            🔧 Mở trang Quản lý Thiết bị
+                        </a>
+                    </div>
+                `;
+                
             } catch (error) {
-                console.error('❌ Error loading maintenance:', error);
-                showToast('❌ Không thể tải danh sách bảo trì', 'error');
+                console.error('Error loading equipment notifications:', error);
+                
+                // Fallback display
+                document.getElementById('equipment-overdue-count').textContent = '0';
+                document.getElementById('equipment-today-count').textContent = '0';
+                document.getElementById('equipment-upcoming-count').textContent = '0';
+                
+                const listContainer = document.getElementById('equipment-notifications-list');
+                listContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🔕</div>
+                        <h4>Chưa có thông báo</h4>
+                        <p>Tất cả thiết bị đang hoạt động tốt!</p>
+                        <div style="margin-top: 20px;">
+                            <a href="admin-equipment.html" class="btn btn-outline-primary">
+                                🏋️‍♂️ Quản lý Thiết bị
+                            </a>
+                        </div>
+                    </div>
+                `;
             }
         }
 

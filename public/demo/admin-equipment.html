@@ -553,9 +553,8 @@
             <button class="tab-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button>
             <button class="tab-btn" onclick="switchTab('equipment')">🏋️‍♂️ Thiết bị</button>
             <button class="tab-btn" onclick="switchTab('schedules')">📅 Lịch bảo trì</button>
-            <button class="tab-btn" onclick="switchTab('maintenance')">🔧 Công việc bảo trì</button>
             <button class="tab-btn" onclick="switchTab('history')">📝 Lịch sử</button>
-            <button class="tab-btn" onclick="switchTab('reports')">📈 Báo cáo</button>
+            <button class="tab-btn" onclick="switchTab('notifications')">🔔 Thông báo</button>
         </div>
 
         <!-- Dashboard Tab -->
@@ -771,80 +770,6 @@
             </div>
         </div>
 
-        <!-- Maintenance Tab -->
-        <div id="maintenance-tab" class="tab-content">
-            <div class="section-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3>🔧 Công việc Bảo trì</h3>
-                    <div>
-                        <button class="btn btn-warning" onclick="showOverdueMaintenance()">⚠️ Quá hạn</button>
-                        <button class="btn btn-primary" onclick="showUpcomingMaintenance()">📅 Sắp tới</button>
-                        <button class="btn btn-success" onclick="autoAssignTasks()">👤 Phân công tự động</button>
-                    </div>
-                </div>
-
-                <!-- Maintenance Filters -->
-                <div class="filters">
-                    <div class="filters-row">
-                        <div class="form-group">
-                            <label>Trạng thái</label>
-                            <select id="maintenance-status" onchange="loadMaintenance()">
-                                <option value="">Tất cả</option>
-                                <option value="scheduled">Đã lên lịch</option>
-                                <option value="in_progress">Đang thực hiện</option>
-                                <option value="completed">Hoàn thành</option>
-                                <option value="cancelled">Đã hủy</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Loại bảo trì</label>
-                            <select id="maintenance-type" onchange="loadMaintenance()">
-                                <option value="">Tất cả</option>
-                                <option value="daily_clean">Vệ sinh hàng ngày</option>
-                                <option value="weekly_check">Kiểm tra hàng tuần</option>
-                                <option value="monthly_maintenance">Bảo dưỡng hàng tháng</option>
-                                <option value="repair">Sửa chữa</option>
-                                <option value="replacement">Thay thế</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Người thực hiện</label>
-                            <select id="maintenance-assignee" onchange="loadMaintenance()">
-                                <option value="">Tất cả</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <button class="btn btn-primary" onclick="loadMaintenance()">🔄 Làm mới</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Maintenance Table -->
-                <div style="overflow-x: auto;">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Thiết bị</th>
-                                <th>Loại công việc</th>
-                                <th>Lịch thực hiện</th>
-                                <th>Người thực hiện</th>
-                                <th>Ưu tiên</th>
-                                <th>Trạng thái</th>
-                                <th>Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody id="maintenance-tbody">
-                            <tr>
-                                <td colspan="7" class="loading">Đang tải công việc bảo trì...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Pagination -->
-                <div id="maintenance-pagination" class="pagination"></div>
-            </div>
-        </div>
 
         <!-- History Tab -->
         <div id="history-tab" class="tab-content">
@@ -911,35 +836,63 @@
             </div>
         </div>
 
-        <!-- Reports Tab -->
-        <div id="reports-tab" class="tab-content">
+        <!-- Notifications Tab -->
+        <div id="notifications-tab" class="tab-content">
             <div class="section-card">
-                <h3>📈 Báo cáo và Thống kê</h3>
+                <h3>🔔 Thông báo Lịch Bảo trì</h3>
                 
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="total-cost">-</div>
-                        <div class="stat-label">Tổng chi phí tháng này</div>
+                <!-- Notification Summary -->
+                <div class="stats-grid" style="margin-bottom: 30px;">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white;">
+                        <div class="stat-number" id="overdue-count">-</div>
+                        <div class="stat-label">⚠️ Quá hạn</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="avg-efficiency">-</div>
-                        <div class="stat-label">Hiệu suất trung bình</div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%); color: white;">
+                        <div class="stat-number" id="due-today-count">-</div>
+                        <div class="stat-label">📅 Đến hạn hôm nay</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="completed-tasks">-</div>
-                        <div class="stat-label">Công việc hoàn thành</div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%); color: white;">
+                        <div class="stat-number" id="upcoming-count">-</div>
+                        <div class="stat-label">⏰ Sắp tới (7 ngày)</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="equipment-reliability">-</div>
-                        <div class="stat-label">Độ tin cậy thiết bị</div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%); color: white;">
+                        <div class="stat-number" id="equipment-broken-count">-</div>
+                        <div class="stat-label">🔧 Thiết bị hỏng</div>
                     </div>
                 </div>
 
-                <div class="section-card">
-                    <h4>📊 Chi phí bảo trì theo tháng</h4>
-                    <div id="cost-chart" style="min-height: 300px; display: flex; align-items: center; justify-content: center; color: #666;">
-                        Biểu đồ chi phí sẽ được hiển thị ở đây
+                <!-- Notification Filters -->
+                <div class="filters" style="margin-bottom: 20px;">
+                    <div class="filters-row">
+                        <div class="form-group">
+                            <label>Loại thông báo</label>
+                            <select id="notification-type" onchange="loadNotifications()">
+                                <option value="">Tất cả</option>
+                                <option value="overdue">Quá hạn</option>
+                                <option value="due_today">Đến hạn hôm nay</option>
+                                <option value="upcoming">Sắp tới</option>
+                                <option value="equipment_broken">Thiết bị hỏng</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Ưu tiên</label>
+                            <select id="notification-priority" onchange="loadNotifications()">
+                                <option value="">Tất cả</option>
+                                <option value="high">Cao</option>
+                                <option value="medium">Trung bình</option>
+                                <option value="low">Thấp</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <button class="btn btn-primary" onclick="loadNotifications()">🔄 Làm mới</button>
+                            <button class="btn btn-success" onclick="markAllAsRead()">✅ Đánh dấu đã đọc</button>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Notifications List -->
+                <div id="notifications-list" style="max-height: 600px; overflow-y: auto;">
+                    <div class="loading">Đang tải thông báo...</div>
                 </div>
             </div>
         </div>
@@ -1100,17 +1053,13 @@
                 case 'schedules':
                     loadSchedules();
                     break;
-                case 'maintenance':
-                    loadMaintenance();
-                    loadStaff();
-                    break;
                 case 'history':
                     loadHistory();
                     loadEquipmentList();
                     loadStaff();
                     break;
-                case 'reports':
-                    loadReports();
+                case 'notifications':
+                    loadNotifications();
                     break;
             }
         }
@@ -1443,9 +1392,223 @@
             // Implementation will be added
         }
 
-        function loadReports() {
-            console.log('Loading reports...');
-            // Implementation will be added
+        // Load notifications data
+        async function loadNotifications() {
+            console.log('Loading notifications...');
+            
+            try {
+                // Load notification stats and list
+                await Promise.all([
+                    loadNotificationStats(),
+                    loadNotificationsList()
+                ]);
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+            }
+        }
+
+        // Load notification statistics
+        async function loadNotificationStats() {
+            try {
+                const response = await fetch('/api/equipment/maintenance/notifications', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load notification stats');
+                
+                const data = await response.json();
+                
+                // Update stats display
+                document.getElementById('overdue-count').textContent = data.overdue || 0;
+                document.getElementById('due-today-count').textContent = data.dueToday || 0;
+                document.getElementById('upcoming-count').textContent = data.upcoming || 0;
+                document.getElementById('equipment-broken-count').textContent = data.equipmentBroken || 0;
+                
+            } catch (error) {
+                console.error('Error loading notification stats:', error);
+                // Set default values
+                document.getElementById('overdue-count').textContent = '❌';
+                document.getElementById('due-today-count').textContent = '❌';
+                document.getElementById('upcoming-count').textContent = '❌';
+                document.getElementById('equipment-broken-count').textContent = '❌';
+            }
+        }
+
+        // Load notifications list
+        async function loadNotificationsList() {
+            const container = document.getElementById('notifications-list');
+            container.innerHTML = '<div class="loading">Đang tải thông báo...</div>';
+
+            try {
+                const type = document.getElementById('notification-type').value;
+                const priority = document.getElementById('notification-priority').value;
+                
+                let url = '/api/equipment/maintenance/notifications/list';
+                const params = new URLSearchParams();
+                if (type) params.append('type', type);
+                if (priority) params.append('priority', priority);
+                
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load notifications');
+                
+                const notifications = await response.json();
+                
+                if (!notifications || notifications.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <div style="font-size: 48px; margin-bottom: 20px;">🔕</div>
+                            <h4>Không có thông báo</h4>
+                            <p>Tất cả thiết bị đang hoạt động tốt!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                notifications.forEach(notification => {
+                    const priorityColors = {
+                        'high': '#dc3545',
+                        'medium': '#ffc107', 
+                        'low': '#28a745'
+                    };
+                    
+                    const typeIcons = {
+                        'overdue': '⚠️',
+                        'due_today': '📅',
+                        'upcoming': '⏰',
+                        'equipment_broken': '🔧'
+                    };
+
+                    html += `
+                        <div class="notification-item" style="
+                            border: 1px solid #e1e5e9; 
+                            border-radius: 8px; 
+                            margin-bottom: 15px; 
+                            padding: 15px;
+                            border-left: 4px solid ${priorityColors[notification.priority] || '#6c757d'};
+                            background: ${notification.read ? '#ffffff' : '#f8f9fa'};
+                        ">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div style="flex: 1;">
+                                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                                        <span style="font-size: 20px; margin-right: 10px;">
+                                            ${typeIcons[notification.type] || '🔔'}
+                                        </span>
+                                        <strong style="color: ${priorityColors[notification.priority] || '#333'};">
+                                            ${notification.title}
+                                        </strong>
+                                        ${!notification.read ? '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 10px;">MỚI</span>' : ''}
+                                    </div>
+                                    <div style="color: #666; margin-bottom: 10px;">
+                                        ${notification.message}
+                                    </div>
+                                    <div style="font-size: 12px; color: #999;">
+                                        📍 ${notification.equipmentName || 'N/A'} • 
+                                        🕒 ${new Date(notification.createdAt).toLocaleString('vi-VN')}
+                                    </div>
+                                </div>
+                                <div class="notification-actions">
+                                    ${!notification.read ? 
+                                        `<button class="btn btn-sm btn-outline-primary" onclick="markNotificationAsRead(${notification.id})" style="margin-right: 5px;">
+                                            ✅ Đánh dấu đã đọc
+                                        </button>` : 
+                                        ''
+                                    }
+                                    ${notification.actionUrl ? 
+                                        `<button class="btn btn-sm btn-primary" onclick="handleNotificationAction('${notification.actionUrl}')">
+                                            🔧 Xử lý
+                                        </button>` : 
+                                        ''
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading notifications list:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #dc3545;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">❌</div>
+                        <h4>Lỗi tải thông báo</h4>
+                        <p>${error.message}</p>
+                        <button class="btn btn-primary" onclick="loadNotificationsList()">🔄 Thử lại</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Mark notification as read
+        async function markNotificationAsRead(notificationId) {
+            try {
+                const response = await fetch(`/api/equipment/maintenance/notifications/${notificationId}/read`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to mark notification as read');
+                
+                // Reload notifications
+                loadNotificationsList();
+                loadNotificationStats();
+                
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+                alert('Lỗi đánh dấu đã đọc: ' + error.message);
+            }
+        }
+
+        // Mark all notifications as read
+        async function markAllAsRead() {
+            if (!confirm('Đánh dấu tất cả thông báo là đã đọc?')) return;
+            
+            try {
+                const response = await fetch('/api/equipment/maintenance/notifications/mark-all-read', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to mark all notifications as read');
+                
+                // Reload notifications
+                loadNotificationsList();
+                loadNotificationStats();
+                
+                alert('✅ Đã đánh dấu tất cả thông báo là đã đọc!');
+                
+            } catch (error) {
+                console.error('Error marking all notifications as read:', error);
+                alert('Lỗi đánh dấu tất cả đã đọc: ' + error.message);
+            }
+        }
+
+        // Handle notification action
+        function handleNotificationAction(actionUrl) {
+            // This would navigate to the appropriate maintenance task or equipment
+            console.log('Handling notification action:', actionUrl);
+            alert('Chức năng này sẽ được phát triển để điều hướng đến tác vụ bảo trì tương ứng.');
         }
 
         function loadStaff() {
