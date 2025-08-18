@@ -3,7 +3,7 @@ require('dotenv').config();
 
 // Tạo kết nối Sequelize với PostgreSQL
 const sequelize = new Sequelize(
-    process.env.DB_NAME || 'gym_manager_simple',
+    process.env.DB_NAME || 'gym_manager',
     process.env.DB_USER || 'postgres',
     process.env.DB_PASSWORD || '',
     {
