@@ -55,8 +55,8 @@ const equipmentService = {
             where.category = filters.category;
         }
         
-        if (filters.status) {
-            where.status = filters.status;
+        if (filters.priority) {
+            where.priority = filters.priority;
         }
         
         if (filters.condition) {

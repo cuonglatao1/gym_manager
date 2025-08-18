@@ -1051,29 +1051,30 @@
         // Load Statistics
         async function loadStats() {
             try {
-                // Get my enrollments, check-ins, and today's schedules
+                // Get comprehensive member stats - use same API calls as profile stats for consistency
                 const [historyResponse, checkInsResponse, todayResponse] = await Promise.all([
-                    apiCall('/classes/my/history'),
+                    apiCall('/classes/my/history?limit=100'),
                     apiCall('/classes/my/checkins'),
                     apiCall('/classes/my/today-schedules')
                 ]);
                 
-                // Fix API response structure handling
-                const enrollments = historyResponse.data?.enrollments || [];
+                // Use consistent calculation method
+                const historyEnrollments = historyResponse.data?.enrollments || [];
+                const totalEnrollmentsFromHistory = historyResponse.data?.total || historyEnrollments.length;
+                const totalEnrollments = Math.max(totalEnrollmentsFromHistory, historyEnrollments.length);
+                
                 const checkIns = checkInsResponse.data?.checkIns || [];
-                // The today-schedules API returns schedules directly in data array
                 const todaySchedules = todayResponse.data || [];
                 
                 // Debug logging
-                console.log('📊 Stats Debug:', {
-                    enrollments: enrollments.length,
+                console.log('📊 Top Stats Debug:', {
+                    totalEnrollments: totalEnrollments,
                     checkIns: checkIns.length,
-                    todaySchedules: todaySchedules.length,
-                    todaySchedulesData: todaySchedules
+                    todaySchedules: todaySchedules.length
                 });
                 
-                // Update stats
-                document.getElementById('totalEnrollments').textContent = enrollments.length;
+                // Update stats with consistent values
+                document.getElementById('totalEnrollments').textContent = totalEnrollments;
                 document.getElementById('totalCheckIns').textContent = checkIns.length;
                 document.getElementById('todayClasses').textContent = todaySchedules.length;
                 

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Equipment Management</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn { 
+            background: #007bff; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 5px;
+        }
+        .btn:hover { background: #0056b3; }
+        .result { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+            white-space: pre-wrap;
+        }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Test Equipment Management System</h1>
+        
+        <div>
+            <h3>🔐 Authentication</h3>
+            <button class="btn" onclick="testLogin()">Login as Admin</button>
+            <button class="btn" onclick="checkToken()">Check Current Token</button>
+        </div>
+
+        <div>
+            <h3>📡 API Tests</h3>
+            <button class="btn" onclick="testHealth()">Test Health</button>
+            <button class="btn" onclick="testEquipment()">Test Equipment API</button>
+            <button class="btn" onclick="testMaintenance()">Test Maintenance API</button>
+        </div>
+
+        <div>
+            <h3>🏋️ Equipment Pages</h3>
+            <button class="btn" onclick="openEquipmentPage()">Open Equipment Management</button>
+            <button class="btn" onclick="openAdminPage()">Open Admin Dashboard</button>
+        </div>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+        
+        function log(message, type = 'info') {
+            const result = document.getElementById('result');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            result.innerHTML = `<div class="${className}">[${timestamp}] ${message}</div>` + result.innerHTML;
+        }
+
+        async function testLogin() {
+            try {
+                log('🔄 Testing login...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@gym.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    localStorage.setItem('gym_auth_token', data.data.accessToken);
+                    log(`✅ Login successful! Token saved.`, 'success');
+                    log(`User: ${data.data.user.fullName} (${data.data.user.role})`, 'success');
+                } else {
+                    log(`❌ Login failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Login error: ${error.message}`, 'error');
+            }
+        }
+
+        function checkToken() {
+            const token = localStorage.getItem('gym_auth_token');
+            if (token) {
+                log(`✅ Token exists: ${token.substring(0, 20)}...`, 'success');
+            } else {
+                log(`❌ No token found`, 'error');
+            }
+        }
+
+        async function testHealth() {
+            try {
+                log('🔄 Testing health endpoint...', 'info');
+                
+                const response = await fetch(`${API_BASE}/api/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`✅ Health check passed: ${data.message}`, 'success');
+                } else {
+                    log(`❌ Health check failed`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Health error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testEquipment() {
+            try {
+                log('🔄 Testing equipment API...', 'info');
+                
+                const token = localStorage.getItem('gym_auth_token');
+                if (!token) {
+                    log('❌ No token found. Please login first.', 'error');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/api/equipment`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    log(`✅ Equipment API working: Found ${data.data.length} equipment items`, 'success');
+                } else {
+                    log(`❌ Equipment API failed: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Equipment error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMaintenance() {
+            try {
+                log('🔄 Testing maintenance API...', 'info');
+                
+                const token = localStorage.getItem('gym_auth_token');
+                if (!token) {
+                    log('❌ No token found. Please login first.', 'error');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/api/equipment-maintenance`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    log(`✅ Maintenance API working: Found ${data.data.length} maintenance records`, 'success');
+                } else {
+                    log(`❌ Maintenance API failed: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Maintenance error: ${error.message}`, 'error');
+            }
+        }
+
+        function openEquipmentPage() {
+            window.open(`${API_BASE}/demo/admin-equipment.html`, '_blank');
+        }
+
+        function openAdminPage() {
+            window.open(`${API_BASE}/demo/admin-complete.html`, '_blank');
+        }
+
+        // Auto-check on page load
+        window.addEventListener('load', function() {
+            log('🚀 Test page loaded. Please test login first.', 'info');
+            checkToken();
+        });
+    </script>
+</body>
+</html>

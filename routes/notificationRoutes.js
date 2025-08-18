@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, requireRole } = require('../middleware/auth');
+const { authenticate, authorize } = require('../middleware/auth');
 const notificationService = require('../services/notificationService');
 
 // Get all notifications
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
     try {
         const filters = {
             unreadOnly: req.query.unread === 'true',
@@ -28,7 +28,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get notification summary
-router.get('/summary', authenticateToken, async (req, res) => {
+router.get('/summary', authenticate, async (req, res) => {
     try {
         const summary = notificationService.getNotificationSummary();
         
@@ -46,7 +46,7 @@ router.get('/summary', authenticateToken, async (req, res) => {
 });
 
 // Mark notification as read
-router.post('/:id/read', authenticateToken, async (req, res) => {
+router.post('/:id/read', authenticate, async (req, res) => {
     try {
         const notificationId = parseFloat(req.params.id);
         const success = notificationService.markAsRead(notificationId);
@@ -72,7 +72,7 @@ router.post('/:id/read', authenticateToken, async (req, res) => {
 });
 
 // Mark all notifications as read
-router.post('/read-all', authenticateToken, async (req, res) => {
+router.post('/read-all', authenticate, async (req, res) => {
     try {
         const count = notificationService.markAllAsRead();
         
@@ -91,7 +91,7 @@ router.post('/read-all', authenticateToken, async (req, res) => {
 });
 
 // Generate maintenance tasks from overdue notifications
-router.post('/generate-tasks', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
+router.post('/generate-tasks', authenticate, authorize('admin', 'manager'), async (req, res) => {
     try {
         const generatedCount = await notificationService.generateTasksFromNotifications();
         
@@ -110,7 +110,7 @@ router.post('/generate-tasks', authenticateToken, requireRole(['admin', 'manager
 });
 
 // Clear old notifications
-router.delete('/cleanup', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.delete('/cleanup', authenticate, authorize('admin'), async (req, res) => {
     try {
         const daysOld = parseInt(req.query.days) || 7;
         const deletedCount = notificationService.clearOldNotifications(daysOld);
@@ -130,7 +130,7 @@ router.delete('/cleanup', authenticateToken, requireRole(['admin']), async (req,
 });
 
 // Force check notifications
-router.post('/check', authenticateToken, requireRole(['admin', 'manager']), async (req, res) => {
+router.post('/check', authenticate, authorize('admin', 'manager'), async (req, res) => {
     try {
         await notificationService.checkMaintenanceNotifications();
         const summary = notificationService.getNotificationSummary();

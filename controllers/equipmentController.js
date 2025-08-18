@@ -63,7 +63,7 @@ const equipmentController = {
             sortBy = 'createdAt',
             sortOrder = 'DESC',
             category,
-            status,
+            priority,
             condition,
             location,
             brand,
@@ -73,7 +73,7 @@ const equipmentController = {
 
         const filters = {};
         if (category) filters.category = category;
-        if (status) filters.status = status;
+        if (priority) filters.priority = priority;
         if (condition) filters.condition = condition;
         if (location) filters.location = location;
         if (brand) filters.brand = brand;

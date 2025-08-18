@@ -311,7 +311,7 @@
         <div class="stats-grid" id="statsGrid">
             <div class="stat-card">
                 <div class="stat-number" id="totalClasses">-</div>
-                <div>Lớp của tôi</div>
+                <div>Buổi học của tôi</div>
             </div>
             <div class="stat-card">
                 <div class="stat-number" id="todaySchedules">-</div>
@@ -654,10 +654,10 @@
                 const userId = currentUser.userId || currentUser.id;
                 logApiDebug(`🔍 Loading stats for trainer userId: ${userId}`, 'info');
                 
-                // Load my classes count
-                const classesResponse = await apiCall(`/classes?trainerId=${userId}`);
-                const totalClasses = classesResponse.data?.classes?.length || 0;
-                logApiDebug(`📚 Total classes found: ${totalClasses}`, 'info');
+                // Load my schedules count (buổi học) instead of classes (loại lớp)
+                const allSchedulesResponse = await apiCall('/classes/trainer/schedules');
+                const totalSchedules = allSchedulesResponse.data?.total || allSchedulesResponse.data?.schedules?.length || 0;
+                logApiDebug(`📚 Total schedules found: ${totalSchedules}`, 'info');
                 
                 // Load today's schedules
                 const today = new Date().toISOString().split('T')[0];
@@ -689,7 +689,7 @@
                 const uniqueStudents = new Set(myEnrollments.map(e => e.memberId)).size;
                 logApiDebug(`👥 Unique students found: ${uniqueStudents}`, 'info');
                 
-                document.getElementById('totalClasses').textContent = totalClasses;
+                document.getElementById('totalClasses').textContent = totalSchedules;
                 document.getElementById('todaySchedules').textContent = todaySchedules;
                 document.getElementById('upcomingSchedules').textContent = upcomingSchedules;
                 document.getElementById('totalStudents').textContent = uniqueStudents;
