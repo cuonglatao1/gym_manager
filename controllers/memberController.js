@@ -156,14 +156,29 @@ const memberController = {
     purchaseMyMembership: asyncHandler(async (req, res) => {
         const { membershipId, startDate } = req.body;
         
+        console.log(`🔍 [AUTH DEBUG] User ID: ${req.user.userId}, Role: ${req.user.role}`);
+        
         // Get member ID from authenticated user using Member model directly
         const { Member } = require('../models');
         const member = await Member.findOne({
             where: { userId: req.user.userId }
         });
         
+        console.log(`🔍 [MEMBER LOOKUP] Found member:`, member ? {
+            id: member.id,
+            fullName: member.fullName,
+            userId: member.userId
+        } : 'NULL');
+        
         if (!member) {
-            throw new NotFoundError('Không tìm thấy thông tin member');
+            // If no member found, check if user has member role but no member record
+            if (req.user.role === 'member') {
+                console.log(`❌ [ERROR] User has member role but no member record found for userId: ${req.user.userId}`);
+                throw new NotFoundError('Tài khoản của bạn chưa được liên kết với hồ sơ hội viên. Vui lòng liên hệ admin để được hỗ trợ.');
+            } else {
+                console.log(`❌ [ERROR] User role ${req.user.role} cannot purchase membership`);
+                throw new NotFoundError('Chỉ hội viên mới có thể mua gói tập');
+            }
         }
 
         // Check for pending MEMBERSHIP invoices before allowing membership purchase

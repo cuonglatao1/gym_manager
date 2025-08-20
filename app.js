@@ -1290,35 +1290,8 @@ async function resetTrainersWithSequentialIDs() {
 // Fix trainer assignments for existing schedules - restore correct trainer from class
 async function fixScheduleTrainerAssignments() {
     try {
-        console.log('🔧 Fixing trainer assignments for schedules...');
-        
-        const { ClassSchedule, Class } = require('./models');
-        
-        // Get all schedules with their associated classes
-        const schedules = await ClassSchedule.findAll({
-            include: [{
-                model: Class,
-                as: 'class',
-                required: true
-            }],
-            logging: false
-        });
-        
-        let fixedCount = 0;
-        for (const schedule of schedules) {
-            const correctTrainerId = schedule.class.trainerId;
-            
-            // Only update if the schedule has wrong trainerId
-            if (schedule.trainerId !== correctTrainerId) {
-                await schedule.update({ 
-                    trainerId: correctTrainerId 
-                }, { logging: false });
-                fixedCount++;
-            }
-        }
-        
-        console.log(`✅ Fixed trainer assignments for ${fixedCount} schedules`);
-        console.log('🎯 All schedules now have correct trainers matching their classes');
+        console.log('🔧 Trainer assignment fix is disabled');
+        return; // Exit early
         
     } catch (error) {
         console.error('⚠️  Failed to fix trainer assignments:', error.message);

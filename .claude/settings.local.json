@@ -31,7 +31,9 @@
       "Bash(npm run:*)",
       "Bash(touch:*)",
       "Bash(git stash:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm test:*)",
+      "Bash(npx jest:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

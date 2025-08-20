@@ -197,6 +197,9 @@ MaintenanceSchedule.prototype.completeAndReschedule = async function(completedDa
         nextDueDate: nextDue.toISOString().split('T')[0]
     });
     
+    // Log the rescheduling for audit trail
+    console.log(`🔄 Reschedule maintenance: Equipment ${this.equipmentId}, Type: ${this.maintenanceType}, Next due: ${nextDue.toISOString().split('T')[0]}`);
+    
     return this;
 };
 

@@ -70,20 +70,28 @@ router.post('/generate-upcoming-tasks', async (req, res) => {
 router.post('/complete-maintenance/:maintenanceId', async (req, res) => {
     try {
         const { maintenanceId } = req.params;
-        const performedBy = req.user.userId;
-        const workDetails = req.body;
+        const details = {
+            performedBy: req.user?.userId || 1, // Default to admin user ID
+            ...req.body
+        };
         
         const result = await maintenanceScheduler.completeMaintenance(
             maintenanceId, 
-            performedBy, 
-            workDetails
+            details
         );
         
-        res.json({
-            success: true,
-            data: result,
-            message: 'Maintenance completed and schedule updated'
-        });
+        if (result.success) {
+            res.json({
+                success: true,
+                data: result,
+                message: 'Maintenance completed and schedule updated'
+            });
+        } else {
+            res.status(400).json({
+                success: false,
+                message: result.error || 'Failed to complete maintenance'
+            });
+        }
     } catch (error) {
         console.error('Error completing maintenance:', error);
         res.status(500).json({
@@ -185,6 +193,29 @@ router.post('/run-scheduler', async (req, res) => {
         });
     } catch (error) {
         console.error('Error running scheduler:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Internal server error'
+        });
+    }
+});
+
+// Clean up duplicate maintenance schedules
+router.post('/cleanup-duplicates', async (req, res) => {
+    try {
+        const result = await maintenanceScheduler.cleanupDuplicateSchedules();
+        
+        res.json({
+            success: result.success,
+            data: {
+                cleanedCount: result.cleanedCount
+            },
+            message: result.success 
+                ? `Successfully cleaned up ${result.cleanedCount} duplicate schedules`
+                : `Cleanup failed: ${result.error}`
+        });
+    } catch (error) {
+        console.error('Error cleaning up duplicates:', error);
         res.status(500).json({
             success: false,
             message: error.message || 'Internal server error'

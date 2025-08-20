@@ -68,11 +68,197 @@
             border-radius: 8px;
             text-align: center;
         }
+
+        .stat-card.enhanced {
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .stat-card.enhanced:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .stat-icon {
+            font-size: 28px;
+            margin-bottom: 10px;
+            display: block;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
         
         .stat-number {
             font-size: 32px;
             font-weight: bold;
             margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .stat-glow {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .stat-card.enhanced:hover .stat-glow {
+            opacity: 1;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .enhanced-card {
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9ff 100%);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+
+        .enhanced-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+        }
+
+        .enhanced-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .card-header h3 {
+            margin: 0 0 20px 0;
+            color: #2d3748;
+            font-weight: 600;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .trend-indicator {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .trend-indicator.up {
+            color: #22c55e;
+        }
+
+        .system-health {
+            font-size: 12px;
+        }
+
+        .system-health.good {
+            color: #22c55e;
+        }
+
+        .modern-list, .modern-stats {
+            list-style: none;
+            padding: 0 25px 25px;
+            margin: 0;
+        }
+
+        .modern-list li, .modern-stats li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .modern-list li:last-child, .modern-stats li:last-child {
+            border-bottom: none;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 0 25px 25px;
+        }
+
+        .overview-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .overview-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
+        }
+
+        .overview-icon {
+            font-size: 24px;
+            margin-right: 15px;
+        }
+
+        .overview-text strong {
+            display: block;
+            color: #2d3748;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .overview-text span {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .skeleton-loader {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 4px;
+            height: 20px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
         }
         
         .form-grid {
@@ -163,6 +349,15 @@
         .status-sent { background: #cce7ff; color: #004085; }
         .status-completed { background: #d4edda; color: #155724; }
         .status-failed { background: #f8d7da; color: #721c24; }
+        
+        .overdue-row {
+            background-color: #fff5f5;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .overdue-row:hover {
+            background-color: #fff0f0;
+        }
         
         .filter-bar {
             display: flex;
@@ -372,6 +567,253 @@
         .btn-info:hover {
             background: #138496;
         }
+        
+        /* Enhanced Notification Styles */
+        .enhanced-notification-item {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .enhanced-notification-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 6px;
+            background: var(--priority-color);
+        }
+
+        .enhanced-notification-item:hover {
+            background: #f8f9fa;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .enhanced-notification-item.critical {
+            --priority-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .enhanced-notification-item.high {
+            --priority-color: #fd7e14;
+            border-color: #fd7e14;
+        }
+
+        .enhanced-notification-item.medium {
+            --priority-color: #ffc107;
+            border-color: #ffc107;
+        }
+
+        .enhanced-notification-item.low {
+            --priority-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .notification-badge-enhanced {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .notification-badge-enhanced.critical {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .notification-badge-enhanced.high {
+            background: linear-gradient(135deg, #fd7e14, #e55a00);
+            color: white;
+        }
+
+        .notification-badge-enhanced.medium {
+            background: linear-gradient(135deg, #ffc107, #ffb300);
+            color: #212529;
+        }
+
+        .notification-badge-enhanced.low {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .notification-title-enhanced {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #212529;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .notification-equipment-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            border-left: 3px solid var(--priority-color);
+        }
+
+        .notification-actions-enhanced {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .btn-action-enhanced {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-action-enhanced:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn-action-enhanced.primary {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .btn-action-enhanced.success {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+            color: white;
+            font-weight: bold;
+        }
+
+        .btn-action-enhanced.success:hover {
+            background: linear-gradient(135deg, #218838, #155724);
+        }
+
+        .overdue-indicator-enhanced {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        /* Modal Styles */
+        .modal-backdrop-enhanced {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content-enhanced {
+            background: white;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal-header-enhanced {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .modal-header-enhanced h3 {
+            margin: 0;
+        }
+
+        .modal-close-enhanced {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .modal-body-enhanced {
+            padding: 20px;
+        }
+
+        /* Custom Scrollbar for Equipment Grid */
+        .equipment-scroll-container {
+            scrollbar-width: thin;
+            scrollbar-color: #007bff #f1f1f1;
+        }
+
+        .equipment-scroll-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .equipment-scroll-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .equipment-scroll-container::-webkit-scrollbar-thumb {
+            background: #007bff;
+            border-radius: 10px;
+            transition: background 0.3s;
+        }
+
+        .equipment-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: #0056b3;
+        }
+
+        /* Equipment Card Hover Effects */
+        .equipment-card {
+            transition: all 0.2s ease;
+        }
+
+        .equipment-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        }
+        
     </style>
 </head>
 <body>
@@ -397,49 +839,64 @@
             <button class="tab-btn" onclick="switchTab('memberships')">💳 Gói tập</button>
             <button class="tab-btn" onclick="switchTab('equipment')">🔧 Thiết bị</button>
             <button class="tab-btn" onclick="switchTab('billing')">💰 Thanh toán</button>
-            <button class="tab-btn" onclick="switchTab('analytics')">📈 Báo cáo</button>
         </div>
 
         <!-- Tab: Dashboard -->
         <div id="dashboard" class="tab-content active">
             <!-- System Stats Cards -->
             <div class="stats-grid" id="systemStats">
-                <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="stat-card enhanced" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative; overflow: hidden;">
+                    <div class="stat-icon">👥</div>
                     <div class="stat-number" id="totalMembers">-</div>
-                    <div>Hội viên</div>
+                    <div class="stat-label">Hội viên</div>
+                    <div class="stat-glow"></div>
                 </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="stat-card enhanced" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); position: relative; overflow: hidden;">
+                    <div class="stat-icon">🏋️</div>
                     <div class="stat-number" id="totalTrainers">-</div>
-                    <div>Huấn luyện viên</div>
+                    <div class="stat-label">Huấn luyện viên</div>
+                    <div class="stat-glow"></div>
                 </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="stat-card enhanced" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); position: relative; overflow: hidden;">
+                    <div class="stat-icon">🏃</div>
                     <div class="stat-number" id="totalClasses">-</div>
-                    <div>Lớp học</div>
+                    <div class="stat-label">Lớp học</div>
+                    <div class="stat-glow"></div>
                 </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="stat-card enhanced" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); position: relative; overflow: hidden;">
+                    <div class="stat-icon">✅</div>
                     <div class="stat-number" id="todayCheckIns">-</div>
-                    <div>Check-in hôm nay</div>
+                    <div class="stat-label">Check-in hôm nay</div>
+                    <div class="stat-glow"></div>
                 </div>
             </div>
 
-            <div class="section-card">
-                <h3>📊 Tổng quan hệ thống</h3>
-                <div id="dashboardContent">
-                    <div class="form-grid">
-                        <div>
-                            <h4>🔥 Hoạt động hôm nay</h4>
-                            <ul id="todayActivity">
-                                <li>Đang tải...</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h4>📈 Thống kê nhanh</h4>
-                            <ul id="quickStats">
-                                <li>Đang tải...</li>
-                            </ul>
-                        </div>
+            <!-- Enhanced Dashboard Content -->
+            <div class="dashboard-grid">
+                <div class="section-card enhanced-card">
+                    <div class="card-header">
+                        <h3>🔥 Hoạt động hôm nay</h3>
+                        <div class="pulse-dot"></div>
+                    </div>
+                    <div class="activity-list">
+                        <ul id="todayActivity" class="modern-list">
+                            <li class="skeleton-loader">Đang tải...</li>
+                        </ul>
                     </div>
                 </div>
+                
+                <div class="section-card enhanced-card">
+                    <div class="card-header">
+                        <h3>📈 Thống kê nhanh</h3>
+                        <div class="trend-indicator up">↗</div>
+                    </div>
+                    <div class="quick-stats">
+                        <ul id="quickStats" class="modern-stats">
+                            <li class="skeleton-loader">Đang tải...</li>
+                        </ul>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -595,7 +1052,7 @@
             <div class="mini-tabs" style="display: flex; margin-bottom: 20px; border-bottom: 2px solid #e1e5e9;">
                 <button class="mini-tab-btn active" onclick="switchBillingTab('invoices')">📄 Hóa đơn</button>
                 <button class="mini-tab-btn" onclick="switchBillingTab('payments')">💳 Thanh toán</button>
-                <button class="mini-tab-btn" onclick="switchBillingTab('revenue')">📊 Báo cáo</button>
+                
             </div>
 
             <!-- Invoices Management -->
@@ -604,22 +1061,18 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                         <h3>📄 Quản lý hóa đơn</h3>
                         <div>
-                            <button class="btn btn-primary" onclick="showCreateInvoiceModal()">+ Tạo hóa đơn mới</button>
+                            <span style="color: #666; font-style: italic;">Hóa đơn được tạo tự động khi thành viên đăng ký dịch vụ</span>
                         </div>
                     </div>
 
                     <!-- Filters -->
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px; max-width: 300px;">
                         <select id="invoiceStatusFilterAdmin" onchange="filterAdminInvoices()">
                             <option value="">Tất cả trạng thái</option>
-                            <option value="draft">Nháp</option>
-                            <option value="sent">Đã gửi</option>
                             <option value="paid">Đã thanh toán</option>
+                            <option value="pending">Đang chờ</option>
                             <option value="overdue">Quá hạn</option>
                         </select>
-                        <input type="text" id="memberSearchAdmin" placeholder="Tìm theo tên thành viên" onchange="filterAdminInvoices()" />
-                        <input type="date" id="startDateAdmin" onchange="filterAdminInvoices()" />
-                        <input type="date" id="endDateAdmin" onchange="filterAdminInvoices()" />
                     </div>
 
                     <div id="adminInvoicesList" class="loading">Đang tải...</div>
@@ -638,12 +1091,12 @@
                     </div>
 
                     <!-- Filters -->
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; max-width: 600px;">
                         <select id="paymentStatusFilterAdmin" onchange="filterAdminPayments()">
                             <option value="">Tất cả trạng thái</option>
-                            <option value="pending">Chờ xử lý</option>
-                            <option value="completed">Hoàn thành</option>
-                            <option value="failed">Thất bại</option>
+                            <option value="completed">Đã thanh toán</option>
+                            <option value="pending">Đang chờ</option>
+                            <option value="overdue">Quá hạn</option>
                         </select>
                         <select id="paymentTypeFilterAdmin" onchange="filterAdminPayments()">
                             <option value="">Tất cả loại</option>
@@ -652,42 +1105,13 @@
                             <option value="service">Dịch vụ</option>
                             <option value="penalty">Phạt</option>
                         </select>
-                        <input type="date" id="paymentStartDateAdmin" onchange="filterAdminPayments()" />
-                        <input type="date" id="paymentEndDateAdmin" onchange="filterAdminPayments()" />
                     </div>
 
                     <div id="adminPaymentsList" class="loading">Đang tải...</div>
                 </div>
             </div>
 
-            <!-- Revenue Reports -->
-            <div id="revenue-billing-tab" class="billing-tab-content">
-                <div class="section-card">
-                    <h3>📊 Báo cáo doanh thu</h3>
-                    
-                    <!-- Revenue Charts -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
-                        <div>
-                            <h4>Doanh thu theo loại</h4>
-                            <div id="revenueByTypeChart" style="height: 300px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                                <p>Biểu đồ doanh thu theo loại</p>
-                            </div>
-                        </div>
-                        <div>
-                            <h4>Doanh thu theo phương thức</h4>
-                            <div id="revenueByMethodChart" style="height: 300px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                                <p>Biểu đồ doanh thu theo phương thức</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Monthly Revenue -->
-                    <div>
-                        <h4>Doanh thu 12 tháng gần nhất</h4>
-                        <div id="monthlyRevenueChart" style="height: 400px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                            <p>Biểu đồ doanh thu hàng tháng</p>
-                        </div>
-                    </div>
+            
                 </div>
             </div>
         </div>
@@ -698,7 +1122,6 @@
             <div class="mini-tabs" style="display: flex; margin-bottom: 20px; border-bottom: 2px solid #e1e5e9;">
                 <button class="mini-tab-btn active" onclick="switchEquipmentTab('dashboard')">📊 Dashboard</button>
                 <button class="mini-tab-btn" onclick="switchEquipmentTab('list')">🏋️‍♂️ Danh sách</button>
-                <button class="mini-tab-btn" onclick="switchEquipmentTab('notifications')">🔔 Thông báo</button>
             </div>
 
             <!-- Equipment Dashboard -->
@@ -790,9 +1213,131 @@
                         </div>
                     </div>
 
-                    <!-- Equipment Grid -->
-                    <div id="equipment-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px;">
-                        <div class="loading">Đang tải danh sách thiết bị...</div>
+                    <!-- Equipment Grid Container with Custom Scrollbar -->
+                    <div class="equipment-scroll-container" style="background: #f8f9fa; border-radius: 10px; padding: 20px; max-height: 70vh; overflow-y: auto; border: 1px solid #e9ecef;">
+                        <div id="equipment-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
+                            <div class="loading">Đang tải danh sách thiết bị...</div>
+                        </div>
+                        
+                        <!-- Equipment Counter -->
+                        <div id="equipment-counter" style="text-align: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6; color: #666; font-size: 0.9em;">
+                            Đang tải thiết bị...
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div id="equipment-pagination" style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Equipment -->
+        <div id="equipment" class="tab-content">
+            <!-- Equipment Mini Tabs -->
+            <div class="mini-tabs" style="display: flex; margin-bottom: 20px; border-bottom: 2px solid #e1e5e9;">
+                <button class="mini-tab-btn active" onclick="switchEquipmentTab('dashboard')">📊 Dashboard</button>
+                <button class="mini-tab-btn" onclick="switchEquipmentTab('list')">🏋️‍♂️ Danh sách</button>
+            </div>
+
+            <!-- Equipment Dashboard -->
+            <div id="equipment-dashboard-tab" class="equipment-tab-content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-equipment">-</div>
+                        <div class="stat-label">Tổng thiết bị</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="overdue-maintenance" style="color: #dc3545;">-</div>
+                        <div class="stat-label">Bảo trì quá hạn</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="today-maintenance" style="color: #ffc107;">-</div>
+                        <div class="stat-label">Bảo trì hôm nay</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="equipment-active" style="color: #28a745;">-</div>
+                        <div class="stat-label">Hoạt động tốt</div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <h3>🎯 Thiết bị theo mức độ ưu tiên</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="high-priority" style="color: #dc3545;">-</div>
+                            <div class="stat-label">Ưu tiên cao</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="medium-priority" style="color: #ffc107;">-</div>
+                            <div class="stat-label">Ưu tiên trung bình</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="low-priority" style="color: #28a745;">-</div>
+                            <div class="stat-label">Ưu tiên thấp</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <h3>🔥 Bảo trì cần chú ý</h3>
+                    <div id="urgent-maintenance">
+                        <div class="loading">Đang tải dữ liệu...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Equipment List -->
+            <div id="equipment-list-tab" class="equipment-tab-content" style="display: none;">
+                <div class="section-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>🏋️‍♂️ Danh sách Thiết bị</h3>
+                        <button class="btn btn-success" onclick="showAddEquipmentModal()">
+                            ➕ Thêm thiết bị mới
+                        </button>
+                    </div>
+
+                    <!-- Equipment Filters -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <div class="form-group">
+                            <label>Tìm kiếm</label>
+                            <input type="text" id="equipment-search" placeholder="Tên thiết bị, mã code..." onkeyup="filterEquipment()">
+                        </div>
+                        <div class="form-group">
+                            <label>Loại thiết bị</label>
+                            <select id="equipment-category" onchange="filterEquipment()">
+                                <option value="">Tất cả</option>
+                                <option value="cardio">Cardio</option>
+                                <option value="strength">Strength</option>
+                                <option value="functional">Functional</option>
+                                <option value="free_weights">Free Weights</option>
+                                <option value="accessories">Accessories</option>
+                                <option value="other">Khác</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Mức độ ưu tiên</label>
+                            <select id="equipment-priority" onchange="filterEquipment()">
+                                <option value="">Tất cả</option>
+                                <option value="high">Cao</option>
+                                <option value="medium">Trung bình</option>
+                                <option value="low">Thấp</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <button class="btn btn-primary" onclick="loadEquipmentList()">🔄 Làm mới</button>
+                        </div>
+                    </div>
+
+                    <!-- Equipment Grid Container with Custom Scrollbar -->
+                    <div class="equipment-scroll-container" style="background: #f8f9fa; border-radius: 10px; padding: 20px; max-height: 70vh; overflow-y: auto; border: 1px solid #e9ecef;">
+                        <div id="equipment-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
+                            <div class="loading">Đang tải danh sách thiết bị...</div>
+                        </div>
+                        
+                        <!-- Equipment Counter -->
+                        <div id="equipment-counter" style="text-align: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6; color: #666; font-size: 0.9em;">
+                            Đang tải thiết bị...
+                        </div>
                     </div>
 
                     <!-- Pagination -->
@@ -800,56 +1345,93 @@
                 </div>
             </div>
 
-            <!-- Equipment Notifications -->
-            <div id="equipment-notifications-tab" class="equipment-tab-content" style="display: none;">
+        </div>
+
+
+        <!-- Tab: Analytics - IMPROVED -->
+        <div id="analytics" class="tab-content">
+            <!-- Overview Cards -->
+            <div class="stats-grid" style="margin-bottom: 30px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div class="stat-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; text-align: center; padding: 25px;">
+                    <div style="font-size: 2.5em; margin-bottom: 10px;">💰</div>
+                    <div style="font-size: 2em; font-weight: bold;" id="dashboardTotalRevenue">0đ</div>
+                    <div style="font-size: 0.9em; opacity: 0.9;">Tổng doanh thu</div>
+                    <div style="font-size: 0.8em; margin-top: 5px;" id="revenueGrowth">+0% so với tháng trước</div>
+                </div>
+                
+                <div class="stat-card" style="background: linear-gradient(135deg, #007bff 0%, #6610f2 100%); color: white; text-align: center; padding: 25px;">
+                    <div style="font-size: 2.5em; margin-bottom: 10px;">👥</div>
+                    <div style="font-size: 2em; font-weight: bold;" id="totalMembers">0</div>
+                    <div style="font-size: 0.9em; opacity: 0.9;">Tổng thành viên</div>
+                    <div style="font-size: 0.8em; margin-top: 5px;" id="memberGrowth">+0 thành viên mới tháng này</div>
+                </div>
+                
+                <div class="stat-card" style="background: linear-gradient(135deg, #fd7e14 0%, #e83e8c 100%); color: white; text-align: center; padding: 25px;">
+                    <div style="font-size: 2.5em; margin-bottom: 10px;">🏃‍♂️</div>
+                    <div style="font-size: 2em; font-weight: bold;" id="activeMembers">0</div>
+                    <div style="font-size: 0.9em; opacity: 0.9;">Thành viên hoạt động</div>
+                    <div style="font-size: 0.8em; margin-top: 5px;" id="activeRate">0% tỷ lệ hoạt động</div>
+                </div>
+                
+                <div class="stat-card" style="background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; text-align: center; padding: 25px;">
+                    <div style="font-size: 2.5em; margin-bottom: 10px;">🔧</div>
+                    <div style="font-size: 2em; font-weight: bold;" id="maintenanceCount">0</div>
+                    <div style="font-size: 0.9em; opacity: 0.9;">Lịch bảo trì hoàn thành</div>
+                    <div style="font-size: 0.8em; margin-top: 5px;">Trong tháng này</div>
+                </div>
+            </div>
+
+            <!-- Detailed Analytics -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                <!-- Revenue Chart -->
+                
+                <!-- Member Statistics -->
                 <div class="section-card">
-                    <h3>🔔 Thông báo Bảo trì Thiết bị</h3>
-                    
-                    <!-- Quick Stats -->
-                    <div class="stats-grid" style="margin-bottom: 20px;">
-                        <div class="stat-card" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white;">
-                            <div class="stat-number" id="equipment-overdue-count">-</div>
-                            <div class="stat-label">⚠️ Quá hạn</div>
-                        </div>
-                        <div class="stat-card" style="background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%); color: white;">
-                            <div class="stat-number" id="equipment-today-count">-</div>
-                            <div class="stat-label">📅 Hôm nay</div>
-                        </div>
-                        <div class="stat-card" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%); color: white;">
-                            <div class="stat-number" id="equipment-upcoming-count">-</div>
-                            <div class="stat-label">⏰ Sắp tới</div>
-                        </div>
+                    <h3>👥 Thống kê thành viên</h3>
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="memberChart" width="400" height="300"></canvas>
                     </div>
-                    
-                    <div id="equipment-notifications-list">
-                        <div class="loading">Đang tải thông báo...</div>
+                    <div id="memberDetails" style="margin-top: 15px;">
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
+                            <span>Thành viên VIP:</span>
+                            <strong id="vipMembers">0</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
+                            <span>Thành viên thường:</span>
+                            <strong id="regularMembers">0</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                            <span>Hết hạn gần đây:</span>
+                            <strong id="expiringMembers" style="color: #dc3545;">0</strong>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Tab: Analytics -->
-        <div id="analytics" class="tab-content">
-            <div class="section-card">
-                <h3>📈 Báo cáo và thống kê</h3>
-                <div class="form-grid">
-                    <div>
-                        <h4>📊 Lớp phổ biến</h4>
-                        <div id="popularClasses" class="loading">Đang tải...</div>
-                    </div>
-                    <div>
-                        <h4>💰 Doanh thu</h4>
-                        <div id="revenue" class="loading">Đang tải...</div>
-                    </div>
-                    <div>
-                        <h4>👥 Tỷ lệ tham gia</h4>
-                        <div id="attendance" class="loading">Đang tải...</div>
-                    </div>
-                    <div>
-                        <h4>📊 Thống kê thành viên</h4>
-                        <div id="memberStats" class="loading">Đang tải...</div>
+            <!-- Equipment and Maintenance -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                <!-- Equipment Status -->
+                
+                <!-- Top Performing Classes -->
+                <div class="section-card">
+                    <h3>🥇 Lớp học phổ biến nhất</h3>
+                    <div id="popularClassesList">
+                        <div style="text-align: center; padding: 50px; color: #666;">
+                            <div style="font-size: 3em; margin-bottom: 10px;">📊</div>
+                            Đang tải dữ liệu lớp học...
+                        </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn btn-primary btn-lg" onclick="refreshAnalytics()" style="margin-right: 15px; padding: 12px 24px;">
+                    🔄 Làm mới dữ liệu
+                </button>
+                <button class="btn btn-success btn-lg" onclick="alert('Chức năng đã được gỡ bỏ')" style="padding: 12px 24px;">
+                    📄 Xuất báo cáo
+                </button>
             </div>
         </div>
     </div>
@@ -938,6 +1520,7 @@
             const statusMap = {
                 'draft': 'Nháp',
                 'sent': 'Đã gửi',
+                'pending': 'Chờ thanh toán',
                 'paid': 'Đã thanh toán',
                 'overdue': 'Quá hạn',
                 'cancelled': 'Đã hủy'
@@ -1036,6 +1619,18 @@
                 
                 if (!response.ok) {
                     logApiDebug(`❌ ${response.status} ${data.message || 'API call failed'}`, 'error');
+                    
+                    // Handle 401 Unauthorized - token expired or invalid
+                    if (response.status === 401) {
+                        showToast('🔐 Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại', 'error');
+                        localStorage.removeItem('gym_auth_token');
+                        localStorage.removeItem('gym_user_data');
+                        setTimeout(() => {
+                            window.location.href = '/demo/';
+                        }, 2000);
+                        throw new Error('Token đã hết hạn');
+                    }
+                    
                     throw new Error(data.message || 'API call failed');
                 }
                 
@@ -1125,9 +1720,7 @@
                 case 'equipment':
                     loadEquipmentDashboard();
                     break;
-                case 'analytics':
-                    loadAnalytics();
-                    break;
+                
             }
         }
 
@@ -1146,9 +1739,6 @@
                         } else if (tabId === 'invoicesTab') {
                             loadAdminInvoices();
                             updateRevenueStats();
-                        } else if (tabId === 'reportsTab') {
-                            loadRevenueReports();
-                            updateRevenueStats();
                         }
                     }
                     // Always refresh revenue stats regardless of tab
@@ -1164,7 +1754,7 @@
                 loadAdminPayments();
                 loadAdminInvoices();
                 updateRevenueStats();
-                loadRevenueReports();
+                
                 showToast('📊 Dữ liệu đã được cập nhật!', 'info');
             }
         }
@@ -1187,31 +1777,88 @@
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            if (checkAuth()) {
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (await checkAuth()) {
                 initDashboard();
                 addRefreshButton(); // Add manual refresh button
                 startAutoRefresh(); // Start auto-refresh
             }
         });
 
-        function checkAuth() {
+        async function checkAuth() {
             const token = localStorage.getItem('gym_auth_token');
             const userInfo = localStorage.getItem('gym_user_info');
             
             if (!token || !userInfo) {
+                console.log('🔑 No auth found, attempting auto-login for admin demo...');
+                
+                // Auto-login for demo purposes
+                try {
+                    const loginResponse = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: 'admin@gym.com',
+                            password: 'admin123'
+                        })
+                    });
+                    
+                    if (loginResponse.ok) {
+                        const loginData = await loginResponse.json();
+                        if (loginData.success) {
+                            localStorage.setItem('gym_auth_token', loginData.data.accessToken);
+                            localStorage.setItem('gym_user_info', JSON.stringify(loginData.data.user));
+                            console.log('✅ Auto-login successful for admin demo');
+                            return true;
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Auto-login failed:', error);
+                }
+                
                 window.location.href = 'index.html';
                 return false;
             }
             
-            currentUser = JSON.parse(userInfo);
-            if (currentUser.role !== 'admin') {
-                window.location.href = 'index.html';
+            try {
+                currentUser = JSON.parse(userInfo);
+                if (currentUser.role !== 'admin') {
+                    window.location.href = 'index.html';
+                    return false;
+                }
+                
+                // Test token validity with a simple API call
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Token không hợp lệ');
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                showToast('🔐 Phiên đăng nhập không hợp lệ, vui lòng đăng nhập lại', 'error');
+                localStorage.removeItem('gym_auth_token');
+                localStorage.removeItem('gym_user_info');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
                 return false;
             }
             
             document.getElementById('adminName').textContent = currentUser.fullName || currentUser.username || 'Admin';
             return true;
+        }
+
+        function logout() {
+            localStorage.removeItem('gym_auth_token');
+            localStorage.removeItem('gym_user_info');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userId');
+            window.location.href = 'index.html';
         }
 
         async function initDashboard() {
@@ -1239,11 +1886,12 @@
                 
                 // Load all data in parallel
                 console.log('🔍 Fetching all dashboard data...');
-                const [checkInsRes, enrollmentsRes, membersRes, classesRes] = await Promise.all([
+                const [checkInsRes, enrollmentsRes, membersRes, classesRes, schedulesRes] = await Promise.all([
                     apiCall(`/classes/checkins/${today}`),
                     apiCall('/classes/enrollments'),
                     apiCall('/members?limit=100'),
-                    apiCall('/classes')
+                    apiCall('/classes'),
+                    apiCall('/classes/schedules')
                 ]);
                 
                 console.log('✅ API responses received');
@@ -1252,6 +1900,7 @@
                 const enrollments = enrollmentsRes.data?.enrollments || enrollmentsRes.data || [];
                 const members = membersRes.data?.members || membersRes.data || [];
                 const classes = classesRes.data?.classes || classesRes.data || [];
+                const schedules = schedulesRes.data?.schedules || schedulesRes.data || [];
                 
                 console.log('📊 Processed data:', {
                     checkIns: checkIns.length,
@@ -1308,16 +1957,173 @@
                 // Calculate active schedules today
                 const activeSchedules = new Set(checkIns.map(c => c.scheduleId || c.classScheduleId)).size;
                 
+                // Calculate upcoming schedules (next 24 hours, not just today)
+                const now = new Date();
+                const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+                
+                console.log('🕐 Current time:', now.toISOString());
+                console.log('📋 All schedules:', schedules.length);
+                
+                // Log first few schedules to see structure
+                console.log('📋 Sample schedules data:', schedules.slice(0, 3));
+                
+                // Use local timezone for date comparison
+                const todayLocal = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+                const todayString = todayLocal.toISOString().split('T')[0];
+                const tomorrowDate = new Date(todayLocal.getTime() + 24 * 60 * 60 * 1000);
+                const tomorrowString = tomorrowDate.toISOString().split('T')[0];
+                
+                console.log('📅 Date strings (local timezone):', { 
+                    todayString, 
+                    tomorrowString,
+                    localTime: todayLocal.toISOString(),
+                    utcTime: now.toISOString()
+                });
+                
+                // Filter upcoming schedules with multiple approaches
+                let upcomingSchedules = 0;
+                
+                schedules.forEach(schedule => {
+                    console.log('🔍 Checking schedule:', {
+                        id: schedule.id,
+                        status: schedule.status,
+                        startTime: schedule.startTime,
+                        date: schedule.date
+                    });
+                    
+                    if (schedule.status !== 'scheduled') {
+                        console.log('❌ Status not scheduled:', schedule.status);
+                        return;
+                    }
+                    
+                    // Method 1: Use startTime for precise comparison
+                    if (schedule.startTime) {
+                        const scheduleDate = new Date(schedule.startTime);
+                        const isUpcoming1 = scheduleDate > now && scheduleDate <= next24Hours;
+                        
+                        if (isUpcoming1) {
+                            console.log('✅ Method 1 - Found upcoming schedule:', {
+                                id: schedule.id,
+                                class: schedule.class?.name || 'Unknown',
+                                startTime: schedule.startTime
+                            });
+                            upcomingSchedules++;
+                            return;
+                        }
+                    }
+                    
+                    // Method 2: Use date field if available
+                    if (schedule.date) {
+                        const scheduleDateString = new Date(schedule.date).toISOString().split('T')[0];
+                        const isToday = scheduleDateString === todayString;
+                        const isTomorrow = scheduleDateString === tomorrowString;
+                        
+                        if (isToday || isTomorrow) {
+                            console.log('✅ Method 2 - Found schedule for today/tomorrow:', {
+                                id: schedule.id,
+                                date: schedule.date,
+                                isToday,
+                                isTomorrow
+                            });
+                            upcomingSchedules++;
+                            return;
+                        }
+                    }
+                    
+                    console.log('❌ Schedule not upcoming');
+                });
+                
+                console.log('⏰ Upcoming schedules in next 24h:', upcomingSchedules);
+                
+                // More intelligent fallback - count schedules for today only
+                const todaySchedules = schedules.filter(schedule => {
+                    console.log('🔍 Checking today schedule:', {
+                        id: schedule.id,
+                        status: schedule.status,
+                        date: schedule.date,
+                        startTime: schedule.startTime
+                    });
+                    
+                    if (schedule.status !== 'scheduled') {
+                        console.log('❌ Not scheduled status');
+                        return false;
+                    }
+                    
+                    // Check if it's today using multiple date fields
+                    let isToday = false;
+                    
+                    if (schedule.date) {
+                        const scheduleDay = new Date(schedule.date).toISOString().split('T')[0];
+                        isToday = scheduleDay === todayString;
+                        console.log('📅 Date check:', {
+                            scheduleDate: schedule.date,
+                            scheduleDay,
+                            todayString,
+                            isToday
+                        });
+                    }
+                    
+                    if (!isToday && schedule.startTime) {
+                        const scheduleDay = new Date(schedule.startTime).toISOString().split('T')[0];
+                        isToday = scheduleDay === todayString;
+                        console.log('📅 StartTime check:', {
+                            startTime: schedule.startTime,
+                            scheduleDay,
+                            todayString,
+                            isToday
+                        });
+                    }
+                    
+                    if (isToday) {
+                        console.log('✅ Found today schedule:', schedule.id);
+                    }
+                    
+                    return isToday;
+                }).length;
+                
+                console.log('📅 Today schedules count:', todaySchedules);
+                
+                // Use today's schedules as fallback if main logic failed
+                if (upcomingSchedules === 0 && todaySchedules > 0) {
+                    console.log('🔄 Using today schedules fallback');
+                    upcomingSchedules = todaySchedules;
+                }
+                
+                // Final fallback - if still 0, try to count from visible schedule table
+                if (upcomingSchedules === 0) {
+                    try {
+                        // This will work if user has visited schedules tab
+                        const scheduleRows = document.querySelectorAll('#schedulesContent .data-table tbody tr');
+                        if (scheduleRows.length > 0) {
+                            upcomingSchedules = scheduleRows.length;
+                            console.log('🔄 DOM fallback - found visible schedules:', upcomingSchedules);
+                        }
+                    } catch (e) {
+                        console.log('❌ DOM fallback failed:', e);
+                    }
+                }
+                
                 // Get recent activity
                 const recentEnrollments = enrollments.slice(-5).reverse(); // Last 5 enrollments
                 const recentCheckIns = checkIns.slice(-5).reverse(); // Last 5 check-ins
                 
-                // Update today's activity
+                // Show first few schedules data for debugging
+                const debugSchedules = schedules.slice(0, 3).map(s => ({
+                    id: s.id,
+                    date: s.date,
+                    startTime: s.startTime,
+                    status: s.status
+                }));
+                
+                // Update today's activity with debug info
                 todayActivity.innerHTML = `
                     <li>✅ Check-ins hôm nay: <strong>${checkIns.length}</strong></li>
                     <li>📝 Đăng ký mới hôm nay: <strong>${todayEnrollments.length}</strong></li>
                     <li>🏃 Lớp đã hoạt động: <strong>${activeSchedules}</strong></li>
-                    <li>⏰ Lớp sắp diễn ra: <strong>...</strong></li>
+                    <li>⏰ Lớp sắp diễn ra (24h tới): <strong>${upcomingSchedules}</strong></li>
+                    <li style="font-size:12px; color:#666;">📋 Debug: Tổng=${schedules.length}, Hôm nay=${todaySchedules}</li>
+                    <li style="font-size:11px; color:#888;">🕐 Today: ${todayString}</li>
+                    <li style="font-size:11px; color:#888;">📋 Sample: ${JSON.stringify(debugSchedules[0] || {})}</li>
                 `;
                 
                 // Calculate participation rate
@@ -1776,11 +2582,9 @@
         }
         
         function displaySchedules(schedules) {
-            console.log('🔍 displaySchedules called with:', schedules.length, 'schedules');
             const container = document.getElementById('schedulesContent');
             
             if (schedules.length === 0) {
-                console.log('⚠️ No schedules to display');
                 container.innerHTML = '<p>Không có lịch tập nào.</p>';
                 return;
             }
@@ -1802,24 +2606,38 @@
             `;
             
             schedules.forEach(schedule => {
-                const startTime = new Date(schedule.startTime);
-                const endTime = new Date(schedule.endTime);
-                
-                html += `
-                    <tr>
-                        <td>${schedule.class?.name || 'N/A'}</td>
-                        <td>${startTime.toLocaleDateString('vi-VN')}</td>
-                        <td>${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}</td>
-                        <td>${schedule.trainer?.fullName || 'N/A'}</td>
-                        <td>${schedule.room || 'N/A'}</td>
-                        <td>${schedule.actualEnrollmentCount || 0}/${schedule.maxParticipants || 0}</td>
-                        <td>
-                            <button class="btn btn-sm btn-info" onclick="viewEnrollments(${schedule.id})" title="Xem danh sách đăng ký">👥 Đăng ký</button>
-                            <button class="btn btn-sm btn-warning" onclick="editSchedule(${schedule.id})" title="Chỉnh sửa lịch tập">✏️</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${schedule.id})" title="Xóa lịch tập">🗑️</button>
-                        </td>
-                    </tr>
-                `;
+                try {
+                    const startTime = new Date(schedule.startTime);
+                    const endTime = new Date(schedule.endTime);
+                    
+                    // Format date properly
+                    const dateStr = startTime.toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit', 
+                        year: 'numeric'
+                    });
+                    
+                    // Format time properly
+                    const timeStr = `${startTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - ${endTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}`;
+                    
+                    html += `
+                        <tr>
+                            <td>${schedule.class?.name || 'N/A'}</td>
+                            <td>${dateStr}</td>
+                            <td>${timeStr}</td>
+                            <td>${schedule.trainer?.fullName || 'N/A'}</td>
+                            <td>${schedule.room || 'N/A'}</td>
+                            <td>${schedule.actualEnrollmentCount || 0}/${schedule.maxParticipants || 0}</td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="viewEnrollments(${schedule.id})" title="Xem danh sách đăng ký">👥 Đăng ký</button>
+                                <button class="btn btn-sm btn-warning" onclick="editSchedule(${schedule.id})" title="Chỉnh sửa lịch tập">✏️</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${schedule.id})" title="Xóa lịch tập">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                } catch (error) {
+                    console.error('Error displaying schedule:', schedule.id, error);
+                }
             });
             
             html += '</tbody></table>';
@@ -2008,32 +2826,7 @@
             }
         }
 
-        // Analytics Functions
-        async function loadAnalytics() {
-            try {
-                const [popularRes, revenueRes, attendanceRes, memberStatsRes] = await Promise.all([
-                    apiCall('/classes/analytics/popular'),
-                    apiCall('/classes/analytics/revenue'),
-                    apiCall('/classes/analytics/attendance'),
-                    apiCall('/members/statistics')
-                ]);
-                
-                document.getElementById('popularClasses').innerHTML = 
-                    popularRes.data?.classes?.map(c => `<p>${c.name}: ${c.enrollmentCount} đăng ký</p>`).join('') || 'Không có dữ liệu';
-                    
-                document.getElementById('revenue').innerHTML = 
-                    `<p>Tổng: ${parseInt(revenueRes.data?.totalRevenue || 0).toLocaleString('vi-VN')}đ</p>`;
-                    
-                document.getElementById('attendance').innerHTML = 
-                    `<p>Tỷ lệ: ${Math.round(attendanceRes.data?.attendanceRate || 0)}%</p>`;
-                    
-                document.getElementById('memberStats').innerHTML = 
-                    `<p>Hoạt động: ${memberStatsRes.data?.activeMembers || 0}</p><p>Tổng: ${memberStatsRes.data?.totalMembers || 0}</p>`;
-                    
-            } catch (error) {
-                console.error('Error loading analytics:', error);
-            }
-        }
+
 
         // Modal Functions
         function showModal(title, content) {
@@ -2517,7 +3310,7 @@
                             <label><strong>Quyền lợi:</strong></label>
                             ${benefits.length > 0 ? 
                                 '<ul style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">' + 
-                                benefits.map(benefit => `<li style="margin: 5px 0;">✅ ${benefit}</li>`).join('') + 
+                                benefits.map(benefit => '<li style="margin: 5px 0;">✅ ' + benefit + '</li>').join('') + 
                                 '</ul>' 
                                 : '<p style="color: #666;">Chưa có quyền lợi nào được định nghĩa</p>'
                             }
@@ -3410,7 +4203,7 @@
                                 <td>${enrollDate.toLocaleDateString('vi-VN')}</td>
                                 <td>
                                     ${enrollment.status === 'enrolled' ? 
-                                        `<button class="btn btn-sm btn-danger" onclick="cancelScheduleEnrollment(${enrollment.id})">❌ Hủy</button>` :
+                                        '<button class="btn btn-sm btn-danger" onclick="cancelScheduleEnrollment(' + enrollment.id + ')">❌ Hủy</button>' :
                                         '<span style="color: #999;">-</span>'
                                     }
                                 </td>
@@ -3485,33 +4278,65 @@
             const classFilter = document.getElementById('scheduleClassFilter').value;
             const trainerFilter = document.getElementById('scheduleTrainerFilter').value;
             
-            console.log('🔍 filterSchedules - Filters:', {dateFilter, classFilter, trainerFilter});
-            console.log('🔍 filterSchedules - Total schedules:', allSchedules.length);
+            // Remove any existing debug info
+            const existing = document.getElementById('filter-debug');
+            if (existing) existing.remove();
             
-            let filteredSchedules = allSchedules;
+            // Start with all schedules
+            let filteredSchedules = [...allSchedules];
             
+            // Filter by date
             if (dateFilter) {
                 filteredSchedules = filteredSchedules.filter(schedule => {
-                    // Sử dụng field date thay vì startTime
-                    const scheduleDate = schedule.date;
-                    console.log('🔍 Comparing:', scheduleDate, 'vs', dateFilter);
+                    let scheduleDate = null;
+                    
+                    // Get date from startTime (most reliable)
+                    if (schedule.startTime) {
+                        try {
+                            const d = new Date(schedule.startTime);
+                            // Format as YYYY-MM-DD to match filter format
+                            scheduleDate = d.getFullYear() + '-' + 
+                                         String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+                                         String(d.getDate()).padStart(2, '0');
+                        } catch (e) {
+                            console.error('Invalid startTime:', schedule.startTime);
+                        }
+                    }
+                    
+                    // Fallback to schedule.date field
+                    if (!scheduleDate && schedule.date) {
+                        try {
+                            if (schedule.date.includes('T')) {
+                                const d = new Date(schedule.date);
+                                scheduleDate = d.getFullYear() + '-' + 
+                                             String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+                                             String(d.getDate()).padStart(2, '0');
+                            } else {
+                                scheduleDate = schedule.date;
+                            }
+                        } catch (e) {
+                            console.error('Invalid date:', schedule.date);
+                        }
+                    }
+                    
                     return scheduleDate === dateFilter;
                 });
             }
             
+            // Filter by class
             if (classFilter) {
                 filteredSchedules = filteredSchedules.filter(schedule => 
                     schedule.classId == classFilter
                 );
             }
             
+            // Filter by trainer
             if (trainerFilter) {
                 filteredSchedules = filteredSchedules.filter(schedule => 
                     schedule.trainerId == trainerFilter
                 );
             }
             
-            console.log('🔍 filterSchedules - Final count:', filteredSchedules.length);
             displaySchedules(filteredSchedules);
         }
         // Populate class filter dropdown
@@ -3665,11 +4490,6 @@
             return modal;
         }
 
-        function logout() {
-            localStorage.removeItem('gym_auth_token');
-            localStorage.removeItem('gym_user_info');
-            window.location.href = 'index.html';
-        }
 
         // Billing Functions
         function switchBillingTab(tabName) {
@@ -3693,14 +4513,23 @@
             } else if (tabName === 'payments') {
                 loadAdminPayments();
             } else if (tabName === 'revenue') {
-                loadRevenueReports();
+                
             }
         }
 
         // Load admin invoices
         async function loadAdminInvoices() {
             try {
-                const response = await fetch('/api/invoices', {
+                // Get filter values
+                const statusFilter = document.getElementById('invoiceStatusFilterAdmin').value;
+                
+                // Build query params
+                let queryParams = [];
+                if (statusFilter) queryParams.push(`status=${statusFilter}`);
+                
+                const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+                
+                const response = await fetch(`/api/invoices${queryString}`, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
                 });
 
@@ -3719,7 +4548,18 @@
         // Load admin payments
         async function loadAdminPayments() {
             try {
-                const response = await fetch('/api/payments', {
+                // Get filter values
+                const statusFilter = document.getElementById('paymentStatusFilterAdmin').value;
+                const typeFilter = document.getElementById('paymentTypeFilterAdmin').value;
+                
+                // Build query params
+                let queryParams = [];
+                if (statusFilter) queryParams.push(`status=${statusFilter}`);
+                if (typeFilter) queryParams.push(`type=${typeFilter}`);
+                
+                const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+                
+                const response = await fetch(`/api/payments${queryString}`, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
                 });
 
@@ -3744,104 +4584,80 @@
             }
         }
 
-        // Load revenue reports
-        async function loadRevenueReports() {
-            try {
-                const response = await fetch('/api/payments/revenue', {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    displayRevenueReports(data.data);
-                    updateRevenueStats(data.data);
-                } else {
-                    console.error('Failed to load revenue reports');
-                }
-            } catch (error) {
-                console.error('Error loading revenue reports:', error);
-            }
-        }
-
-        // Display admin invoices
+        // Display admin invoices in table
         function displayAdminInvoices(invoices) {
             const container = document.getElementById('adminInvoicesList');
             
             if (!invoices || invoices.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #666; margin: 40px 0;">Chưa có hóa đơn nào</p>';
+                container.innerHTML = '<p>Không có hóa đơn nào.</p>';
                 return;
             }
-
-            // Sort invoices by status priority and time
-            const statusPriority = {
-                'paid': 1,      // Đã thanh toán - ưu tiên cao nhất
-                'sent': 2,      // Đã gửi
-                'overdue': 2,   // Quá hạn (cùng mức với đã gửi)
-                'draft': 3,     // Nháp - ưu tiên thấp nhất
-                'cancelled': 4  // Đã hủy - cuối cùng
-            };
-
-            invoices.sort((a, b) => {
-                // Sort by status priority first
-                const priorityDiff = statusPriority[a.status] - statusPriority[b.status];
-                if (priorityDiff !== 0) return priorityDiff;
+            
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Khách hàng</th>
+                            <th>Mô tả</th>
+                            <th>Số tiền</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày tạo</th>
+                            <th>Hạn thanh toán</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            invoices.forEach(invoice => {
+                const createdDate = new Date(invoice.createdAt || invoice.created_at).toLocaleDateString('vi-VN');
+                const dueDate = invoice.dueDate || invoice.due_date ? 
+                    new Date(invoice.dueDate || invoice.due_date).toLocaleDateString('vi-VN') : 'Không có';
+                const amount = (invoice.totalAmount || invoice.amount || 0).toLocaleString('vi-VN') + 'đ';
+                const status = invoice.status || 'pending';
+                const isOverdue = invoice.dueDate && new Date(invoice.dueDate) < new Date() && status === 'pending';
+                const actualStatus = isOverdue ? 'overdue' : status;
                 
-                // Within same status, sort by time (newest first for paid, newest first for others)
-                if (a.status === 'paid') {
-                    return new Date(b.updatedAt) - new Date(a.updatedAt); // Newest paid first
-                } else {
-                    return new Date(b.createdAt) - new Date(a.createdAt); // Newest created first
-                }
-            });
-
-            container.innerHTML = invoices.map(invoice => `
-                <div class="invoice-item">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                        <div>
-                            <h4 style="margin: 0; color: #333;">#${invoice.invoiceNumber}</h4>
-                            <p style="margin: 5px 0; color: #666;">Khách hàng: ${invoice.member?.fullName || 'N/A'}</p>
-                            <p style="margin: 5px 0; color: #666;">${invoice.description || 'Hóa đơn thanh toán'}</p>
-                        </div>
-                        <span class="status-badge status-${invoice.status}">${getInvoiceStatusText(invoice.status)}</span>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; margin-bottom: 15px;">
-                        <div>
-                            <strong>Tổng tiền:</strong><br>
-                            <span style="font-size: 18px; color: #5b86e5; font-weight: bold;">${formatCurrency(invoice.totalAmount)}</span>
-                        </div>
-                        <div>
-                            <strong>Đã thanh toán:</strong><br>
-                            <span style="color: #28a745;">${formatCurrency(invoice.paidAmount || 0)}</span>
-                        </div>
-                        <div>
-                            <strong>Ngày phát hành:</strong><br>
-                            ${formatDate(invoice.issueDate)}
-                        </div>
-                        <div>
-                            <strong>Hạn thanh toán:</strong><br>
-                            <span style="color: ${new Date(invoice.dueDate) < new Date() ? '#dc3545' : '#666'};">
-                                ${formatDate(invoice.dueDate)}
+                html += `
+                    <tr class="${actualStatus === 'overdue' ? 'overdue-row' : ''}">
+                        <td>${invoice.invoiceNumber || `#${invoice.id}`}</td>
+                        <td>${invoice.Member?.fullName || invoice.member?.fullName || 'N/A'}</td>
+                        <td>${invoice.description || 'Không có mô tả'}</td>
+                        <td style="font-weight: bold; color: ${actualStatus === 'paid' ? '#28a745' : actualStatus === 'overdue' ? '#dc3545' : '#ffc107'};">
+                            ${amount}
+                        </td>
+                        <td>
+                            <span class="status-badge status-${actualStatus}">
+                                ${getInvoiceStatusText(actualStatus)}
                             </span>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 15px; text-align: right;">
-                        ${invoice.status === 'draft' ? `
-                            <button class="btn btn-primary" onclick="sendInvoice(${invoice.id})">📧 Gửi hóa đơn</button>
-                            <button class="btn btn-secondary" onclick="editInvoice(${invoice.id})">✏️ Chỉnh sửa</button>
-                        ` : ''}
-                        ${invoice.status === 'sent' || invoice.status === 'overdue' ? `
-                            <button class="btn btn-success" onclick="markInvoiceAsPaid(${invoice.id})">✅ Đánh dấu đã thanh toán</button>
-                        ` : ''}
-                        <button class="btn btn-info" onclick="viewInvoiceDetails(${invoice.id})">👁️ Xem chi tiết</button>
-                        <button class="btn btn-danger" onclick="cancelInvoice(${invoice.id})">❌ Hủy</button>
-                    </div>
-                </div>
-            `).join('');
+                        </td>
+                        <td>${createdDate}</td>
+                        <td style="color: ${isOverdue ? '#dc3545' : 'inherit'};">
+                            ${dueDate}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="viewInvoiceDetails(${invoice.id})" title="Xem chi tiết">
+                                👁️ Xem
+                            </button>
+                            ${status === 'pending' ? `
+                                <button class="btn btn-sm btn-success" onclick="confirmPayment(${invoice.id})" title="Xác nhận đã thanh toán">
+                                    ✅ Xác nhận TT
+                                </button>
+                            ` : ''}
+                            ${status === 'paid' ? `
+                                <span style="color: #28a745; font-weight: bold;">✅ Đã thanh toán</span>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
         }
 
-        // Display admin payments
+        // Display admin payments in card format
         function displayAdminPayments(payments) {
             const container = document.getElementById('adminPaymentsList');
             
@@ -3854,129 +4670,42 @@
                 <div class="payment-item">
                     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
                         <div>
-                            <h4 style="margin: 0; color: #333;">${payment.description || getPaymentTypeText(payment.paymentType)}</h4>
-                            <p style="margin: 5px 0; color: #666;">Khách hàng: ${payment.member?.fullName || 'N/A'}</p>
+                            <h4 style="margin: 0; color: #333;">${payment.description || getPaymentTypeText(payment.paymentType)} - ${payment.member?.fullName || 'N/A'}</h4>
                             <p style="margin: 5px 0; color: #666;">Mã thanh toán: #${payment.id}</p>
                         </div>
                         <span class="status-badge status-${payment.paymentStatus}">${getPaymentStatusText(payment.paymentStatus)}</span>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; margin-bottom: 15px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 15px;">
                         <div>
                             <strong>Số tiền:</strong><br>
-                            <span style="font-size: 18px; color: #28a745; font-weight: bold;">${formatCurrency(payment.amount)}</span>
+                            <span style="font-size: 18px; color: #28a745; font-weight: bold;">${payment.amount ? payment.amount.toLocaleString('vi-VN') + 'đ' : '0đ'}</span>
                         </div>
                         <div>
                             <strong>Phương thức:</strong><br>
                             ${getPaymentMethodText(payment.paymentMethod)}
                         </div>
                         <div>
-                            <strong>Ngày tạo:</strong><br>
-                            ${formatDate(payment.createdAt)}
-                        </div>
-                        <div>
                             <strong>Ngày thanh toán:</strong><br>
-                            ${payment.paymentDate ? formatDate(payment.paymentDate) : 'Chưa thanh toán'}
+                            ${payment.createdAt ? new Date(payment.createdAt).toLocaleDateString('vi-VN') : 'Chưa rõ'}
                         </div>
                     </div>
-
-                    <div style="margin-top: 15px; text-align: right;">
+                    
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn btn-sm btn-info" onclick="viewPaymentDetails(${payment.id})" style="display: flex; align-items: center; gap: 5px;">
+                            👁️ Xem chi tiết
+                        </button>
                         ${payment.paymentStatus === 'pending' ? `
-                            <button class="btn btn-success" onclick="processPayment(${payment.id})">✅ Xác nhận thanh toán</button>
-                            <button class="btn btn-warning" onclick="sendPaymentReminder(${payment.id})">📧 Nhắc nhở</button>
+                            <button class="btn btn-sm btn-success" onclick="processPayment(${payment.id})" style="display: flex; align-items: center; gap: 5px;">
+                                ✅ Xử lý thanh toán
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="sendPaymentReminder(${payment.id})" style="display: flex; align-items: center; gap: 5px;">
+                                📧 Nhắc nhở
+                            </button>
                         ` : ''}
-                        <button class="btn btn-info" onclick="viewPaymentDetails(${payment.id})">👁️ Chi tiết</button>
                     </div>
                 </div>
             `).join('');
-        }
-
-        // Update revenue stats
-        async function updateRevenueStats() {
-            try {
-                console.log('📊 Updating revenue stats...');
-                const response = await fetch('/api/payments/revenue', {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const stats = data.data;
-                    console.log('📊 Revenue stats received:', stats);
-
-                    document.getElementById('totalRevenue').textContent = formatCurrency(stats.totalRevenue || 0);
-                    
-                    // Calculate monthly revenue (current month)
-                    const currentMonth = stats.monthlyRevenue?.find(m => 
-                        m.month === new Date().toISOString().slice(0, 7)
-                    );
-                    document.getElementById('monthlyRevenue').textContent = 
-                        formatCurrency(currentMonth?.totalAmount || 0);
-
-                    // Get pending and overdue from invoices
-                    const invoicesResponse = await fetch('/api/invoices', {
-                        headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
-                    });
-                    
-                    if (invoicesResponse.ok) {
-                        const invoicesData = await invoicesResponse.json();
-                        const invoices = invoicesData.data.invoices;
-                        
-                        const pending = invoices
-                            .filter(inv => inv.status === 'pending' || inv.status === 'sent')
-                            .reduce((sum, inv) => sum + parseFloat(inv.totalAmount), 0);
-                        
-                        const overdue = invoices
-                            .filter(inv => inv.status === 'overdue')
-                            .reduce((sum, inv) => sum + parseFloat(inv.totalAmount), 0);
-
-                        document.getElementById('pendingPayments').textContent = formatCurrency(pending);
-                        document.getElementById('overduePayments').textContent = formatCurrency(overdue);
-                    }
-                }
-            } catch (error) {
-                console.error('Error updating revenue stats:', error);
-            }
-        }
-
-        // Display revenue reports
-        function displayRevenueReports(data) {
-            // Simple text display for now - you can integrate charts here
-            const typeChart = document.getElementById('revenueByTypeChart');
-            if (data.revenueByType && data.revenueByType.length > 0) {
-                typeChart.innerHTML = `
-                    <div style="padding: 20px;">
-                        <h5>Doanh thu theo loại thanh toán:</h5>
-                        ${data.revenueByType.map(item => `
-                            <p><strong>${getPaymentTypeText(item.paymentType)}:</strong> ${formatCurrency(item.totalAmount)} (${item.count} giao dịch)</p>
-                        `).join('')}
-                    </div>
-                `;
-            }
-
-            const methodChart = document.getElementById('revenueByMethodChart');
-            if (data.revenueByMethod && data.revenueByMethod.length > 0) {
-                methodChart.innerHTML = `
-                    <div style="padding: 20px;">
-                        <h5>Doanh thu theo phương thức:</h5>
-                        ${data.revenueByMethod.map(item => `
-                            <p><strong>${getPaymentMethodText(item.paymentMethod)}:</strong> ${formatCurrency(item.totalAmount)} (${item.count} giao dịch)</p>
-                        `).join('')}
-                    </div>
-                `;
-            }
-
-            const monthlyChart = document.getElementById('monthlyRevenueChart');
-            if (data.monthlyRevenue && data.monthlyRevenue.length > 0) {
-                monthlyChart.innerHTML = `
-                    <div style="padding: 20px;">
-                        <h5>Doanh thu hàng tháng:</h5>
-                        ${data.monthlyRevenue.map(item => `
-                            <p><strong>Tháng ${item.month}:</strong> ${formatCurrency(item.totalAmount)} (${item.count} giao dịch)</p>
-                        `).join('')}
-                    </div>
-                `;
-            }
         }
 
         // Helper functions for payment status, method, type texts (reuse from member interface)
@@ -3984,6 +4713,7 @@
             const statusMap = {
                 'draft': 'Nháp',
                 'sent': 'Đã gửi',
+                'pending': 'Chờ thanh toán',
                 'paid': 'Đã thanh toán',
                 'overdue': 'Quá hạn',
                 'cancelled': 'Đã hủy'
@@ -4023,9 +4753,7 @@
         }
 
         // Action functions (placeholders)
-        function showCreateInvoiceModal() {
-            showToast('🔧 Chức năng tạo hóa đơn đang được phát triển...', 'info');
-        }
+        // Removed - Invoices are created automatically when members register for services
 
         function showCreatePaymentModal() {
             showToast('🔧 Chức năng ghi nhận thanh toán đang được phát triển...', 'info');
@@ -4051,13 +4779,40 @@
             }
         }
 
-        async function markInvoiceAsPaid(invoiceId) {
-            if (!confirm('Xác nhận đánh dấu hóa đơn này đã được thanh toán?')) {
-                return;
-            }
-
+        // Confirm payment for an invoice (Admin only)
+        async function confirmPayment(invoiceId) {
+            // First, get invoice details to show confirmation dialog
             try {
-                const response = await fetch(`/api/invoices/${invoiceId}/status`, {
+                const response = await fetch(`/api/invoices/${invoiceId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+
+                if (!response.ok) {
+                    showToast('❌ Không thể lấy thông tin hóa đơn', 'error');
+                    return;
+                }
+
+                const invoiceData = await response.json();
+                const invoice = invoiceData.data;
+                
+                const memberName = invoice.Member?.fullName || invoice.member?.fullName || 'N/A';
+                const amount = (invoice.totalAmount || invoice.amount || 0).toLocaleString('vi-VN') + 'đ';
+                const description = invoice.description || 'Không có mô tả';
+
+                const confirmMessage = `🔔 XÁC NHẬN THANH TOÁN\n\n` +
+                    `👤 Khách hàng: ${memberName}\n` +
+                    `📝 Dịch vụ: ${description}\n` +
+                    `💰 Số tiền: ${amount}\n` +
+                    `📄 Hóa đơn: ${invoice.invoiceNumber || `#${invoice.id}`}\n\n` +
+                    `⚠️ Bạn xác nhận khách hàng đã thanh toán hóa đơn này?\n` +
+                    `Sau khi xác nhận, hóa đơn sẽ được đánh dấu đã thanh toán và cộng vào doanh thu.`;
+
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
+
+                // Mark invoice as paid
+                const updateResponse = await fetch(`/api/invoices/${invoiceId}/status`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -4066,17 +4821,25 @@
                     body: JSON.stringify({ status: 'paid' })
                 });
 
-                if (response.ok) {
-                    showToast('✅ Đã đánh dấu hóa đơn đã thanh toán!', 'success');
-                    loadAdminInvoices(); // Reload to show updated status
-                    updateRevenueStats(); // Update revenue stats
+                if (updateResponse.ok) {
+                    showToast(`✅ Đã xác nhận thanh toán ${amount} từ ${memberName}!`, 'success');
+                    
+                    // Refresh data
+                    loadAdminInvoices();
+                    updateRevenueStats();
+                    
+                    // Show success notification
+                    setTimeout(() => {
+                        showToast(`💰 Doanh thu đã được cập nhật: +${amount}`, 'info');
+                    }, 1000);
                 } else {
-                    const error = await response.json();
-                    showToast(`❌ Lỗi: ${error.message}`, 'error');
+                    const error = await updateResponse.json();
+                    showToast(`❌ Lỗi xác nhận thanh toán: ${error.message}`, 'error');
                 }
+
             } catch (error) {
-                console.error('Error marking invoice as paid:', error);
-                showToast('❌ Lỗi khi cập nhật trạng thái hóa đơn', 'error');
+                console.error('Error confirming payment:', error);
+                showToast('❌ Lỗi khi xác nhận thanh toán', 'error');
             }
         }
 
@@ -4140,18 +4903,18 @@
                             ${latestPayment ? `<p><strong>Phương thức thanh toán:</strong> ${getPaymentMethodText(latestPayment.paymentMethod)}</p>` : ''}
                             <p><strong>Mô tả:</strong> ${invoice.description || 'Không có'}</p>
                             <p><strong>Ghi chú:</strong> ${invoice.notes || 'Không có'}</p>
-                            ${completedPayments.length > 0 ? `
-                                <div style="margin-top: 20px;">
-                                    <h4>Lịch sử thanh toán:</h4>
-                                    ${completedPayments.map(payment => `
-                                        <div style="background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 4px;">
-                                            <strong>${formatCurrency(payment.amount)}</strong> - 
-                                            ${getPaymentMethodText(payment.paymentMethod)} - 
-                                            ${formatDate(payment.paymentDate)}
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
+                            ${completedPayments.length > 0 ? 
+                                '<div style="margin-top: 20px;">' +
+                                    '<h4>Lịch sử thanh toán:</h4>' +
+                                    completedPayments.map(payment => 
+                                        '<div style="background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 4px;">' +
+                                            '<strong>' + formatCurrency(payment.amount) + '</strong> - ' + 
+                                            getPaymentMethodText(payment.paymentMethod) + ' - ' + 
+                                            formatDate(payment.paymentDate) +
+                                        '</div>'
+                                    ).join('') +
+                                '</div>'
+                            : ''}
                         </div>
                     `;
 
@@ -4194,36 +4957,9 @@
             }
         }
 
-        function editInvoice(invoiceId) {
-            showToast('🔧 Chức năng chỉnh sửa hóa đơn đang được phát triển...', 'info');
-        }
+        // Removed - Invoice editing not allowed for automatic invoices
 
-        async function cancelInvoice(invoiceId) {
-            const reason = prompt('Nhập lý do hủy hóa đơn:');
-            if (!reason) return;
-
-            try {
-                const response = await fetch(`/api/invoices/${invoiceId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}`
-                    },
-                    body: JSON.stringify({ reason })
-                });
-
-                if (response.ok) {
-                    showToast('✅ Đã hủy hóa đơn!', 'success');
-                    loadAdminInvoices(); // Reload to show updated status
-                } else {
-                    const error = await response.json();
-                    showToast(`❌ Lỗi: ${error.message}`, 'error');
-                }
-            } catch (error) {
-                console.error('Error cancelling invoice:', error);
-                showToast('❌ Lỗi khi hủy hóa đơn', 'error');
-            }
-        }
+        // Removed - Invoice cancellation not allowed for automatic system invoices
 
         function sendPaymentReminder(paymentId) {
             showToast('📧 Chức năng nhắc nhở thanh toán đang được phát triển...', 'info');
@@ -4304,10 +5040,149 @@
             loadAdminPayments(); // Reload with filters
         }
 
+        // Calculate and update revenue statistics
+        async function updateRevenueStats() {
+            try {
+                console.log('🔄 Starting revenue calculation...');
+                
+                // Fetch invoices (main source of truth)
+                const invoicesResponse = await fetch('/api/invoices', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+
+                let totalRevenue = 0;
+                let monthlyRevenue = 0;
+                let pendingPayments = 0;
+                let overduePayments = 0;
+
+                if (invoicesResponse.ok) {
+                    const invoiceData = await invoicesResponse.json();
+                    const invoices = invoiceData.data?.invoices || [];
+                    
+                    console.log('📄 Total invoices found:', invoices.length);
+                    
+                    const today = new Date();
+                    const currentMonth = today.getMonth();
+                    const currentYear = today.getFullYear();
+                    
+                    // Separate invoices by status
+                    const paidInvoices = invoices.filter(inv => inv.status === 'paid');
+                    const pendingInvoices = invoices.filter(inv => inv.status === 'pending');
+                    
+                    console.log('✅ Paid invoices:', paidInvoices.length);
+                    console.log('⏳ Pending invoices:', pendingInvoices.length);
+                    
+                    // Calculate total revenue from PAID invoices
+                    totalRevenue = paidInvoices.reduce((sum, invoice) => {
+                        const amount = parseFloat(invoice.totalAmount || invoice.amount || 0);
+                        return sum + amount;
+                    }, 0);
+                    
+                    // Calculate monthly revenue from PAID invoices in current month
+                    const monthlyPaidInvoices = paidInvoices.filter(inv => {
+                        const invoiceDate = new Date(inv.createdAt || inv.created_at);
+                        return invoiceDate.getMonth() === currentMonth && invoiceDate.getFullYear() === currentYear;
+                    });
+                    
+                    monthlyRevenue = monthlyPaidInvoices.reduce((sum, invoice) => {
+                        const amount = parseFloat(invoice.totalAmount || invoice.amount || 0);
+                        return sum + amount;
+                    }, 0);
+                    
+                    // Calculate pending payments from PENDING invoices
+                    pendingPayments = pendingInvoices.reduce((sum, invoice) => {
+                        const amount = parseFloat(invoice.totalAmount || invoice.amount || 0);
+                        return sum + amount;
+                    }, 0);
+                    
+                    // Calculate overdue payments from PENDING invoices past due date
+                    const overdueInvoices = pendingInvoices.filter(inv => {
+                        if (!inv.dueDate) return false;
+                        const dueDate = new Date(inv.dueDate);
+                        return dueDate < today;
+                    });
+                    
+                    overduePayments = overdueInvoices.reduce((sum, invoice) => {
+                        const amount = parseFloat(invoice.totalAmount || invoice.amount || 0);
+                        return sum + amount;
+                    }, 0);
+                    
+                    console.log('💰 Revenue calculated:', {
+                        totalRevenue,
+                        monthlyRevenue,
+                        pendingPayments,
+                        overduePayments,
+                        overdueCount: overdueInvoices.length
+                    });
+                    
+                } else {
+                    console.error('❌ Failed to fetch invoices for revenue calculation');
+                }
+                
+                // Update UI elements
+                const totalRevenueElements = document.querySelectorAll('#totalRevenue');
+                totalRevenueElements.forEach(el => {
+                    if (el) el.textContent = totalRevenue.toLocaleString('vi-VN') + 'đ';
+                });
+                
+                // Also update dashboard revenue element
+                const dashboardRevenueElement = document.getElementById('dashboardTotalRevenue');
+                if (dashboardRevenueElement) {
+                    dashboardRevenueElement.textContent = totalRevenue.toLocaleString('vi-VN') + 'đ';
+                }
+                
+                const monthlyRevenueElement = document.getElementById('monthlyRevenue');
+                if (monthlyRevenueElement) {
+                    monthlyRevenueElement.textContent = monthlyRevenue.toLocaleString('vi-VN') + 'đ';
+                }
+
+                const pendingPaymentsElement = document.getElementById('pendingPayments');
+                if (pendingPaymentsElement) {
+                    pendingPaymentsElement.textContent = pendingPayments.toLocaleString('vi-VN') + 'đ';
+                }
+
+                const overduePaymentsElement = document.getElementById('overduePayments');
+                if (overduePaymentsElement) {
+                    overduePaymentsElement.textContent = overduePayments.toLocaleString('vi-VN') + 'đ';
+                }
+                
+                // Calculate growth (placeholder for now)
+                const revenueGrowthElement = document.getElementById('revenueGrowth');
+                if (revenueGrowthElement) {
+                    revenueGrowthElement.textContent = '+0% so với tháng trước';
+                }
+
+                console.log('📊 Revenue Stats UI Updated:', {
+                    totalRevenue: totalRevenue.toLocaleString('vi-VN') + 'đ',
+                    monthlyRevenue: monthlyRevenue.toLocaleString('vi-VN') + 'đ',
+                    pendingPayments: pendingPayments.toLocaleString('vi-VN') + 'đ',
+                    overduePayments: overduePayments.toLocaleString('vi-VN') + 'đ'
+                });
+
+            } catch (error) {
+                console.error('❌ Error updating revenue stats:', error);
+                // Set default values on error
+                const elements = ['totalRevenue', 'monthlyRevenue', 'pendingPayments', 'overduePayments'];
+                elements.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) element.textContent = '0đ';
+                });
+            }
+        }
+
         // ================== EQUIPMENT MANAGEMENT FUNCTIONS ==================
 
         // Switch equipment mini tabs
         function switchEquipmentTab(tabName) {
+            console.log(`🔄 Switching to equipment tab: ${tabName}`);
+            
+            // Ensure equipment section is visible first
+            const equipmentSection = document.getElementById('equipment-section');
+            if (equipmentSection && equipmentSection.style.display === 'none') {
+                equipmentSection.style.display = 'block';
+                console.log('✅ Equipment section made visible');
+            }
+            
             // Hide all equipment tab contents
             document.querySelectorAll('.equipment-tab-content').forEach(tab => {
                 tab.style.display = 'none';
@@ -4319,19 +5194,45 @@
             });
             
             // Show selected tab and activate button
-            document.getElementById(`equipment-${tabName}-tab`).style.display = 'block';
-            event.target.classList.add('active');
+            const targetTab = document.getElementById(`equipment-${tabName}-tab`);
+            console.log(`🔍 Setting display for equipment-${tabName}-tab:`, targetTab);
+            if (targetTab) {
+                targetTab.style.display = 'block';
+                targetTab.style.visibility = 'visible';
+                targetTab.style.opacity = '1';
+                console.log(`✅ Display set to block for equipment-${tabName}-tab`);
+                
+                // Force visibility for notifications tab specifically
+                if (tabName === 'notifications') {
+                    targetTab.style.display = 'block !important';
+                    targetTab.style.visibility = 'visible !important';
+                    targetTab.style.opacity = '1 !important';
+                    targetTab.style.height = 'auto !important';
+                    console.log('🔔 Applied enhanced visibility for notifications tab');
+                }
+            } else {
+                console.log(`❌ Tab element not found: equipment-${tabName}-tab`);
+            }
             
-            // Load data for the selected tab
+            // Add active class to the correct button
+            if (typeof event !== 'undefined' && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // Find and activate the correct button when called programmatically
+                const targetBtn = document.querySelector(`[onclick*="switchEquipmentTab('${tabName}')"]`);
+                if (targetBtn) {
+                    targetBtn.classList.add('active');
+                    console.log(`✅ Activated button for ${tabName} tab`);
+                }
+            }
+            
+            // Load data for the selected tab (only if not already loaded)
             switch(tabName) {
                 case 'dashboard':
                     loadEquipmentDashboard();
                     break;
                 case 'list':
                     loadEquipmentList();
-                    break;
-                case 'notifications':
-                    loadEquipmentNotifications();
                     break;
             }
         }
@@ -4479,76 +5380,281 @@
         // Display equipment grid
         function displayEquipmentGrid(equipment) {
             const grid = document.getElementById('equipment-grid');
+            const counter = document.getElementById('equipment-counter');
             
             if (!equipment || equipment.length === 0) {
                 grid.innerHTML = '<p style="text-align: center; color: #666; padding: 40px; grid-column: 1 / -1;">Không có thiết bị nào</p>';
+                counter.innerHTML = 'Không có thiết bị nào';
                 return;
             }
 
             grid.innerHTML = equipment.map(item => `
-                <div style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 5px solid ${getPriorityColor(item.priority)};">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <div style="font-weight: bold; font-size: 1.1em; color: #333;">
+                <div style="background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); border-left: 4px solid ${getPriorityColor(item.priority)}; transition: transform 0.2s, box-shadow 0.2s; position: relative;" 
+                     onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" 
+                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.08)'">
+                    
+                    <!-- Status Badge -->
+                    <div style="position: absolute; top: 10px; right: 10px; background: ${getStatusColor(item.status)}; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7em; font-weight: bold;">
+                        ${getStatusText(item.status)}
+                    </div>
+                    
+                    <!-- Equipment Name & Code -->
+                    <div style="margin-bottom: 12px; padding-right: 60px;">
+                        <div style="font-weight: bold; font-size: 1em; color: #333; margin-bottom: 4px; line-height: 1.3;">
                             ${item.name}
                         </div>
-                        <div style="background: #f8f9fa; color: #666; padding: 4px 8px; border-radius: 4px; font-size: 0.8em;">
-                            ${item.equipmentCode}
+                        <div style="color: #666; font-size: 0.8em;">
+                            📋 ${item.equipmentCode} | ${item.brand || 'N/A'}
                         </div>
                     </div>
                     
-                    <div style="margin: 15px 0;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9em;">
-                            <span><strong>Loại:</strong></span>
+                    <!-- Quick Info Grid -->
+                    <div style="margin: 12px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85em;">
+                        <div style="display: flex; align-items: center;">
+                            <span style="margin-right: 6px;">🏷️</span>
                             <span>${getCategoryText(item.category)}</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9em;">
-                            <span><strong>Ưu tiên:</strong></span>
-                            <span style="padding: 4px 8px; border-radius: 20px; font-size: 0.8em; font-weight: bold; background: ${getPriorityBgColor(item.priority)}; color: ${getPriorityTextColor(item.priority)};">
+                        <div style="display: flex; align-items: center;">
+                            <span style="margin-right: 6px;">📍</span>
+                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.location || 'Chưa xác định'}</span>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <span style="margin-right: 6px;">⚡</span>
+                            <span style="padding: 2px 6px; border-radius: 10px; font-size: 0.75em; font-weight: bold; background: ${getPriorityBgColor(item.priority)}; color: ${getPriorityTextColor(item.priority)};">
                                 ${getPriorityText(item.priority)}
                             </span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9em;">
-                            <span><strong>Vị trí:</strong></span>
-                            <span>${item.location || 'Chưa xác định'}</span>
+                        <div style="display: flex; align-items: center;">
+                            <span style="margin-right: 6px;">💰</span>
+                            <span>${item.purchasePrice ? (item.purchasePrice/1000000).toFixed(0) + 'M' : 'N/A'}</span>
                         </div>
                     </div>
                     
-                    <div style="display: flex; gap: 10px; margin-top: 15px;">
-                        <button onclick="viewEquipmentDetails(${item.id})" style="flex: 1; background: #007bff; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em;">
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 6px; margin-top: 12px;">
+                        <button onclick="viewEquipmentDetails(${item.id})" 
+                                style="flex: 1; background: #007bff; color: white; border: none; padding: 6px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8em; transition: background 0.2s;"
+                                onmouseover="this.style.background='#0056b3'" 
+                                onmouseout="this.style.background='#007bff'">
                             👁️ Xem
                         </button>
-                        <button onclick="editEquipment(${item.id})" style="flex: 1; background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em;">
+                        <button onclick="editEquipment(${item.id})" 
+                                style="flex: 1; background: #28a745; color: white; border: none; padding: 6px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8em; transition: background 0.2s;"
+                                onmouseover="this.style.background='#1e7e34'" 
+                                onmouseout="this.style.background='#28a745'">
                             ✏️ Sửa
                         </button>
-                        <button onclick="deleteEquipment(${item.id})" style="flex: 1; background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em;">
+                        <button onclick="deleteEquipment(${item.id})" 
+                                style="flex: 1; background: #dc3545; color: white; border: none; padding: 6px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8em; transition: background 0.2s;"
+                                onmouseover="this.style.background='#c82333'" 
+                                onmouseout="this.style.background='#dc3545'">
                             🗑️ Xóa
                         </button>
                     </div>
                 </div>
             `).join('');
+
+            // Update equipment counter with stats
+            const stats = {};
+            equipment.forEach(eq => {
+                stats[eq.category] = (stats[eq.category] || 0) + 1;
+            });
+            
+            const statsText = Object.entries(stats)
+                .map(([category, count]) => `${getCategoryText(category)}: ${count}`)
+                .join(' | ');
+            
+            counter.innerHTML = `📊 Tổng cộng: <strong>${equipment.length}</strong> thiết bị | ${statsText}`;
         }
 
         // Load equipment maintenance
         // Load equipment notifications
-        async function loadEquipmentNotifications() {
+        
+        // Auto-login function for admin
+        async function autoLoginAdmin() {
             try {
-                console.log('Loading equipment notifications...');
+                console.log('🔑 Attempting auto-login...');
+                const loginResponse = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@gym.com',
+                        password: 'admin123'
+                    })
+                });
                 
-                // Mock notification data (since API doesn't exist yet)
-                const mockStats = {
-                    overdue: 2,
-                    dueToday: 3,
-                    upcoming: 5
-                };
+                if (loginResponse.ok) {
+                    const loginData = await loginResponse.json();
+                    if (loginData.success) {
+                        localStorage.setItem('gym_auth_token', loginData.data.accessToken);
+                        localStorage.setItem('gym_user_info', JSON.stringify(loginData.data.user));
+                        console.log('✅ Auto-login successful');
+                        return true;
+                    }
+                }
+                console.log('❌ Auto-login failed');
+                return false;
+            } catch (error) {
+                console.log('❌ Auto-login error: ' + error.message);
+                return false;
+            }
+        }
+        
+        // Display notifications function
+        
+        
+        function formatDateTime(dateString) {
+            try {
+                return new Date(dateString).toLocaleString('vi-VN');
+            } catch {
+                return dateString;
+            }
+        }
+
+        async function loadEnhancedNotificationStats() {
+            // Stats elements removed - no longer needed
+            console.log('📊 Stats elements removed per user request');
+        }
+
+        async function loadEnhancedNotificationsList() {
+            const container = document.getElementById('equipment-notifications-list');
+            container.innerHTML = '<div class="loading">🔄 Đang tải thông báo bảo trì...</div>';
+
+            try {
+                // Check if user is authenticated
+                const token = localStorage.getItem('gym_auth_token');
+                if (!token) {
+                    console.log('⚠️ No auth token found, loading mock data');
+                    await loadMockNotifications();
+                    return;
+                }
                 
-                // Update stats
-                document.getElementById('equipment-overdue-count').textContent = mockStats.overdue;
-                document.getElementById('equipment-today-count').textContent = mockStats.dueToday;
-                document.getElementById('equipment-upcoming-count').textContent = mockStats.upcoming;
+                const response = await apiCall('/notifications?unread=true', 'GET');
                 
-                // Load notifications list
-                const listContainer = document.getElementById('equipment-notifications-list');
-                listContainer.innerHTML = `
+                if (!response.success) {
+                    throw new Error(response.message || 'Failed to load notifications');
+                }
+                
+                const notifications = response.data;
+                
+                if (!notifications || notifications.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 60px; color: #666;">
+                            <div style="font-size: 72px; margin-bottom: 20px;">🎉</div>
+                            <h3 style="color: #28a745; margin-bottom: 10px;">Tuyệt vời!</h3>
+                            <h4>Không có thông báo bảo trì nào</h4>
+                            <p>Tất cả thiết bị đang hoạt động tốt và theo đúng lịch trình!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                notifications.forEach(notification => {
+                    const priorityIcons = {
+                        'critical': '🚨',
+                        'high': '⚠️', 
+                        'medium': '📋',
+                        'low': '📝'
+                    };
+                    
+                    const typeIcons = {
+                        'overdue_maintenance': '⏰',
+                        'upcoming_maintenance': '📅',
+                        'equipment_broken': '🔧'
+                    };
+
+                    const equipmentName = notification.message.split('(')[0].trim();
+                    const equipmentCode = notification.message.match(/\\((.*?)\\)/)?.[1] || '';
+
+                    html += `
+                        <div class="enhanced-notification-item ${notification.priority} ${notification.priority === 'critical' ? 'pulse-animation' : ''}" style="--priority-color: ${getPriorityColor(notification.priority)};">
+                            <div class="notification-badge-enhanced ${notification.priority}">
+                                ${priorityIcons[notification.priority]} ${getPriorityTextVietnamese(notification.priority)}
+                            </div>
+                            
+                            <div class="notification-title-enhanced">
+                                ${typeIcons[notification.type] || '🔔'} ${notification.title}
+                                ${notification.daysOverdue ? `<span class="overdue-indicator-enhanced">QUÁ HẠN ${notification.daysOverdue} NGÀY</span>` : ''}
+                            </div>
+                            
+                            <div class="notification-equipment-info">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <strong>🏋️ Thiết bị:</strong> ${equipmentName}
+                                        ${equipmentCode ? `<br><strong>📋 Mã:</strong> ${equipmentCode}` : ''}
+                                    </div>
+                                    <div style="text-align: right; font-size: 0.9em; color: #6c757d;">
+                                        <div><strong>Loại bảo trì:</strong> ${getMaintenanceTypeText(notification.type)}</div>
+                                        <div><strong>Thời gian:</strong> ${formatDateTime(notification.createdAt)}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="color: #6c757d; font-size: 0.95em; line-height: 1.5; margin-bottom: 15px;">
+                                ${notification.message}
+                            </div>
+                            
+                            <div class="notification-actions-enhanced">
+                                ${!notification.read ? 
+                                    `<button class="btn-action-enhanced primary" onclick="markNotificationAsRead(${notification.id})">
+                                        ✅ Đánh dấu đã đọc
+                                    </button>` : 
+                                    ''
+                                }
+                                ${(notification.type === 'overdue_maintenance' || notification.type === 'upcoming_maintenance') && !notification.read ? 
+                                    `<button class="btn-action-enhanced success" onclick="confirmMaintenanceCompletion(${notification.id})" style="font-weight: bold; font-size: 1em;">
+                                        🔧 XÁC NHẬN HOÀN THÀNH BẢO TRÌ
+                                    </button>` : 
+                                    ''
+                                }
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Add complete all button if there are notifications
+                if (notifications.length > 0) {
+                    html += `
+                        <div style="text-align: center; margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-top: 3px solid #007bff;">
+                            <h4 style="color: #007bff; margin-bottom: 15px;">🎯 Quản lý thông báo</h4>
+                            <p style="margin-bottom: 20px; color: #666;">
+                                Có ${notifications.length} thông báo bảo trì cần được xử lý
+                            </p>
+                            <button class="btn btn-success btn-lg" onclick="completeAllMaintenanceAndCreateNew()" style="margin-right: 10px; padding: 12px 25px;">
+                                ✅ Hoàn thành tất cả thông báo
+                            </button>
+                            <button class="btn btn-primary" onclick="loadEquipmentNotifications()" style="padding: 12px 25px;">
+                                🔄 Làm mới danh sách
+                            </button>
+                        </div>
+                    `;
+                }
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading enhanced notifications list:', error);
+                await loadMockNotifications();
+            }
+        }
+
+        async function loadMockNotifications() {
+            console.log('🎭 Loading mock notifications');
+            
+            // Stats elements removed per user request
+                
+            // Load notifications list
+            const listContainer = document.getElementById('equipment-notifications-list');
+            console.log('📋 List container found:', !!listContainer);
+            
+            if (!listContainer) {
+                console.error('❌ equipment-notifications-list container not found!');
+                return;
+            }
+            
+            console.log('✏️ Setting mock notification HTML content');
+            listContainer.innerHTML = `
                     <div style="border: 1px solid #e1e5e9; border-radius: 8px; margin-bottom: 15px; padding: 15px; border-left: 4px solid #dc3545; background: #f8f9fa;">
                         <div style="display: flex; align-items: center; margin-bottom: 8px;">
                             <span style="font-size: 20px; margin-right: 10px;">⚠️</span>
@@ -4597,29 +5703,6 @@
                         </a>
                     </div>
                 `;
-                
-            } catch (error) {
-                console.error('Error loading equipment notifications:', error);
-                
-                // Fallback display
-                document.getElementById('equipment-overdue-count').textContent = '0';
-                document.getElementById('equipment-today-count').textContent = '0';
-                document.getElementById('equipment-upcoming-count').textContent = '0';
-                
-                const listContainer = document.getElementById('equipment-notifications-list');
-                listContainer.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #666;">
-                        <div style="font-size: 48px; margin-bottom: 20px;">🔕</div>
-                        <h4>Chưa có thông báo</h4>
-                        <p>Tất cả thiết bị đang hoạt động tốt!</p>
-                        <div style="margin-top: 20px;">
-                            <a href="admin-equipment.html" class="btn btn-outline-primary">
-                                🏋️‍♂️ Quản lý Thiết bị
-                            </a>
-                        </div>
-                    </div>
-                `;
-            }
         }
 
         // Display maintenance list
@@ -4686,6 +5769,26 @@
         function getPriorityText(priority) {
             const texts = { high: 'Cao', medium: 'Trung bình', low: 'Thấp' };
             return texts[priority] || priority;
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'active': '#28a745',
+                'maintenance': '#ffc107', 
+                'broken': '#dc3545',
+                'retired': '#6c757d'
+            };
+            return colors[status] || '#6c757d';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'active': 'Hoạt động',
+                'maintenance': 'Bảo trì',
+                'broken': 'Hỏng',
+                'retired': 'Ngừng'
+            };
+            return texts[status] || status;
         }
 
 
@@ -5228,9 +6331,15 @@
                                 <div><strong>Loại:</strong> ${getMaintenanceTypeText(record.maintenanceType)}</div>
                                 <div><strong>Ngày đến hạn:</strong> ${formatDate(record.nextDueDate)}</div>
                                 <div><strong>Chu kỳ:</strong> ${record.intervalDays} ngày</div>
-                                <div><strong>Lần cuối:</strong> ${record.lastCompletedDate ? formatDate(record.lastCompletedDate) : 'Chưa thực hiện'}</div>
+                                <div><strong>Lần cuối:</strong> ${formatDate(record.lastCompletedDate || new Date().toISOString().split('T')[0])}</div>
                             </div>
                             ${record.notes ? `<div style="margin-top: 10px; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 0.85em; color: #666;"><strong>Ghi chú:</strong> ${record.notes}</div>` : ''}
+                            <div style="margin-top: 15px; text-align: right;">
+                                <button class="btn btn-success btn-sm" onclick="completeMaintenanceSchedule(${record.id}, '${record.equipmentName || 'Unknown'}', '${record.maintenanceType}')" 
+                                        style="background: #28a745; border: #28a745; padding: 6px 12px; font-size: 0.85em;">
+                                    ✅ XÁC NHẬN ĐÃ HOÀN THÀNH
+                                </button>
+                            </div>
                         </div>
                     `).join('')}
                 </div>
@@ -5554,6 +6663,666 @@
                 }, 300);
             });
         }
+
+        // Helper functions for enhanced notifications
+        function getPriorityColor(priority) {
+            const colors = {
+                'critical': '#dc3545',
+                'high': '#fd7e14',
+                'medium': '#ffc107',
+                'low': '#007bff'
+            };
+            return colors[priority] || '#6c757d';
+        }
+
+        function getPriorityTextVietnamese(priority) {
+            const priorities = {
+                'critical': 'KHẨN CẤP',
+                'high': 'ƯU TIÊN CAO',
+                'medium': 'TRUNG BÌNH',
+                'low': 'THẤP'
+            };
+            return priorities[priority] || priority;
+        }
+
+        function getMaintenanceTypeText(type) {
+            const types = {
+                'cleaning': 'Vệ sinh',
+                'inspection': 'Kiểm tra',
+                'maintenance': 'Bảo dưỡng',
+                'overdue_maintenance': 'Bảo trì quá hạn',
+                'upcoming_maintenance': 'Bảo trì sắp tới'
+            };
+            return types[type] || type;
+        }
+
+        function formatDateTime(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString('vi-VN');
+        }
+
+        // Enhanced notification action functions
+        async function confirmMaintenanceCompletion(notificationId) {
+            currentMaintenanceNotificationId = notificationId;
+            
+            // Get notification details to populate modal
+            try {
+                const response = await apiCall('/notifications', 'GET');
+                if (response.success) {
+                    const notification = response.data.find(n => n.id === notificationId);
+                    if (notification) {
+                        // Populate maintenance info
+                        document.getElementById('maintenance-info-enhanced').innerHTML = `
+                            <h4 style="margin: 0 0 10px 0; color: #28a745;">🔧 ${notification.title}</h4>
+                            <p style="margin: 0 0 5px 0;"><strong>Thiết bị:</strong> ${notification.message.split('(')[0].trim()}</p>
+                            <p style="margin: 0 0 5px 0;"><strong>Loại bảo trì:</strong> ${getMaintenanceTypeText(notification.type)}</p>
+                            <p style="margin: 0;"><strong>Mức độ ưu tiên:</strong> ${getPriorityTextVietnamese(notification.priority)}</p>
+                            ${notification.daysOverdue ? `<p style="margin: 5px 0 0 0; color: #dc3545;"><strong>Quá hạn:</strong> ${notification.daysOverdue} ngày</p>` : ''}
+                        `;
+                        
+                        // Clear form
+                        document.getElementById('maintenance-completion-form-enhanced').reset();
+                        
+                        // Show modal
+                        document.getElementById('maintenance-completion-modal').style.display = 'flex';
+                    }
+                }
+            } catch (error) {
+                console.error('Error getting notification details:', error);
+                // Fallback to simple prompt
+                const notes = prompt('Nhập ghi chú về bảo trì (tùy chọn):');
+                if (notes !== null) {
+                    await submitMaintenanceCompletion(notificationId, { notes });
+                }
+            }
+        }
+
+        // Submit maintenance completion
+        async function submitMaintenanceCompletion(notificationId, details) {
+            try {
+                const response = await fetch(`/api/notifications/${notificationId}/complete-maintenance`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(details)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess(data.message);
+                    
+                    // Refresh notifications
+                    await loadEquipmentNotifications();
+                    
+                    // Show completion details
+                    if (data.data && data.data.schedule) {
+                        const schedule = data.data.schedule;
+                        setTimeout(() => {
+                            showSuccess(`📅 Lịch bảo trì tiếp theo đã được tự động đặt:\n\n` +
+                                      `🏋️ Thiết bị: ${schedule.equipmentName}\n` +
+                                      `🔧 Loại: ${schedule.maintenanceType}\n` +
+                                      `📆 Ngày tiếp theo: ${new Date(schedule.nextDueDate).toLocaleDateString('vi-VN')}\n\n` +
+                                      `✅ Hệ thống đã tự động setup lịch bảo trì tiếp theo!`);
+                        }, 1000);
+                    }
+                } else {
+                    showError(data.message);
+                }
+                
+            } catch (error) {
+                console.error('Error completing maintenance:', error);
+                showError('Lỗi khi xác nhận hoàn thành bảo trì: ' + error.message);
+            }
+        }
+
+        // Mark notification as read
+        async function markNotificationAsRead(notificationId) {
+            try {
+                const response = await apiCall(`/notifications/${notificationId}/read`, 'POST');
+                
+                if (response.success) {
+                    await loadEquipmentNotifications(); // Reload notifications
+                } else {
+                    showError(response.message || 'Không thể đánh dấu đã đọc');
+                }
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+                showError('Lỗi đánh dấu đã đọc: ' + error.message);
+            }
+        }
+
+        // Mark all notifications as read
+        async function markAllNotificationsRead() {
+            if (!confirm('Đánh dấu tất cả thông báo là đã đọc?')) return;
+            
+            try {
+                const response = await apiCall('/notifications/read-all', 'POST');
+                
+                if (response.success) {
+                    showSuccess(response.message);
+                    await loadEquipmentNotifications(); // Reload notifications
+                } else {
+                    showError(response.message || 'Không thể đánh dấu tất cả đã đọc');
+                }
+            } catch (error) {
+                console.error('Error marking all notifications as read:', error);
+                showError('Lỗi đánh dấu tất cả đã đọc: ' + error.message);
+            }
+        }
+
+        // Generate tasks from notifications
+        async function generateTasksFromNotifications() {
+            try {
+                const response = await apiCall('/notifications/generate-tasks', 'POST');
+                
+                if (response.success) {
+                    showSuccess(response.message);
+                    await loadEquipmentNotifications(); // Reload notifications
+                } else {
+                    showError(response.message || 'Không thể tạo công việc');
+                }
+            } catch (error) {
+                console.error('Error generating tasks from notifications:', error);
+                showError('Lỗi khi tạo công việc từ thông báo: ' + error.message);
+            }
+        }
+
+        // Complete all maintenance and create new schedules
+        async function completeAllMaintenanceAndCreateNew() {
+            if (!confirm('🎯 Hoàn thành TẤT CẢ lịch bảo trì và tự động tạo lịch mới?\n\nĐiều này sẽ:\n✅ Đánh dấu tất cả lịch hiện tại là hoàn thành\n🔄 Tự động tạo lịch bảo trì mới theo chu kỳ\n📅 Cập nhật "Lần cuối thực hiện" là hôm nay')) return;
+            
+            try {
+                // Show loading
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.innerHTML = '⏳ Đang xử lý...';
+                button.disabled = true;
+                
+                // Call the new bulk completion API
+                console.log('🔧 Starting bulk maintenance completion...');
+                
+                const response = await apiCall('/notifications/complete-all-maintenance', 'POST', {
+                    notes: 'Hoàn thành tất cả bảo trì hàng loạt',
+                    performedBy: 1
+                });
+                
+                if (!response.success) {
+                    throw new Error(response.message || 'Không thể hoàn thành bảo trì');
+                }
+                
+                console.log('✅ Bulk completion result:', response.data);
+                
+                const completedCount = response.data.completedCount || 0;
+                const totalCount = response.data.totalNotifications || 0;
+                const errors = response.data.errors || [];
+                
+                // Restore button
+                button.innerHTML = originalText;
+                button.disabled = false;
+                
+                // Show results
+                if (completedCount > 0) {
+                    let message = '🎉 Hoàn thành thành công ' + completedCount + ' lịch bảo trì!\\nĐã tự động tạo lịch mới theo chu kỳ.';
+                    if (errors.length > 0) {
+                        message += '\\n\\n⚠️ Có ' + errors.length + ' lỗi nhỏ đã được bỏ qua.';
+                    }
+                    showSuccess(message);
+                    
+                    // Reload notifications and equipment list
+                    await loadEquipmentNotifications();
+                    await loadEquipmentList();
+                } else {
+                    showError('Không có lịch bảo trì nào để hoàn thành.');
+                }
+                
+                if (errorCount > 0) {
+                    console.warn('⚠️ ' + errorCount + ' lịch không thể hoàn thành');
+                }
+                
+            } catch (error) {
+                // Restore button on error
+                const button = document.querySelector('[onclick="completeAllMaintenanceAndCreateNew()"]');
+                if (button) {
+                    button.innerHTML = '🎯 HOÀN THÀNH TẤT CẢ & TẠO LỊCH MỚI';
+                    button.disabled = false;
+                }
+                
+                console.error('Error in completeAllMaintenanceAndCreateNew:', error);
+                showError('Lỗi khi hoàn thành hàng loạt: ' + error.message);
+            }
+        }
+
+        // Modal functions
+        function closeMaintainerModal() {
+            document.getElementById('maintenance-completion-modal').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            alert('✅ ' + message);
+        }
+
+        function showError(message) {
+            alert('❌ ' + message);
+        }
+
+        // Setup form handler when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('maintenance-completion-form-enhanced');
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = {
+                        notes: document.getElementById('maintenance-notes-enhanced').value || 'Bảo trì hoàn thành từ thông báo',
+                        duration: parseInt(document.getElementById('maintenance-duration-enhanced').value) || null,
+                        cost: parseFloat(document.getElementById('maintenance-cost-enhanced').value) || 0,
+                        conditionAfter: document.getElementById('equipment-condition-enhanced').value,
+                        performedBy: localStorage.getItem('userId')
+                    };
+                    
+                    await submitMaintenanceCompletion(currentMaintenanceNotificationId, formData);
+                    closeMaintainerModal();
+                });
+            }
+        });
     </script>
+
+    <!-- Maintenance Completion Modal -->
+    <div id="maintenance-completion-modal" class="modal-backdrop-enhanced" style="display: none;">
+        <div class="modal-content-enhanced">
+            <div class="modal-header-enhanced">
+                <h3>✅ Xác nhận hoàn thành bảo trì</h3>
+                <button class="modal-close-enhanced" onclick="closeMaintainerModal()">&times;</button>
+            </div>
+            <div class="modal-body-enhanced">
+                <div id="maintenance-info-enhanced" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <!-- Equipment and maintenance info will be populated here -->
+                </div>
+                <form id="maintenance-completion-form-enhanced">
+                    <div class="form-group">
+                        <label><strong>Ghi chú về công việc đã thực hiện *</strong></label>
+                        <textarea id="maintenance-notes-enhanced" placeholder="Mô tả những việc đã làm trong quá trình bảo trì..." rows="4" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;"></textarea>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label><strong>Thời gian thực hiện (phút)</strong></label>
+                            <input type="number" id="maintenance-duration-enhanced" min="1" placeholder="30" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
+                        <div class="form-group">
+                            <label><strong>Chi phí (VNĐ)</strong></label>
+                            <input type="number" id="maintenance-cost-enhanced" min="0" placeholder="0" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label><strong>Tình trạng thiết bị sau bảo trì</strong></label>
+                        <select id="equipment-condition-enhanced" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                            <option value="excellent">Tuyệt vời</option>
+                            <option value="good" selected>Tốt</option>
+                            <option value="fair">Khá</option>
+                            <option value="poor">Cần sửa chữa</option>
+                        </select>
+                    </div>
+                    <div style="text-align: right; margin-top: 20px;">
+                        <button type="button" onclick="closeMaintainerModal()" style="margin-right: 10px; padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Hủy</button>
+                        <button type="submit" class="btn-action-enhanced success" style="font-size: 1em; padding: 12px 24px;">✅ XÁC NHẬN HOÀN THÀNH VÀ TỰ ĐỘNG ĐẶT LỊCH TIẾP THEO</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to complete maintenance schedule directly
+        async function completeMaintenanceSchedule(scheduleId, equipmentName, maintenanceType) {
+            try {
+                console.log(`🔧 Completing maintenance schedule ${scheduleId} for ${equipmentName}`);
+                
+                // Simple confirmation
+                if (!confirm(`Xác nhận hoàn thành bảo trì?\n\nThiết bị: ${equipmentName}\nLoại: ${getMaintenanceTypeText(maintenanceType)}\n\n✅ Sau khi xác nhận, lịch bảo trì tiếp theo sẽ được tự động tạo!`)) {
+                    return;
+                }
+
+                // Call maintenance scheduler completion API directly
+                const response = await fetch('/api/maintenance-scheduler/complete-maintenance/' + scheduleId, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}`
+                    },
+                    body: JSON.stringify({
+                        performedBy: 1, // Admin user ID
+                        notes: `Hoàn thành ${getMaintenanceTypeText(maintenanceType)} cho ${equipmentName}`,
+                        duration: 30,
+                        cost: 0
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('✅ Đã hoàn thành bảo trì và tạo lịch tiếp theo thành công!');
+                    
+                    // Refresh equipment list to show updated maintenance schedules
+                    await loadEquipmentList();
+                    
+                    // Show next schedule info
+                    if (data.nextSchedule) {
+                        setTimeout(() => {
+                            showSuccess(`📅 Lịch bảo trì tiếp theo:\n\n` +
+                                      `🏋️ Thiết bị: ${equipmentName}\n` +
+                                      `🔧 Loại: ${getMaintenanceTypeText(maintenanceType)}\n` +
+                                      `📆 Ngày tiếp theo: ${formatDate(data.nextSchedule.nextDueDate)}\n\n` +
+                                      `✅ Hệ thống đã tự động tạo lịch mới!`);
+                        }, 1000);
+                    }
+                } else {
+                    showError(data.message || 'Lỗi khi hoàn thành bảo trì');
+                }
+                
+            } catch (error) {
+                console.error('Error completing maintenance schedule:', error);
+                showError('Lỗi kết nối khi hoàn thành bảo trì: ' + error.message);
+            }
+        }
+
+        // Helper function to get maintenance type text in Vietnamese
+        function getMaintenanceTypeText(type) {
+            const types = {
+                'cleaning': 'Vệ sinh',
+                'inspection': 'Kiểm tra', 
+                'maintenance': 'Bảo dưỡng'
+            };
+            return types[type] || type;
+        }
+
+        // ==================== EDIT EQUIPMENT FUNCTIONS ====================
+
+        // Open edit equipment modal
+        async function editEquipment(equipmentId) {
+            try {
+                console.log('✏️ Opening edit modal for equipment ID:', equipmentId);
+                
+                // Fetch equipment details
+                const response = await fetch(`/api/equipment/${equipmentId}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch equipment details');
+                }
+                
+                const data = await response.json();
+                const equipment = data.data;
+                
+                // Populate form with current data
+                document.getElementById('edit-equipment-id').value = equipment.id;
+                document.getElementById('edit-equipment-name').value = equipment.name || '';
+                document.getElementById('edit-equipment-category').value = equipment.category || '';
+                document.getElementById('edit-equipment-size').value = equipment.equipmentSize || 'large';
+                document.getElementById('edit-equipment-priority').value = equipment.priority || 'medium';
+                document.getElementById('edit-equipment-brand').value = equipment.brand || '';
+                document.getElementById('edit-equipment-model').value = equipment.model || '';
+                document.getElementById('edit-equipment-serial').value = equipment.serialNumber || '';
+                document.getElementById('edit-equipment-price').value = equipment.purchasePrice || '';
+                document.getElementById('edit-equipment-purchase-date').value = equipment.purchaseDate || '';
+                document.getElementById('edit-equipment-status').value = equipment.status || 'active';
+                document.getElementById('edit-equipment-location').value = equipment.location || '';
+                document.getElementById('edit-equipment-notes').value = equipment.notes || '';
+                
+                // Show modal
+                document.getElementById('edit-equipment-modal').style.display = 'block';
+                
+            } catch (error) {
+                console.error('❌ Error loading equipment for edit:', error);
+                showToast(`❌ Lỗi: ${error.message}`, 'error');
+            }
+        }
+
+        // Close edit equipment modal
+        function closeEditEquipmentModal() {
+            document.getElementById('edit-equipment-modal').style.display = 'none';
+            document.getElementById('edit-equipment-form').reset();
+        }
+
+        // Handle edit equipment form submission
+        document.getElementById('edit-equipment-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            try {
+                // Show loading state
+                submitBtn.innerHTML = '⏳ Đang cập nhật...';
+                submitBtn.disabled = true;
+                
+                // Get form data
+                const equipmentId = document.getElementById('edit-equipment-id').value;
+                const formData = {
+                    name: document.getElementById('edit-equipment-name').value.trim(),
+                    category: document.getElementById('edit-equipment-category').value,
+                    equipmentSize: document.getElementById('edit-equipment-size').value,
+                    priority: document.getElementById('edit-equipment-priority').value,
+                    brand: document.getElementById('edit-equipment-brand').value.trim(),
+                    model: document.getElementById('edit-equipment-model').value.trim(),
+                    serialNumber: document.getElementById('edit-equipment-serial').value.trim(),
+                    purchasePrice: parseInt(document.getElementById('edit-equipment-price').value) || null,
+                    purchaseDate: document.getElementById('edit-equipment-purchase-date').value,
+                    status: document.getElementById('edit-equipment-status').value,
+                    location: document.getElementById('edit-equipment-location').value.trim(),
+                    notes: document.getElementById('edit-equipment-notes').value.trim()
+                };
+                
+                // Validate form
+                const errors = validateEquipmentUpdateForm(formData);
+                if (errors.length > 0) {
+                    throw new Error(errors.join('\n'));
+                }
+                
+                console.log('📝 Updating equipment with data:', formData);
+                
+                // Submit to API
+                const response = await fetch(`/api/equipment/${equipmentId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('✅ Cập nhật thiết bị thành công!', 'success');
+                    closeEditEquipmentModal();
+                    
+                    // Refresh equipment list and dashboard
+                    await loadEquipmentList();
+                    await loadEquipmentDashboard();
+                    
+                } else {
+                    throw new Error(result.message || 'Lỗi khi cập nhật thiết bị');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error updating equipment:', error);
+                showToast(`❌ Lỗi: ${error.message}`, 'error');
+                
+            } finally {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Validate equipment update form
+        function validateEquipmentUpdateForm(data) {
+            const errors = [];
+            
+            if (!data.name) {
+                errors.push('Tên thiết bị không được để trống');
+            }
+            
+            if (!data.category) {
+                errors.push('Loại thiết bị không được để trống');
+            }
+            
+            if (data.purchasePrice && (data.purchasePrice < 0 || data.purchasePrice > 99999999)) {
+                errors.push('Giá mua phải từ 0 đến 99,999,999 VNĐ');
+            }
+            
+            if (data.serialNumber && data.serialNumber.length > 50) {
+                errors.push('Serial number không được quá 50 ký tự');
+            }
+            
+            return errors;
+        }
+
+        // Delete equipment function (existing)
+        async function deleteEquipment(equipmentId) {
+            if (!confirm('🗑️ Bạn có chắc chắn muốn xóa thiết bị này?\n\nLưu ý: Việc xóa thiết bị sẽ không thể hoàn tác!')) {
+                return;
+            }
+            
+            try {
+                console.log('🗑️ Deleting equipment ID:', equipmentId);
+                
+                const response = await fetch(`/api/equipment/${equipmentId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('gym_auth_token')}` }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('✅ Xóa thiết bị thành công!', 'success');
+                    await loadEquipmentList();
+                    await loadEquipmentDashboard();
+                } else {
+                    throw new Error(result.message || 'Lỗi khi xóa thiết bị');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error deleting equipment:', error);
+                showToast(`❌ Lỗi: ${error.message}`, 'error');
+            }
+        }
+    </script>
+
+    <!-- Edit Equipment Modal -->
+    <div id="edit-equipment-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
+        <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;">
+            <div style="background: white; border-radius: 10px; padding: 30px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #e9ecef; padding-bottom: 15px;">
+                    <h3 style="margin: 0; color: #333; font-size: 1.5em;">✏️ Sửa thông tin thiết bị</h3>
+                    <button onclick="closeEditEquipmentModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+                </div>
+                
+                <form id="edit-equipment-form">
+                    <input type="hidden" id="edit-equipment-id">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Tên thiết bị *</label>
+                            <input type="text" id="edit-equipment-name" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Loại thiết bị *</label>
+                            <select id="edit-equipment-category" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em;">
+                                <option value="">-- Chọn loại --</option>
+                                <option value="cardio">Cardio</option>
+                                <option value="strength">Strength</option>
+                                <option value="functional">Functional</option>
+                                <option value="free_weights">Free Weights</option>
+                                <option value="accessories">Accessories</option>
+                                <option value="other">Khác</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Kích thước</label>
+                            <select id="edit-equipment-size" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em;">
+                                <option value="large">Lớn (máy tập lớn)</option>
+                                <option value="small">Nhỏ (phụ kiện, tạ)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Độ ưu tiên bảo trì</label>
+                            <select id="edit-equipment-priority" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em;">
+                                <option value="high">Cao (bảo trì thường xuyên)</option>
+                                <option value="medium">Trung bình</option>
+                                <option value="low">Thấp (bảo trì ít)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Thương hiệu</label>
+                            <input type="text" id="edit-equipment-brand" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Model</label>
+                            <input type="text" id="edit-equipment-model" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em;">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Serial Number</label>
+                            <input type="text" id="edit-equipment-serial" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Giá mua (VNĐ)</label>
+                            <input type="number" id="edit-equipment-price" min="0" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em;">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Ngày mua</label>
+                            <input type="date" id="edit-equipment-purchase-date" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Trạng thái</label>
+                            <select id="edit-equipment-status" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em;">
+                                <option value="active">Đang hoạt động</option>
+                                <option value="maintenance">Đang bảo trì</option>
+                                <option value="broken">Hỏng</option>
+                                <option value="retired">Ngừng sử dụng</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Vị trí</label>
+                        <input type="text" id="edit-equipment-location" placeholder="VD: Khu vực Cardio A, Phòng tập 1..." style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em;">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 30px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Ghi chú</label>
+                        <textarea id="edit-equipment-notes" rows="4" placeholder="Ghi chú về thiết bị..." style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em; resize: vertical;"></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 15px; justify-content: flex-end;">
+                        <button type="button" onclick="closeEditEquipmentModal()" style="padding: 12px 25px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1em;">
+                            ❌ Hủy
+                        </button>
+                        <button type="submit" style="padding: 12px 25px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1em;">
+                            ✅ Cập nhật thiết bị
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

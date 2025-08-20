@@ -70,7 +70,13 @@ const maintenanceScheduleController = {
             if (equipmentId) whereClause.equipmentId = equipmentId;
             if (maintenanceType) whereClause.maintenanceType = maintenanceType;
             if (priority) whereClause.priority = priority;
-            if (isActive !== undefined) whereClause.isActive = isActive === 'true';
+            
+            // Always filter by isActive, default to true if not specified
+            if (isActive !== undefined) {
+                whereClause.isActive = isActive === 'true';
+            } else {
+                whereClause.isActive = true; // Default to only active schedules
+            }
 
             const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -153,7 +159,13 @@ const maintenanceScheduleController = {
             const { isActive } = req.query;
 
             const whereClause = { equipmentId };
-            if (isActive !== undefined) whereClause.isActive = isActive === 'true';
+            
+            // Always filter by isActive, default to true if not specified
+            if (isActive !== undefined) {
+                whereClause.isActive = isActive === 'true';
+            } else {
+                whereClause.isActive = true; // Default to only active schedules
+            }
 
             const schedules = await MaintenanceSchedule.findAll({
                 where: whereClause,

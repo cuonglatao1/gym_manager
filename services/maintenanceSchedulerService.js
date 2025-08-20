@@ -1,336 +1,429 @@
-const { MaintenanceSchedule, Equipment, EquipmentMaintenance, MaintenanceHistory, User } = require('../models');
+/**
+ * Maintenance Scheduler Service - Automatic maintenance scheduling based on equipment priority
+ * 
+ * Logic:
+ * 1. Equipment có priority (low, medium, high, critical) 
+ * 2. Dựa trên priority tạo MaintenanceSchedule tự động
+ * 3. Priority càng cao → lịch bảo trì càng dày (nhiều loại, chu kỳ ngắn)
+ * 4. Khi đến hạn → thông báo → admin xác nhận → tạo lịch mới tự động
+ */
+
+const { Equipment, MaintenanceSchedule, MaintenanceHistory } = require('../models');
 const { Op } = require('sequelize');
 
 class MaintenanceSchedulerService {
     constructor() {
-        this.priorityRules = {
-            high: {
-                cleaning: { interval: 1, priority: 'high' },      // Daily cleaning
-                inspection: { interval: 7, priority: 'high' },    // Weekly inspection
-                maintenance: { interval: 30, priority: 'medium' }  // Monthly maintenance
-            },
-            medium: {
-                cleaning: { interval: 3, priority: 'medium' },    // Every 3 days cleaning
-                inspection: { interval: 14, priority: 'medium' }, // Bi-weekly inspection
-                maintenance: { interval: 60, priority: 'medium' } // Every 2 months maintenance
-            },
-            low: {
-                cleaning: { interval: 7, priority: 'low' },       // Weekly cleaning
-                inspection: { interval: 30, priority: 'low' },    // Monthly inspection
-                maintenance: { interval: 90, priority: 'low' }    // Every 3 months maintenance
-            }
+        this.maintenanceTemplates = this.getMaintenanceTemplates();
+        this.init();
+    }
+
+    init() {
+        console.log('📅 Maintenance Scheduler Service initialized');
+        
+        // Schedule daily check for new equipment needing schedules
+        setInterval(() => {
+            this.checkForNewEquipment();
+        }, 24 * 60 * 60 * 1000); // Daily
+        
+        // Initial check after 10 seconds
+        setTimeout(() => {
+            this.checkForNewEquipment();
+        }, 10000);
+    }
+
+    // Define maintenance templates based on priority
+    getMaintenanceTemplates() {
+        return {
+            'critical': [
+                { type: 'cleaning', intervalDays: 1, description: 'Vệ sinh thiết bị, lau chùi bề mặt, khử trùng các điểm tiếp xúc' },
+                { type: 'inspection', intervalDays: 3, description: 'Kiểm tra ốc vít, dây cáp, các bộ phận chuyển động, tình trạng hoạt động' },
+                { type: 'maintenance', intervalDays: 7, description: 'Bảo dưỡng, tra dầu, cân chỉnh, kiểm tra hệ thống, thay thế phụ tùng nếu cần' }
+            ],
+            'high': [
+                { type: 'cleaning', intervalDays: 1, description: 'Vệ sinh thiết bị, lau chùi bề mặt, khử trùng các điểm tiếp xúc' },
+                { type: 'inspection', intervalDays: 7, description: 'Kiểm tra ốc vít, dây cáp, các bộ phận chuyển động, tình trạng hoạt động' },
+                { type: 'maintenance', intervalDays: 30, description: 'Bảo dưỡng, tra dầu, cân chỉnh, kiểm tra hệ thống, thay thế phụ tùng nếu cần' }
+            ],
+            'medium': [
+                { type: 'cleaning', intervalDays: 3, description: 'Vệ sinh thiết bị, lau chùi bề mặt, khử trùng các điểm tiếp xúc' },
+                { type: 'inspection', intervalDays: 14, description: 'Kiểm tra ốc vít, dây cáp, các bộ phận chuyển động, tình trạng hoạt động' },
+                { type: 'maintenance', intervalDays: 60, description: 'Bảo dưỡng, tra dầu, cân chỉnh, kiểm tra hệ thống, thay thế phụ tùng nếu cần' }
+            ],
+            'low': [
+                { type: 'cleaning', intervalDays: 7, description: 'Vệ sinh thiết bị, lau chùi bề mặt, khử trùng các điểm tiếp xúc' },
+                { type: 'inspection', intervalDays: 30, description: 'Kiểm tra ốc vít, dây cáp, các bộ phận chuyển động, tình trạng hoạt động' },
+                { type: 'maintenance', intervalDays: 90, description: 'Bảo dưỡng, tra dầu, cân chỉnh, kiểm tra hệ thống, thay thế phụ tùng nếu cần' }
+            ]
         };
     }
 
-    /**
-     * Create automatic maintenance schedules for new equipment
-     */
-    async createSchedulesForEquipment(equipmentId, priority = 'medium', startDate = null) {
+    // Check for new equipment that needs maintenance schedules
+    async checkForNewEquipment() {
+        try {
+            console.log('🔍 Checking for equipment needing maintenance schedules...');
+            
+            const equipmentWithoutSchedules = await Equipment.findAll({
+                where: {
+                    isActive: true,
+                    status: { [Op.in]: ['active', 'maintenance'] }
+                },
+                include: [{
+                    model: MaintenanceSchedule,
+                    as: 'maintenanceSchedules',
+                    required: false
+                }]
+            });
+
+            let createdCount = 0;
+            for (const equipment of equipmentWithoutSchedules) {
+                if (!equipment.maintenanceSchedules || equipment.maintenanceSchedules.length === 0) {
+                    await this.createSchedulesForEquipment(equipment.id, equipment.priority);
+                    createdCount++;
+                }
+            }
+
+            if (createdCount > 0) {
+                console.log(`✅ Created maintenance schedules for ${createdCount} equipment`);
+            } else {
+                console.log('📋 All equipment already have maintenance schedules');
+            }
+
+        } catch (error) {
+            console.error('❌ Error checking for new equipment:', error);
+        }
+    }
+
+    // Create maintenance schedules for specific equipment based on priority
+    async createSchedulesForEquipment(equipmentId, priority = 'medium') {
         try {
             const equipment = await Equipment.findByPk(equipmentId);
             if (!equipment) {
                 throw new Error('Equipment not found');
             }
 
-            const baseDate = startDate ? new Date(startDate) : new Date();
-            const rules = this.priorityRules[priority];
+            const templates = this.maintenanceTemplates[priority] || this.maintenanceTemplates['medium'];
+            const today = new Date();
             
-            if (!rules) {
-                throw new Error(`Invalid priority level: ${priority}`);
-            }
+            console.log(`📅 Creating maintenance schedules for ${equipment.name} (priority: ${priority})`);
 
             const schedules = [];
-            
-            for (const [maintenanceType, rule] of Object.entries(rules)) {
-                const nextDueDate = new Date(baseDate);
-                nextDueDate.setDate(nextDueDate.getDate() + rule.interval);
-                
+            for (const template of templates) {
+                const nextDueDate = new Date(today);
+                nextDueDate.setDate(today.getDate() + template.intervalDays);
+
                 const schedule = await MaintenanceSchedule.create({
-                    equipmentId,
-                    maintenanceType,
-                    priority,
-                    intervalDays: rule.interval,
+                    equipmentId: equipmentId,
+                    maintenanceType: template.type,
+                    priority: priority,
+                    intervalDays: template.intervalDays,
                     nextDueDate: nextDueDate.toISOString().split('T')[0],
-                    autoGenerated: true,
-                    notes: `Auto-generated ${maintenanceType} schedule for ${priority} priority equipment`
+                    description: template.description,
+                    isActive: true,
+                    notes: `Auto-generated ${template.type} schedule for ${priority} priority equipment`
                 });
-                
+
                 schedules.push(schedule);
             }
 
-            console.log(`✅ Created ${schedules.length} maintenance schedules for equipment ${equipment.name}`);
+            console.log(`✅ Created ${schedules.length} maintenance schedules for ${equipment.name}`);
             return schedules;
+
         } catch (error) {
-            console.error('Error creating schedules for equipment:', error);
-            throw error;
+            console.error(`❌ Error creating schedules for equipment ${equipmentId}:`, error);
+            return [];
         }
     }
 
-    /**
-     * Update schedules when equipment priority changes
-     */
-    async updateSchedulesForPriorityChange(equipmentId, newPriority) {
+    // Complete maintenance and create next schedule
+    async completeMaintenance(scheduleId, details = {}) {
         try {
-            const equipment = await Equipment.findByPk(equipmentId);
-            if (!equipment) {
-                throw new Error('Equipment not found');
-            }
-
-            // Deactivate existing auto-generated schedules
-            await MaintenanceSchedule.update(
-                { isActive: false },
-                { 
-                    where: { 
-                        equipmentId, 
-                        autoGenerated: true 
-                    } 
-                }
-            );
-
-            // Create new schedules with updated priority
-            const newSchedules = await this.createSchedulesForEquipment(
-                equipmentId, 
-                newPriority, 
-                equipment.lastMaintenanceDate || equipment.purchaseDate
-            );
-
-            console.log(`✅ Updated schedules for equipment ${equipment.name} with new priority: ${newPriority}`);
-            return newSchedules;
-        } catch (error) {
-            console.error('Error updating schedules for priority change:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Generate maintenance tasks for overdue schedules
-     */
-    async generateOverdueTasks(assignedTo = null, maxTasks = 50) {
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            
-            const overdueSchedules = await MaintenanceSchedule.findAll({
-                where: {
-                    nextDueDate: { [Op.lt]: today },
-                    isActive: true
-                },
-                include: [{
-                    model: Equipment,
-                    as: 'equipment',
-                    where: { status: 'active' }
-                }],
-                order: [
-                    ['nextDueDate', 'ASC'],
-                    [{ model: Equipment, as: 'equipment' }, 'priority', 'DESC']
-                ],
-                limit: maxTasks
-            });
-
-            const tasks = [];
-            for (const schedule of overdueSchedules) {
-                try {
-                    // Check if task already exists
-                    const existingTask = await EquipmentMaintenance.findOne({
-                        where: {
-                            equipmentId: schedule.equipmentId,
-                            maintenanceType: this.mapMaintenanceType(schedule.maintenanceType),
-                            scheduledDate: schedule.nextDueDate,
-                            status: { [Op.in]: ['scheduled', 'in_progress'] }
-                        }
-                    });
-
-                    if (!existingTask) {
-                        const task = await this.createMaintenanceTask(schedule, assignedTo);
-                        tasks.push(task);
-                    }
-                } catch (error) {
-                    console.error(`Error generating task for schedule ${schedule.id}:`, error);
-                }
-            }
-
-            console.log(`✅ Generated ${tasks.length} maintenance tasks from overdue schedules`);
-            return tasks;
-        } catch (error) {
-            console.error('Error generating overdue tasks:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Generate upcoming maintenance tasks (next 7 days)
-     */
-    async generateUpcomingTasks(days = 7, assignedTo = null) {
-        try {
-            const today = new Date();
-            const futureDate = new Date();
-            futureDate.setDate(today.getDate() + days);
-            
-            const upcomingSchedules = await MaintenanceSchedule.findAll({
-                where: {
-                    nextDueDate: {
-                        [Op.between]: [
-                            today.toISOString().split('T')[0],
-                            futureDate.toISOString().split('T')[0]
-                        ]
-                    },
-                    isActive: true
-                },
-                include: [{
-                    model: Equipment,
-                    as: 'equipment',
-                    where: { status: 'active' }
-                }],
-                order: [
-                    ['nextDueDate', 'ASC'],
-                    [{ model: Equipment, as: 'equipment' }, 'priority', 'DESC']
-                ]
-            });
-
-            const tasks = [];
-            for (const schedule of upcomingSchedules) {
-                try {
-                    // Check if task already exists
-                    const existingTask = await EquipmentMaintenance.findOne({
-                        where: {
-                            equipmentId: schedule.equipmentId,
-                            maintenanceType: this.mapMaintenanceType(schedule.maintenanceType),
-                            scheduledDate: schedule.nextDueDate,
-                            status: { [Op.in]: ['scheduled', 'in_progress'] }
-                        }
-                    });
-
-                    if (!existingTask) {
-                        const task = await this.createMaintenanceTask(schedule, assignedTo);
-                        tasks.push(task);
-                    }
-                } catch (error) {
-                    console.error(`Error generating upcoming task for schedule ${schedule.id}:`, error);
-                }
-            }
-
-            console.log(`✅ Generated ${tasks.length} upcoming maintenance tasks`);
-            return tasks;
-        } catch (error) {
-            console.error('Error generating upcoming tasks:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Complete maintenance and update schedule
-     */
-    async completeMaintenance(maintenanceId, performedBy, workDetails = {}) {
-        try {
-            const maintenance = await EquipmentMaintenance.findByPk(maintenanceId, {
+            const schedule = await MaintenanceSchedule.findByPk(scheduleId, {
                 include: [{
                     model: Equipment,
                     as: 'equipment'
                 }]
             });
 
-            if (!maintenance) {
-                throw new Error('Maintenance record not found');
+            if (!schedule) {
+                throw new Error('Maintenance schedule not found');
             }
 
-            // Mark maintenance as completed
-            await maintenance.update({
-                status: 'completed',
-                completedDate: new Date().toISOString().split('T')[0],
-                workPerformed: workDetails.workPerformed || 'Maintenance completed',
-                actualDuration: workDetails.duration,
-                cost: workDetails.cost || 0
+            // Check if this schedule is already completed
+            if (!schedule.isActive) {
+                throw new Error('This maintenance schedule has already been completed');
+            }
+
+            // STEP 1: Calculate next due date first
+            const nextDueDate = new Date();
+            nextDueDate.setDate(nextDueDate.getDate() + schedule.intervalDays);
+            const nextDueDateStr = nextDueDate.toISOString().split('T')[0];
+
+            // STEP 2: Deactivate ALL active schedules of the same type for this equipment
+            // This includes the current schedule AND any duplicates
+            const completedDate = new Date().toISOString().split('T')[0]; // Thời gian thực khi ấn hoàn thành
+            const deactivatedCount = await MaintenanceSchedule.update(
+                { 
+                    isActive: false, 
+                    lastCompletedDate: completedDate,
+                    notes: details.notes || 'Hoàn thành bảo trì định kỳ'
+                },
+                {
+                    where: {
+                        equipmentId: schedule.equipmentId,
+                        maintenanceType: schedule.maintenanceType,
+                        isActive: true
+                    }
+                }
+            );
+            
+            console.log(`🧹 Deactivated ${deactivatedCount[0]} schedules of type ${schedule.maintenanceType}`);
+
+            // STEP 3: Check if a schedule for the next due date already exists
+            const existingScheduleForDate = await MaintenanceSchedule.findOne({
+                where: {
+                    equipmentId: schedule.equipmentId,
+                    maintenanceType: schedule.maintenanceType,
+                    nextDueDate: nextDueDateStr,
+                    isActive: true
+                }
             });
+
+            let nextSchedule;
+            if (existingScheduleForDate) {
+                console.log(`⚠️ Schedule for ${nextDueDateStr} already exists, reusing it`);
+                // Make sure existing schedule has completion date
+                if (!existingScheduleForDate.lastCompletedDate) {
+                    await existingScheduleForDate.update({ lastCompletedDate: completedDate });
+                }
+                nextSchedule = existingScheduleForDate;
+            } else {
+                // STEP 4: Create new schedule only if none exists for this date
+                nextSchedule = await MaintenanceSchedule.create({
+                    equipmentId: schedule.equipmentId,
+                    maintenanceType: schedule.maintenanceType,
+                    priority: schedule.priority,
+                    intervalDays: schedule.intervalDays,
+                    nextDueDate: nextDueDateStr,
+                    description: schedule.description,
+                    isActive: true,
+                    lastCompletedDate: completedDate, // ALWAYS set completion date
+                    notes: `Auto-generated next ${schedule.maintenanceType} schedule`,
+                    previousScheduleId: schedule.id
+                });
+                console.log(`✅ Created new schedule for ${nextDueDateStr} with lastCompletedDate: ${completedDate}`);
+            }
 
             // Create maintenance history record
             const historyRecord = await MaintenanceHistory.create({
-                equipmentId: maintenance.equipmentId,
-                maintenanceId: maintenance.id,
-                maintenanceType: maintenance.maintenanceType,
-                performedDate: new Date().toISOString().split('T')[0],
-                performedBy,
-                duration: workDetails.duration,
-                workPerformed: workDetails.workPerformed || 'Maintenance completed',
-                issuesFound: workDetails.issuesFound,
-                partsReplaced: workDetails.partsReplaced,
-                cost: workDetails.cost || 0,
-                equipmentConditionBefore: workDetails.conditionBefore || 'good',
-                equipmentConditionAfter: workDetails.conditionAfter || 'good',
-                priority: maintenance.priority,
+                equipmentId: schedule.equipmentId,
+                maintenanceType: schedule.maintenanceType,
+                performedDate: completedDate,
+                performedBy: details.performedBy || 1, // Default to admin user ID
+                duration: details.duration,
+                workPerformed: details.notes || `${this.getMaintenanceTypeText(schedule.maintenanceType)} - Hoàn thành theo lịch`,
+                notes: details.notes || `Lịch bảo trì ${this.getMaintenanceTypeText(schedule.maintenanceType)} đã hoàn thành`,
+                cost: details.cost || 0,
                 result: 'completed',
-                qualityRating: workDetails.qualityRating,
-                notes: workDetails.notes
+                priority: schedule.equipment?.priority || 'medium',
+                equipmentConditionBefore: 'good',
+                equipmentConditionAfter: details.conditionAfter || 'good',
+                scheduleId: schedule.id
             });
 
-            // Update related schedule
-            const schedule = await MaintenanceSchedule.findOne({
-                where: {
-                    equipmentId: maintenance.equipmentId,
-                    maintenanceType: this.mapScheduleMaintenanceType(maintenance.maintenanceType),
-                    isActive: true
-                }
-            });
+            console.log(`✅ Completed maintenance for ${schedule.equipment?.name} and created next schedule`);
 
-            if (schedule) {
-                await schedule.completeAndReschedule();
-            }
+            return {
+                success: true,
+                completedSchedule: schedule,
+                nextSchedule: nextSchedule,
+                historyRecord: historyRecord
+            };
 
-            // Update equipment's last maintenance date
-            await maintenance.equipment.update({
-                lastMaintenanceDate: new Date().toISOString().split('T')[0],
-                status: 'active' // Ensure equipment is active after maintenance
-            });
-
-            console.log(`✅ Completed maintenance ${maintenanceId} and updated schedule`);
-            return { maintenance, historyRecord, schedule };
         } catch (error) {
-            console.error('Error completing maintenance:', error);
-            throw error;
+            console.error('❌ Error completing maintenance:', error);
+            return {
+                success: false,
+                error: error.message
+            };
         }
     }
 
-    /**
-     * Get maintenance dashboard data
-     */
+    // Skip/Delete overdue maintenance
+    async skipOverdueMaintenance(scheduleId, reason = 'Bỏ qua do quá hạn') {
+        try {
+            const schedule = await MaintenanceSchedule.findByPk(scheduleId);
+            if (!schedule) {
+                throw new Error('Maintenance schedule not found');
+            }
+
+            // Check if this schedule is already inactive
+            if (!schedule.isActive) {
+                throw new Error('This maintenance schedule has already been processed');
+            }
+
+            // STEP 1: Calculate next due date
+            const nextDueDate = new Date();
+            nextDueDate.setDate(nextDueDate.getDate() + schedule.intervalDays);
+            const nextDueDateStr = nextDueDate.toISOString().split('T')[0];
+
+            // STEP 2: Deactivate ALL active schedules of the same type for this equipment
+            const deactivatedCount = await MaintenanceSchedule.update(
+                { 
+                    isActive: false,
+                    status: 'skipped',
+                    completionNotes: reason
+                },
+                {
+                    where: {
+                        equipmentId: schedule.equipmentId,
+                        maintenanceType: schedule.maintenanceType,
+                        isActive: true
+                    }
+                }
+            );
+            
+            console.log(`🧹 Deactivated ${deactivatedCount[0]} schedules during skip`);
+
+            // STEP 3: Check if a schedule for the next due date already exists
+            const existingScheduleForDate = await MaintenanceSchedule.findOne({
+                where: {
+                    equipmentId: schedule.equipmentId,
+                    maintenanceType: schedule.maintenanceType,
+                    nextDueDate: nextDueDateStr,
+                    isActive: true
+                }
+            });
+
+            let nextSchedule;
+            if (existingScheduleForDate) {
+                console.log(`⚠️ Schedule for ${nextDueDateStr} already exists after skip, reusing it`);
+                nextSchedule = existingScheduleForDate;
+            } else {
+                // STEP 4: Create new schedule only if none exists for this date
+                nextSchedule = await MaintenanceSchedule.create({
+                    equipmentId: schedule.equipmentId,
+                    maintenanceType: schedule.maintenanceType,
+                    priority: schedule.priority,
+                    intervalDays: schedule.intervalDays,
+                    nextDueDate: nextDueDateStr,
+                    description: schedule.description,
+                    isActive: true,
+                    lastCompletedDate: null, // Skipped, so no completion date
+                    notes: `Auto-generated after skipping overdue schedule`,
+                    previousScheduleId: schedule.id
+                });
+                console.log(`✅ Created new schedule after skip for ${nextDueDateStr}`);
+            }
+
+            console.log(`⏭️ Skipped overdue maintenance and created next schedule`);
+
+            return {
+                success: true,
+                skippedSchedule: schedule,
+                nextSchedule: nextSchedule
+            };
+
+        } catch (error) {
+            console.error('❌ Error skipping maintenance:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    // Get maintenance type text in Vietnamese
+    getMaintenanceTypeText(type) {
+        const types = {
+            'cleaning': 'vệ sinh',
+            'inspection': 'kiểm tra',
+            'maintenance': 'bảo dưỡng'
+        };
+        return types[type] || type;
+    }
+
+    // Clean up duplicate maintenance schedules
+    async cleanupDuplicateSchedules() {
+        try {
+            console.log('🧹 Starting cleanup of duplicate maintenance schedules...');
+            
+            // Find all active schedules grouped by equipment and maintenance type
+            const duplicateGroups = await MaintenanceSchedule.findAll({
+                where: { isActive: true },
+                order: [['createdAt', 'DESC']] // Keep the newest ones
+            });
+
+            // Group by equipmentId + maintenanceType
+            const groupedSchedules = {};
+            duplicateGroups.forEach(schedule => {
+                const key = `${schedule.equipmentId}_${schedule.maintenanceType}`;
+                if (!groupedSchedules[key]) {
+                    groupedSchedules[key] = [];
+                }
+                groupedSchedules[key].push(schedule);
+            });
+
+            let cleanedCount = 0;
+            for (const [key, schedules] of Object.entries(groupedSchedules)) {
+                if (schedules.length > 1) {
+                    // Keep the newest, deactivate the rest
+                    const toDeactivate = schedules.slice(1); // All except the first (newest)
+                    
+                    if (toDeactivate.length > 0) {
+                        await MaintenanceSchedule.update(
+                            { 
+                                isActive: false, 
+                                notes: 'Deactivated during duplicate cleanup - ' + new Date().toISOString()
+                            },
+                            {
+                                where: {
+                                    id: { [Op.in]: toDeactivate.map(s => s.id) }
+                                }
+                            }
+                        );
+                        cleanedCount += toDeactivate.length;
+                        console.log(`🧹 Cleaned ${toDeactivate.length} duplicates for ${key}`);
+                    }
+                }
+            }
+
+            console.log(`✅ Cleanup completed. Deactivated ${cleanedCount} duplicate schedules`);
+            return { success: true, cleanedCount };
+
+        } catch (error) {
+            console.error('❌ Error during duplicate cleanup:', error);
+            return { success: false, error: error.message, cleanedCount: 0 };
+        }
+    }
+
+    // Get maintenance dashboard data
     async getMaintenanceDashboard() {
         try {
             const today = new Date().toISOString().split('T')[0];
-            
-            // Get overdue maintenance count
-            const overdueCount = await MaintenanceSchedule.count({
-                where: {
-                    nextDueDate: { [Op.lt]: today },
-                    isActive: true
-                }
-            });
 
-            // Get today's maintenance
-            const todayCount = await MaintenanceSchedule.count({
-                where: {
-                    nextDueDate: today,
-                    isActive: true
-                }
-            });
+            const summary = {
+                total: await MaintenanceSchedule.count({ where: { isActive: true } }),
+                overdue: await MaintenanceSchedule.count({
+                    where: {
+                        isActive: true,
+                        nextDueDate: { [Op.lt]: today }
+                    }
+                }),
+                dueToday: await MaintenanceSchedule.count({
+                    where: {
+                        isActive: true,
+                        nextDueDate: today
+                    }
+                }),
+                upcoming: await MaintenanceSchedule.count({
+                    where: {
+                        isActive: true,
+                        nextDueDate: { [Op.gt]: today }
+                    }
+                })
+            };
 
-            // Get this week's maintenance
-            const weekEnd = new Date();
-            weekEnd.setDate(weekEnd.getDate() + 7);
-            const thisWeekCount = await MaintenanceSchedule.count({
-                where: {
-                    nextDueDate: {
-                        [Op.between]: [today, weekEnd.toISOString().split('T')[0]]
-                    },
-                    isActive: true
-                }
-            });
-
-            // Get active maintenance tasks
-            const activeTasks = await EquipmentMaintenance.count({
-                where: {
-                    status: { [Op.in]: ['scheduled', 'in_progress'] }
-                }
-            });
-
-            // Get equipment by priority
+            // Get equipment counts by priority
             const equipmentByPriority = await Equipment.findAll({
                 attributes: [
                     'priority',
@@ -341,201 +434,68 @@ class MaintenanceSchedulerService {
                 raw: true
             });
 
-            // Get recent completed maintenance
-            const recentMaintenance = await MaintenanceHistory.findAll({
-                limit: 5,
-                order: [['performedDate', 'DESC']],
-                include: [
-                    {
-                        model: Equipment,
-                        as: 'equipment',
-                        attributes: ['name', 'equipmentCode']
-                    },
-                    {
-                        model: User,
-                        as: 'performer',
-                        attributes: ['fullName', 'username']
-                    }
-                ]
+            const priorityCounts = {
+                critical: 0,
+                high: 0,
+                medium: 0,
+                low: 0
+            };
+
+            equipmentByPriority.forEach(item => {
+                priorityCounts[item.priority] = parseInt(item.count);
             });
 
             return {
-                summary: {
-                    overdueCount,
-                    todayCount,
-                    thisWeekCount,
-                    activeTasks
-                },
-                equipmentByPriority: equipmentByPriority.reduce((acc, item) => {
-                    acc[item.priority] = parseInt(item.count);
-                    return acc;
-                }, {}),
-                recentMaintenance
+                summary,
+                equipmentByPriority: priorityCounts
             };
+
         } catch (error) {
-            console.error('Error getting maintenance dashboard:', error);
-            throw error;
+            console.error('❌ Error getting maintenance dashboard:', error);
+            return { 
+                summary: { total: 0, overdue: 0, dueToday: 0, upcoming: 0 },
+                equipmentByPriority: { critical: 0, high: 0, medium: 0, low: 0 }
+            };
         }
     }
 
-    /**
-     * Auto-assign maintenance tasks based on staff availability
-     */
-    async autoAssignTasks(taskIds = null) {
+    // Get maintenance schedules summary
+    async getMaintenanceSchedulesSummary() {
         try {
-            let tasks;
-            
-            if (taskIds && taskIds.length > 0) {
-                tasks = await EquipmentMaintenance.findAll({
+            const today = new Date().toISOString().split('T')[0];
+
+            const summary = {
+                total: await MaintenanceSchedule.count({ where: { isActive: true } }),
+                overdue: await MaintenanceSchedule.count({
                     where: {
-                        id: { [Op.in]: taskIds },
-                        status: 'scheduled',
-                        assignedTo: null
+                        isActive: true,
+                        nextDueDate: { [Op.lt]: today }
                     }
-                });
-            } else {
-                tasks = await EquipmentMaintenance.findAll({
+                }),
+                dueToday: await MaintenanceSchedule.count({
                     where: {
-                        status: 'scheduled',
-                        assignedTo: null,
-                        scheduledDate: {
-                            [Op.lte]: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Next 7 days
-                        }
-                    },
-                    order: [['scheduledDate', 'ASC'], ['priority', 'DESC']]
-                });
-            }
+                        isActive: true,
+                        nextDueDate: today
+                    }
+                }),
+                upcoming: await MaintenanceSchedule.count({
+                    where: {
+                        isActive: true,
+                        nextDueDate: { [Op.gt]: today }
+                    }
+                })
+            };
 
-            // Get available staff (users with role 'staff' or 'admin')
-            const availableStaff = await User.findAll({
-                where: {
-                    role: { [Op.in]: ['staff', 'admin'] },
-                    isActive: true
-                },
-                attributes: ['id', 'fullName', 'username']
-            });
+            return summary;
 
-            if (availableStaff.length === 0) {
-                throw new Error('No available staff for task assignment');
-            }
-
-            const assignedTasks = [];
-            let staffIndex = 0;
-
-            for (const task of tasks) {
-                try {
-                    const assignedStaff = availableStaff[staffIndex % availableStaff.length];
-                    
-                    await task.update({
-                        assignedTo: assignedStaff.id
-                    });
-
-                    assignedTasks.push({
-                        taskId: task.id,
-                        assignedTo: assignedStaff.id,
-                        assignedToName: assignedStaff.fullName || assignedStaff.username
-                    });
-
-                    staffIndex++;
-                } catch (error) {
-                    console.error(`Error assigning task ${task.id}:`, error);
-                }
-            }
-
-            console.log(`✅ Auto-assigned ${assignedTasks.length} maintenance tasks`);
-            return assignedTasks;
         } catch (error) {
-            console.error('Error auto-assigning tasks:', error);
-            throw error;
+            console.error('❌ Error getting maintenance schedules summary:', error);
+            return { total: 0, overdue: 0, dueToday: 0, upcoming: 0 };
         }
-    }
-
-    /**
-     * Helper method to create maintenance task from schedule
-     */
-    async createMaintenanceTask(schedule, assignedTo = null) {
-        const task = await EquipmentMaintenance.create({
-            equipmentId: schedule.equipmentId,
-            maintenanceType: this.mapMaintenanceType(schedule.maintenanceType),
-            status: 'scheduled',
-            priority: this.mapTaskPriority(schedule.priority),
-            scheduledDate: schedule.nextDueDate,
-            assignedTo,
-            title: this.generateTaskTitle(schedule),
-            description: this.generateTaskDescription(schedule),
-            isRecurring: true,
-            recurringInterval: schedule.intervalDays
-        });
-
-        return task;
-    }
-
-    /**
-     * Map schedule maintenance type to task maintenance type
-     */
-    mapMaintenanceType(scheduleType) {
-        const mapping = {
-            'cleaning': 'daily_clean',
-            'inspection': 'weekly_check',
-            'maintenance': 'monthly_maintenance'
-        };
-        return mapping[scheduleType] || 'daily_clean';
-    }
-
-    /**
-     * Map task maintenance type to schedule maintenance type
-     */
-    mapScheduleMaintenanceType(taskType) {
-        const mapping = {
-            'daily_clean': 'cleaning',
-            'weekly_check': 'inspection',
-            'monthly_maintenance': 'maintenance'
-        };
-        return mapping[taskType] || 'cleaning';
-    }
-
-    /**
-     * Map schedule priority to task priority
-     */
-    mapTaskPriority(schedulePriority) {
-        const mapping = {
-            'high': 'high',
-            'medium': 'medium',
-            'low': 'low'
-        };
-        return mapping[schedulePriority] || 'medium';
-    }
-
-    /**
-     * Generate task title
-     */
-    generateTaskTitle(schedule) {
-        const typeNames = {
-            'cleaning': 'Vệ sinh thiết bị',
-            'inspection': 'Kiểm tra thiết bị',
-            'maintenance': 'Bảo dưỡng thiết bị'
-        };
-        return `${typeNames[schedule.maintenanceType]} (Tự động)`;
-    }
-
-    /**
-     * Generate task description
-     */
-    generateTaskDescription(schedule) {
-        const descriptions = {
-            'cleaning': 'Vệ sinh và làm sạch thiết bị theo quy trình tiêu chuẩn',
-            'inspection': 'Kiểm tra tình trạng hoạt động và an toàn của thiết bị',
-            'maintenance': 'Bảo dưỡng, kiểm tra chi tiết và thay thế linh kiện nếu cần'
-        };
-        
-        const priorityNotes = {
-            'high': 'Ưu tiên cao - Cần thực hiện ngay',
-            'medium': 'Ưu tiên trung bình - Thực hiện theo lịch',
-            'low': 'Ưu tiên thấp - Có thể linh hoạt thời gian'
-        };
-        
-        return `${descriptions[schedule.maintenanceType]}.\n\nMức độ ưu tiên: ${priorityNotes[schedule.priority]}\nKhoảng cách: ${schedule.intervalDays} ngày`;
     }
 }
 
-module.exports = new MaintenanceSchedulerService();
+// Create singleton instance
+const maintenanceSchedulerService = new MaintenanceSchedulerService();
+
+module.exports = maintenanceSchedulerService;

@@ -149,4 +149,86 @@ router.post('/check', authenticate, authorize('admin', 'manager'), async (req, r
     }
 });
 
+// Complete all maintenance tasks in bulk
+router.post('/complete-all-maintenance', async (req, res) => {
+    try {
+        const { notes, performedBy } = req.body;
+        
+        // Get all maintenance notifications
+        const notifications = notificationService.getNotifications({
+            category: 'maintenance',
+            unreadOnly: true
+        });
+        
+        let completedCount = 0;
+        let errors = [];
+        
+        for (const notification of notifications) {
+            try {
+                const result = await notificationService.completeMaintenance(notification.id, {
+                    notes: notes || 'Hoàn thành tất cả bảo trì',
+                    performedBy: performedBy || 1
+                });
+                
+                if (result.success) {
+                    completedCount++;
+                } else {
+                    errors.push(`ID ${notification.id}: ${result.message}`);
+                }
+            } catch (error) {
+                errors.push(`ID ${notification.id}: ${error.message}`);
+            }
+        }
+        
+        res.json({
+            success: true,
+            message: `Đã hoàn thành ${completedCount} nhiệm vụ bảo trì`,
+            data: { 
+                completedCount,
+                totalNotifications: notifications.length,
+                errors: errors.length > 0 ? errors : undefined
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error completing all maintenance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi hoàn thành tất cả bảo trì'
+        });
+    }
+});
+
+// Confirm maintenance completion and reschedule
+router.post('/:notificationId/complete-maintenance', async (req, res) => {
+    try {
+        const notificationId = parseFloat(req.params.notificationId);
+        const { notes, performedBy } = req.body;
+        
+        const result = await notificationService.completeMaintenance(notificationId, {
+            notes: notes || 'Bảo trì hoàn thành từ thông báo',
+            performedBy: performedBy || 1
+        });
+        
+        if (result.success) {
+            res.json({
+                success: true,
+                message: 'Đã xác nhận hoàn thành bảo trì và tự động đặt lịch tiếp theo',
+                data: result.data
+            });
+        } else {
+            res.status(400).json({
+                success: false,
+                message: result.message || 'Không thể xác nhận hoàn thành bảo trì'
+            });
+        }
+    } catch (error) {
+        console.error('Error completing maintenance from notification:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi xác nhận hoàn thành bảo trì'
+        });
+    }
+});
+
 module.exports = router;

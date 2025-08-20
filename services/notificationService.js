@@ -1,4 +1,4 @@
-const { MaintenanceSchedule, Equipment, EquipmentMaintenance, User } = require('../models');
+const { MaintenanceSchedule, Equipment, User } = require('../models');
 const { Op } = require('sequelize');
 
 class NotificationService {
@@ -11,27 +11,27 @@ class NotificationService {
     init() {
         console.log('🔔 Notification Service initialized');
         
-        // Schedule periodic checks (every 30 minutes in production, every 1 minute for demo)
+        // Schedule periodic checks (every 30 minutes in production, every 5 minutes for demo)
         setInterval(() => {
             this.checkMaintenanceNotifications();
-        }, 60000); // 1 minute for demo
+        }, 300000); // 5 minutes for demo
         
-        // Initial check
+        // Initial check after 10 seconds
         setTimeout(() => {
             this.checkMaintenanceNotifications();
-        }, 5000); // 5 seconds after startup
+        }, 10000); // 10 seconds after startup
     }
 
-    // Check for maintenance notifications
+    // Check for maintenance notifications from MaintenanceSchedule
     async checkMaintenanceNotifications() {
         try {
-            console.log('🔍 Checking maintenance notifications...');
+            console.log('🔍 Checking maintenance notifications from MaintenanceSchedule...');
             
-            // Check overdue maintenance
-            await this.checkOverdueMaintenance();
+            // Check overdue maintenance schedules
+            await this.checkOverdueMaintenanceSchedules();
             
-            // Check upcoming maintenance (today and tomorrow)
-            await this.checkUpcomingMaintenance();
+            // Check due today maintenance schedules 
+            await this.checkUpcomingMaintenanceSchedules();
             
             // Check equipment status alerts
             await this.checkEquipmentStatusAlerts();
@@ -42,8 +42,8 @@ class NotificationService {
         }
     }
 
-    // Check overdue maintenance
-    async checkOverdueMaintenance() {
+    // Check overdue maintenance schedules
+    async checkOverdueMaintenanceSchedules() {
         try {
             const today = new Date().toISOString().split('T')[0];
             
@@ -66,11 +66,13 @@ class NotificationService {
             for (const schedule of overdueSchedules) {
                 const daysOverdue = this.getDaysOverdue(schedule.nextDueDate);
                 
-                // Create notification for overdue maintenance
+                // Create notification for overdue maintenance schedule
                 this.addNotification({
                     type: 'overdue_maintenance',
-                    priority: daysOverdue > 7 ? 'critical' : daysOverdue > 3 ? 'high' : 'medium',
-                    title: `Bảo trì quá hạn ${daysOverdue} ngày`,
+                    priority: schedule.equipment.priority === 'critical' ? 'critical' : 
+                             daysOverdue > 7 ? 'critical' : 
+                             daysOverdue > 3 ? 'high' : 'medium',
+                    title: `Lịch bảo trì quá hạn ${daysOverdue} ngày`,
                     message: `${schedule.equipment.name} (${schedule.equipment.equipmentCode}) cần ${this.getMaintenanceTypeText(schedule.maintenanceType)}`,
                     equipmentId: schedule.equipmentId,
                     scheduleId: schedule.id,
@@ -79,29 +81,20 @@ class NotificationService {
                 });
             }
 
-            console.log(`⚠️ Found ${overdueSchedules.length} overdue maintenance items`);
+            console.log(`⚠️ Found ${overdueSchedules.length} overdue maintenance schedules`);
         } catch (error) {
-            console.error('Error checking overdue maintenance:', error);
+            console.error('Error checking overdue maintenance schedules:', error);
         }
     }
 
-    // Check upcoming maintenance
-    async checkUpcomingMaintenance() {
+    // Check due today maintenance schedules
+    async checkUpcomingMaintenanceSchedules() {
         try {
-            const today = new Date();
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const dayAfterTomorrow = new Date(today);
-            dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+            const today = new Date().toISOString().split('T')[0];
             
-            const upcomingSchedules = await MaintenanceSchedule.findAll({
+            const todaySchedules = await MaintenanceSchedule.findAll({
                 where: {
-                    nextDueDate: {
-                        [Op.between]: [
-                            today.toISOString().split('T')[0],
-                            dayAfterTomorrow.toISOString().split('T')[0]
-                        ]
-                    },
+                    nextDueDate: today,
                     isActive: true
                 },
                 include: [{
@@ -114,15 +107,11 @@ class NotificationService {
                 }]
             });
 
-            for (const schedule of upcomingSchedules) {
-                const dueDate = new Date(schedule.nextDueDate);
-                const isToday = dueDate.toDateString() === today.toDateString();
-                const isTomorrow = dueDate.toDateString() === tomorrow.toDateString();
-                
+            for (const schedule of todaySchedules) {
                 this.addNotification({
-                    type: 'upcoming_maintenance',
-                    priority: isToday ? 'high' : 'medium',
-                    title: isToday ? 'Bảo trì hôm nay' : isTomorrow ? 'Bảo trì ngày mai' : 'Bảo trì sắp tới',
+                    type: 'due_today_maintenance',
+                    priority: schedule.equipment.priority === 'critical' ? 'critical' : 'high',
+                    title: 'Lịch bảo trì hôm nay',
                     message: `${schedule.equipment.name} (${schedule.equipment.equipmentCode}) cần ${this.getMaintenanceTypeText(schedule.maintenanceType)}`,
                     equipmentId: schedule.equipmentId,
                     scheduleId: schedule.id,
@@ -131,55 +120,17 @@ class NotificationService {
                 });
             }
 
-            console.log(`📅 Found ${upcomingSchedules.length} upcoming maintenance items`);
+            console.log(`📅 Found ${todaySchedules.length} due today maintenance schedules`);
         } catch (error) {
-            console.error('Error checking upcoming maintenance:', error);
+            console.error('Error checking due today maintenance schedules:', error);
         }
     }
 
-    // Check equipment status alerts
+    // Check equipment status alerts (disabled - user doesn't use equipment status)
     async checkEquipmentStatusAlerts() {
         try {
-            // Check broken equipment
-            const brokenEquipment = await Equipment.findAll({
-                where: {
-                    status: 'broken',
-                    isActive: true
-                }
-            });
-
-            for (const equipment of brokenEquipment) {
-                this.addNotification({
-                    type: 'equipment_broken',
-                    priority: 'critical',
-                    title: 'Thiết bị hỏng',
-                    message: `${equipment.name} (${equipment.equipmentCode}) đang trong trạng thái hỏng`,
-                    equipmentId: equipment.id,
-                    category: 'equipment_status'
-                });
-            }
-
-            // Check equipment in maintenance too long
-            const maintenanceEquipment = await Equipment.findAll({
-                where: {
-                    status: 'maintenance',
-                    isActive: true,
-                    updatedAt: { [Op.lt]: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // 7 days ago
-                }
-            });
-
-            for (const equipment of maintenanceEquipment) {
-                this.addNotification({
-                    type: 'maintenance_too_long',
-                    priority: 'medium',
-                    title: 'Bảo trì quá lâu',
-                    message: `${equipment.name} (${equipment.equipmentCode}) đang bảo trì quá 7 ngày`,
-                    equipmentId: equipment.id,
-                    category: 'equipment_status'
-                });
-            }
-
-            console.log(`🔧 Found ${brokenEquipment.length} broken and ${maintenanceEquipment.length} long-maintenance equipment`);
+            // Equipment status checking is disabled per user request
+            console.log(`🔧 Equipment status alerts disabled - no status-based notifications`);
         } catch (error) {
             console.error('Error checking equipment status alerts:', error);
         }
@@ -187,10 +138,12 @@ class NotificationService {
 
     // Add notification (avoid duplicates)
     addNotification(notification) {
+        // More robust duplicate check - include title and message
         const existing = this.notifications.find(n => 
             n.type === notification.type && 
             n.equipmentId === notification.equipmentId &&
-            n.scheduleId === notification.scheduleId
+            n.title === notification.title &&
+            (n.scheduleId === notification.scheduleId || n.maintenanceTaskId === notification.maintenanceTaskId)
         );
 
         if (!existing) {
@@ -343,11 +296,89 @@ class NotificationService {
         return types[type] || type;
     }
 
+    getEquipmentMaintenanceTypeText(type) {
+        const types = {
+            'daily_clean': 'vệ sinh hàng ngày',
+            'weekly_check': 'kiểm tra hàng tuần', 
+            'monthly_maintenance': 'bảo dưỡng hàng tháng',
+            'repair': 'sửa chữa',
+            'replacement': 'thay mới'
+        };
+        return types[type] || type;
+    }
+
     // Real-time notification methods (for WebSocket/SSE integration)
     subscribeToNotifications(callback) {
         // This would integrate with WebSocket or Server-Sent Events
         // For now, just return current notifications
         return this.getNotifications({ unreadOnly: true });
+    }
+
+    // Complete maintenance schedule from notification
+    async completeMaintenance(notificationId, details = {}) {
+        try {
+            const notification = this.notifications.find(n => n.id === notificationId);
+            
+            if (!notification) {
+                return {
+                    success: false,
+                    message: 'Không tìm thấy thông báo'
+                };
+            }
+
+            if (!notification.scheduleId) {
+                return {
+                    success: false,
+                    message: 'Thông báo không có thông tin lịch bảo trì'
+                };
+            }
+
+            // Use maintenance scheduler service to complete maintenance
+            const maintenanceSchedulerService = require('./maintenanceSchedulerService');
+            const result = await maintenanceSchedulerService.completeMaintenance(notification.scheduleId, details);
+
+            if (result.success) {
+                // Mark notification as read
+                this.markAsRead(notificationId);
+
+                // Check for any new notifications after completion
+                setTimeout(() => {
+                    this.checkMaintenanceNotifications();
+                }, 1000);
+
+                return {
+                    success: true,
+                    message: 'Đã hoàn thành lịch bảo trì và tạo lịch mới thành công',
+                    data: {
+                        completedSchedule: {
+                            id: result.completedSchedule.id,
+                            equipmentName: result.completedSchedule.equipment?.name,
+                            maintenanceType: this.getMaintenanceTypeText(result.completedSchedule.maintenanceType),
+                            completedDate: result.completedSchedule.lastPerformed,
+                            status: 'completed'
+                        },
+                        nextSchedule: {
+                            id: result.nextSchedule.id,
+                            nextDueDate: result.nextSchedule.nextDueDate,
+                            maintenanceType: this.getMaintenanceTypeText(result.nextSchedule.maintenanceType)
+                        },
+                        historyRecord: result.historyRecord
+                    }
+                };
+            } else {
+                return {
+                    success: false,
+                    message: 'Lỗi khi hoàn thành bảo trì: ' + result.error
+                };
+            }
+
+        } catch (error) {
+            console.error('Error completing maintenance schedule from notification:', error);
+            return {
+                success: false,
+                message: 'Lỗi khi xử lý hoàn thành bảo trì: ' + error.message
+            };
+        }
     }
 
     // Simulate real-time updates

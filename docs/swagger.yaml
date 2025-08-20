@@ -1,0 +1,930 @@
+openapi: 3.0.0
+info:
+  title: Gym Manager API
+  description: Hệ thống quản lý phòng gym - API Documentation
+  version: 1.0.0
+  contact:
+    name: Đặng Đức Cường
+    email: dangduccoung@gymmanager.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://api.gymmanager.com/api
+    description: Production server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Access Token
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [admin, trainer, member]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Member:
+      type: object
+      properties:
+        id:
+          type: integer
+        memberCode:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        dateOfBirth:
+          type: string
+          format: date
+        gender:
+          type: string
+          enum: [male, female, other]
+        address:
+          type: string
+        emergencyContact:
+          type: string
+        emergencyPhone:
+          type: string
+        joinDate:
+          type: string
+          format: date
+        isActive:
+          type: boolean
+
+    Membership:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        price:
+          type: number
+        duration:
+          type: integer
+        description:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+        isActive:
+          type: boolean
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: integer
+        invoiceNumber:
+          type: string
+        memberId:
+          type: integer
+        totalAmount:
+          type: number
+        status:
+          type: string
+          enum: [pending, paid, overdue, cancelled]
+        description:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+        memberId:
+          type: integer
+        invoiceId:
+          type: integer
+        amount:
+          type: number
+        paymentMethod:
+          type: string
+          enum: [cash, card, bank_transfer, mobile_payment]
+        paymentStatus:
+          type: string
+          enum: [pending, completed, failed]
+        paymentDate:
+          type: string
+          format: date-time
+
+    Equipment:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        category:
+          type: string
+        brand:
+          type: string
+        model:
+          type: string
+        serialNumber:
+          type: string
+        status:
+          type: string
+          enum: [active, maintenance, retired, broken]
+        purchaseDate:
+          type: string
+          format: date
+        warrantyExpiry:
+          type: string
+          format: date
+
+    Class:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        trainerId:
+          type: integer
+        maxCapacity:
+          type: integer
+        duration:
+          type: integer
+        price:
+          type: number
+        isActive:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        error:
+          type: string
+
+    Success:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: object
+
+paths:
+  # ==================== AUTHENTICATION ====================
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Đăng ký tài khoản mới
+      description: Tạo tài khoản người dùng mới với thông tin cơ bản
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+                - fullName
+                - role
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+                fullName:
+                  type: string
+                  minLength: 2
+                phone:
+                  type: string
+                role:
+                  type: string
+                  enum: [admin, trainer, member]
+      responses:
+        '201':
+          description: Đăng ký thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email hoặc username đã tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Đăng nhập
+      description: Xác thực người dùng và trả về JWT tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      accessToken:
+                        type: string
+                      refreshToken:
+                        type: string
+        '401':
+          description: Thông tin đăng nhập không chính xác
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Đăng xuất
+      description: Hủy refresh token và đăng xuất
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Đăng xuất thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '401':
+          description: Chưa xác thực
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Làm mới access token
+      description: Sử dụng refresh token để lấy access token mới
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Làm mới token thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+                      refreshToken:
+                        type: string
+
+  # ==================== MEMBERS ====================
+  /members:
+    get:
+      tags:
+        - Members
+      summary: Lấy danh sách thành viên
+      description: Lấy danh sách tất cả thành viên với phân trang và lọc
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive]
+      responses:
+        '200':
+          description: Danh sách thành viên
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      members:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Member'
+                      pagination:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+                          limit:
+                            type: integer
+                          totalPages:
+                            type: integer
+
+    post:
+      tags:
+        - Members
+      summary: Đăng ký thành viên mới
+      description: Tạo hồ sơ thành viên mới
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fullName
+                - phone
+              properties:
+                fullName:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                dateOfBirth:
+                  type: string
+                  format: date
+                gender:
+                  type: string
+                  enum: [male, female, other]
+                address:
+                  type: string
+                emergencyContact:
+                  type: string
+                emergencyPhone:
+                  type: string
+                membershipId:
+                  type: integer
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Đăng ký thành viên thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Member'
+
+  /members/{id}:
+    get:
+      tags:
+        - Members
+      summary: Lấy thông tin thành viên
+      description: Lấy thông tin chi tiết của một thành viên
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Thông tin thành viên
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Member'
+        '404':
+          description: Không tìm thấy thành viên
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Members
+      summary: Cập nhật thông tin thành viên
+      description: Cập nhật thông tin của thành viên
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Member'
+      responses:
+        '200':
+          description: Cập nhật thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Member'
+
+  # ==================== MEMBERSHIPS ====================
+  /members/memberships/all:
+    get:
+      tags:
+        - Memberships
+      summary: Lấy danh sách gói thành viên
+      description: Lấy tất cả gói thành viên có sẵn
+      responses:
+        '200':
+          description: Danh sách gói thành viên
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Membership'
+
+  /members/memberships:
+    post:
+      tags:
+        - Memberships
+      summary: Tạo gói thành viên mới
+      description: Tạo gói thành viên mới (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - price
+                - duration
+              properties:
+                name:
+                  type: string
+                price:
+                  type: number
+                duration:
+                  type: integer
+                description:
+                  type: string
+                features:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Tạo gói thành viên thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Membership'
+
+  # ==================== INVOICES ====================
+  /invoices:
+    get:
+      tags:
+        - Invoices
+      summary: Lấy danh sách hóa đơn
+      description: Lấy danh sách hóa đơn với phân quyền
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, paid, overdue]
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Danh sách hóa đơn
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      invoices:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Invoice'
+
+  /invoices/{id}:
+    get:
+      tags:
+        - Invoices
+      summary: Lấy chi tiết hóa đơn
+      description: Lấy thông tin chi tiết hóa đơn
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Chi tiết hóa đơn
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Invoice'
+
+  /invoices/{id}/status:
+    put:
+      tags:
+        - Invoices
+      summary: Cập nhật trạng thái hóa đơn
+      description: Cập nhật trạng thái hóa đơn (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [pending, paid, cancelled]
+      responses:
+        '200':
+          description: Cập nhật trạng thái thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  # ==================== PAYMENTS ====================
+  /payments:
+    get:
+      tags:
+        - Payments
+      summary: Lấy danh sách thanh toán
+      description: Lấy lịch sử thanh toán
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, completed, failed]
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [membership, class, service]
+      responses:
+        '200':
+          description: Danh sách thanh toán
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      payments:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Payment'
+
+  # ==================== EQUIPMENT ====================
+  /equipment:
+    get:
+      tags:
+        - Equipment
+      summary: Lấy danh sách thiết bị
+      description: Lấy danh sách tất cả thiết bị
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, maintenance, retired, broken]
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Danh sách thiết bị
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Equipment'
+
+    post:
+      tags:
+        - Equipment
+      summary: Thêm thiết bị mới
+      description: Thêm thiết bị mới vào hệ thống (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - category
+              properties:
+                name:
+                  type: string
+                category:
+                  type: string
+                brand:
+                  type: string
+                model:
+                  type: string
+                serialNumber:
+                  type: string
+                purchaseDate:
+                  type: string
+                  format: date
+                warrantyExpiry:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Thêm thiết bị thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Equipment'
+
+  # ==================== CLASSES ====================
+  /classes:
+    get:
+      tags:
+        - Classes
+      summary: Lấy danh sách lớp học
+      description: Lấy danh sách tất cả lớp học
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Danh sách lớp học
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Class'
+
+    post:
+      tags:
+        - Classes
+      summary: Tạo lớp học mới
+      description: Tạo lớp học mới (Admin/Trainer only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - trainerId
+                - maxCapacity
+                - duration
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                trainerId:
+                  type: integer
+                maxCapacity:
+                  type: integer
+                duration:
+                  type: integer
+                price:
+                  type: number
+      responses:
+        '201':
+          description: Tạo lớp học thành công
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Class'
+
+tags:
+  - name: Authentication
+    description: Xác thực và phân quyền
+  - name: Members
+    description: Quản lý thành viên
+  - name: Memberships
+    description: Quản lý gói thành viên
+  - name: Invoices
+    description: Quản lý hóa đơn
+  - name: Payments
+    description: Quản lý thanh toán
+  - name: Equipment
+    description: Quản lý thiết bị
+  - name: Classes
+    description: Quản lý lớp học
