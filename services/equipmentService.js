@@ -28,6 +28,7 @@ const equipmentService = {
             
             // Auto-create maintenance schedules for the new equipment
             try {
+                console.log(`🔍 Creating maintenance schedules for equipment: ${equipment.equipmentCode} with priority: ${equipment.priority}`);
                 await this.createAutoMaintenanceSchedules(equipment);
                 console.log(`✅ Auto-created maintenance schedules for equipment: ${equipment.equipmentCode}`);
             } catch (error) {
@@ -155,7 +156,19 @@ const equipmentService = {
             }
         }
 
+        // Check if priority or equipment size changed (affects maintenance frequency)
+        const priorityChanged = updateData.hasOwnProperty('priority') && updateData.priority !== equipment.priority;
+        const sizeChanged = updateData.hasOwnProperty('equipmentSize') && updateData.equipmentSize !== equipment.equipmentSize;
+        
+        
         await equipment.update(updateData);
+        
+        // If priority or size changed, update maintenance schedules
+        if (priorityChanged || sizeChanged) {
+            console.log(`ℹ️ Priority/size changed for equipment ${equipment.equipmentCode}. Auto-update maintenance schedules feature is disabled for stability.`);
+            // TODO: Auto-update maintenance schedules feature disabled due to stability issues
+        }
+
         return equipment;
     },
 
@@ -166,17 +179,13 @@ const equipmentService = {
             throw new NotFoundError('Equipment not found');
         }
 
-        // Check if equipment has any pending maintenance
-        const pendingMaintenance = await EquipmentMaintenance.findOne({
+        // Delete all related maintenance records first
+        await EquipmentMaintenance.destroy({
             where: {
-                equipmentId: id,
-                status: { [Op.in]: ['scheduled', 'in_progress'] }
+                equipmentId: id
             }
         });
-
-        if (pendingMaintenance) {
-            throw new ValidationError('Cannot delete equipment with pending maintenance');
-        }
+        console.log(`🗑️ Deleted all maintenance records for equipment ${equipment.equipmentCode}`);
 
         await equipment.destroy();
         return { message: 'Equipment deleted successfully' };
@@ -213,6 +222,15 @@ const equipmentService = {
             raw: true
         });
 
+        const priorityStats = await Equipment.findAll({
+            attributes: [
+                'priority',
+                [Equipment.sequelize.fn('COUNT', Equipment.sequelize.col('id')), 'count']
+            ],
+            group: ['priority'],
+            raw: true
+        });
+
         // Equipment requiring maintenance
         const today = new Date().toISOString().split('T')[0];
         const maintenanceDue = await Equipment.count({
@@ -234,6 +252,7 @@ const equipmentService = {
             statusStats,
             categoryStats,
             conditionStats,
+            priorityStats,
             maintenanceDue,
             mostUsed
         };
@@ -321,7 +340,6 @@ const equipmentService = {
 
     // Auto-create maintenance schedules for new equipment
     async createAutoMaintenanceSchedules(equipment) {
-        const { EquipmentMaintenance } = require('../models');
         
         // Define maintenance frequency based on priority
         const maintenanceFrequency = {
@@ -343,6 +361,7 @@ const equipmentService = {
         };
         
         const frequency = maintenanceFrequency[equipment.priority] || maintenanceFrequency.medium;
+        console.log(`🔧 Equipment ${equipment.equipmentCode} priority: ${equipment.priority}, using frequency:`, frequency);
         const today = new Date();
         const createdSchedules = [];
         
@@ -400,6 +419,114 @@ const equipmentService = {
         };
         
         return baseDuration[type] ? baseDuration[type][priority] || 30 : 30;
+    },
+
+    // Update maintenance schedules when equipment priority changes
+    async updateMaintenanceSchedulesForEquipment(equipment) {
+        
+        // Define maintenance frequency based on priority
+        const maintenanceFrequency = {
+            high: {
+                daily_clean: 1,    // Mỗi ngày
+                weekly_check: 7,   // Mỗi 7 ngày  
+                monthly_maintenance: 30  // Mỗi 30 ngày
+            },
+            medium: {
+                daily_clean: 3,    // Mỗi 3 ngày
+                weekly_check: 14,  // Mỗi 14 ngày
+                monthly_maintenance: 60  // Mỗi 60 ngày
+            },
+            low: {
+                daily_clean: 7,    // Mỗi 7 ngày
+                weekly_check: 30,  // Mỗi 30 ngày
+                monthly_maintenance: 90  // Mỗi 90 ngày
+            }
+        };
+        
+        const frequency = maintenanceFrequency[equipment.priority] || maintenanceFrequency.medium;
+        const today = new Date();
+        
+        // Get all scheduled (future) maintenance for this equipment
+        const scheduledMaintenances = await EquipmentMaintenance.findAll({
+            where: {
+                equipmentId: equipment.id,
+                status: 'scheduled',
+                scheduledDate: { [Op.gte]: today.toISOString().split('T')[0] }
+            },
+            order: [['scheduledDate', 'ASC']]
+        });
+        
+        // Group by maintenance type
+        const maintenanceByType = {};
+        scheduledMaintenances.forEach(maintenance => {
+            if (!maintenanceByType[maintenance.maintenanceType]) {
+                maintenanceByType[maintenance.maintenanceType] = [];
+            }
+            maintenanceByType[maintenance.maintenanceType].push(maintenance);
+        });
+        
+        const updatedSchedules = [];
+        
+        // Update each maintenance type with new frequency
+        const scheduleTypes = [
+            { type: 'daily_clean', name: 'Vệ sinh', interval: frequency.daily_clean },
+            { type: 'weekly_check', name: 'Kiểm tra', interval: frequency.weekly_check },
+            { type: 'monthly_maintenance', name: 'Bảo dưỡng', interval: frequency.monthly_maintenance }
+        ];
+        
+        for (const scheduleType of scheduleTypes) {
+            const existingSchedules = maintenanceByType[scheduleType.type] || [];
+            
+            if (existingSchedules.length > 0) {
+                // Update existing schedules with new intervals
+                for (let i = 0; i < existingSchedules.length; i++) {
+                    const schedule = existingSchedules[i];
+                    
+                    // Calculate new date based on today + interval for each schedule
+                    let newDate = new Date(today);
+                    newDate.setDate(newDate.getDate() + scheduleType.interval * (i + 1));
+                    
+                    const newScheduleDate = newDate.toISOString().split('T')[0];
+                    
+                    await schedule.update({
+                        scheduledDate: newScheduleDate,
+                        priority: equipment.priority,
+                        title: `${scheduleType.name} - ${equipment.name}`,
+                        description: this.getMaintenanceDescription(scheduleType.type, equipment),
+                        estimatedDuration: this.getEstimatedDuration(scheduleType.type, equipment.priority),
+                        notes: `Cập nhật tự động do thay đổi mức độ ưu tiên thiết bị ${equipment.equipmentCode}`
+                    });
+                    
+                    updatedSchedules.push(schedule);
+                    
+                }
+            } else {
+                // Create new schedule if none exists for this type
+                let scheduleDate = new Date(today);
+                scheduleDate.setDate(scheduleDate.getDate() + scheduleType.interval);
+                
+                try {
+                    const newSchedule = await EquipmentMaintenance.create({
+                        equipmentId: equipment.id,
+                        maintenanceType: scheduleType.type,
+                        status: 'scheduled',
+                        priority: equipment.priority,
+                        scheduledDate: scheduleDate.toISOString().split('T')[0],
+                        title: `${scheduleType.name} - ${equipment.name}`,
+                        description: this.getMaintenanceDescription(scheduleType.type, equipment),
+                        estimatedDuration: this.getEstimatedDuration(scheduleType.type, equipment.priority),
+                        notes: `Tự động tạo khi cập nhật thiết bị ${equipment.equipmentCode}`
+                    });
+                    
+                    updatedSchedules.push(newSchedule);
+                } catch (error) {
+                    console.warn(`⚠️ Could not create ${scheduleType.type} schedule for ${equipment.equipmentCode}:`, error.message);
+                }
+            }
+        }
+        
+        console.log(`✅ Updated ${updatedSchedules.length} maintenance schedules for equipment ${equipment.equipmentCode}`);
+        return updatedSchedules;
     }
 };
 

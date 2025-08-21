@@ -251,7 +251,12 @@ const invoiceService = {
 
     // Update invoice status
     async updateInvoiceStatus(invoiceId, status) {
-        const invoice = await Invoice.findByPk(invoiceId);
+        const invoice = await Invoice.findByPk(invoiceId, {
+            include: [{
+                model: require('../models').InvoiceItem,
+                as: 'items'
+            }]
+        });
         if (!invoice) {
             throw new NotFoundError('Invoice not found');
         }
@@ -262,7 +267,81 @@ const invoiceService = {
         }
 
         await invoice.update({ status });
+
+        // IMPORTANT: If invoice is marked as paid and contains membership items, activate the membership
+        if (status === 'paid') {
+            await this.activateMembershipFromPaidInvoice(invoice);
+        }
+
         return await this.getInvoiceById(invoiceId);
+    },
+
+    // Activate membership when invoice is paid
+    async activateMembershipFromPaidInvoice(invoice) {
+        try {
+            // Check if this invoice contains membership items
+            const membershipItems = invoice.items?.filter(item => 
+                item.itemType === 'membership' && item.description.toLowerCase().includes('membership')
+            );
+
+            if (membershipItems && membershipItems.length > 0) {
+                console.log(`🔍 [MEMBERSHIP ACTIVATION] Found ${membershipItems.length} membership items in paid invoice ${invoice.invoiceNumber}`);
+                
+                // Update corresponding MembershipHistory records to active
+                const { MembershipHistory } = require('../models');
+                
+                // Find membership history records that reference this invoice
+                const membershipHistories = await MembershipHistory.findAll({
+                    where: {
+                        memberId: invoice.memberId,
+                        paymentStatus: 'pending',
+                        notes: {
+                            [require('sequelize').Op.like]: `%${invoice.invoiceNumber}%`
+                        }
+                    }
+                });
+
+                console.log(`🔍 [MEMBERSHIP ACTIVATION] Found ${membershipHistories.length} pending membership history records for invoice ${invoice.invoiceNumber}`);
+
+                // Activate all pending memberships linked to this invoice
+                for (const membershipHistory of membershipHistories) {
+                    await membershipHistory.update({
+                        status: 'active',
+                        paymentStatus: 'paid'
+                    });
+                    
+                    console.log(`✅ [MEMBERSHIP ACTIVATED] Activated membership history ID ${membershipHistory.id} for member ${invoice.memberId}`);
+                }
+
+                // Also check for recent membership purchases without invoice reference (fallback)
+                if (membershipHistories.length === 0) {
+                    const recentMemberships = await MembershipHistory.findAll({
+                        where: {
+                            memberId: invoice.memberId,
+                            paymentStatus: 'pending',
+                            createdAt: {
+                                [require('sequelize').Op.gte]: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+                            }
+                        },
+                        order: [['createdAt', 'DESC']]
+                    });
+
+                    console.log(`🔍 [FALLBACK ACTIVATION] Found ${recentMemberships.length} recent pending memberships for member ${invoice.memberId}`);
+
+                    for (const membership of recentMemberships) {
+                        await membership.update({
+                            status: 'active',
+                            paymentStatus: 'paid'
+                        });
+                        
+                        console.log(`✅ [FALLBACK ACTIVATED] Activated recent membership history ID ${membership.id} for member ${invoice.memberId}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('❌ [MEMBERSHIP ACTIVATION ERROR]', error);
+            // Don't throw error to avoid breaking invoice payment process
+        }
     },
 
     // Send invoice to member

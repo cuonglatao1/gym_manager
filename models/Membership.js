@@ -21,8 +21,9 @@ const Membership = sequelize.define('Membership', {
         comment: 'Duration in days'
     },
     price: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false
+        type: DataTypes.DECIMAL(12, 2),
+        allowNull: false,
+        comment: 'Price in VND (up to 9,999,999,999.99)'
     },
     benefits: {
         type: DataTypes.JSON,

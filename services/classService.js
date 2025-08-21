@@ -889,6 +889,49 @@ class ClassService {
             throw new Error('Đã đăng ký lớp này rồi');
         }
 
+        // Check for schedule conflict - member cannot enroll in overlapping classes
+        const conflictingEnrollments = await ClassEnrollment.findAll({
+            where: {
+                memberId: member.id,
+                status: { [Op.in]: ['enrolled', 'attended'] }
+            },
+            include: [{
+                model: ClassSchedule,
+                as: 'classSchedule',
+                where: {
+                    date: schedule.date, // Same date
+                    [Op.or]: [
+                        // Current schedule starts during existing class
+                        {
+                            startTime: { [Op.lte]: schedule.startTime },
+                            endTime: { [Op.gt]: schedule.startTime }
+                        },
+                        // Current schedule ends during existing class
+                        {
+                            startTime: { [Op.lt]: schedule.endTime },
+                            endTime: { [Op.gte]: schedule.endTime }
+                        },
+                        // Current schedule completely contains existing class
+                        {
+                            startTime: { [Op.gte]: schedule.startTime },
+                            endTime: { [Op.lte]: schedule.endTime }
+                        }
+                    ]
+                },
+                include: [{
+                    model: Class,
+                    as: 'class',
+                    attributes: ['name']
+                }]
+            }]
+        });
+
+        if (conflictingEnrollments.length > 0) {
+            const conflictClass = conflictingEnrollments[0].classSchedule.class.name;
+            const conflictTime = `${conflictingEnrollments[0].classSchedule.startTime} - ${conflictingEnrollments[0].classSchedule.endTime}`;
+            throw new Error(`Không thể đăng ký - Trùng lịch với lớp "${conflictClass}" (${conflictTime})`);
+        }
+
         // Check membership requirements (optional - implement if needed)
         // const activeMembership = await member.getActiveMembership();
         // if (!activeMembership) {

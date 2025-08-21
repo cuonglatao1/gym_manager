@@ -69,14 +69,14 @@ const memberSchemas = {
     update: Joi.object({
         fullName: Joi.string().min(2).max(100).optional(),
         phone: Joi.string().pattern(/^[0-9]{10,11}$/).optional(),
-        email: Joi.string().email().allow('').optional(),
+        email: Joi.string().email().allow('', null).optional(),
         dateOfBirth: Joi.date().max('now').allow(null).optional(),
         gender: Joi.string().valid('male', 'female', 'other').allow(null).optional(),
-        address: Joi.string().max(500).allow('').optional(),
-        emergencyContact: Joi.string().max(100).allow('').optional(),
-        emergencyPhone: Joi.string().pattern(/^[0-9]{10,11}$/).allow('').optional(),
+        address: Joi.string().max(500).allow('', null).optional(),
+        emergencyContact: Joi.string().max(100).allow('', null).optional(),
+        emergencyPhone: Joi.string().pattern(/^[0-9]{10,11}$/).allow('', null).optional(),
         isActive: Joi.boolean().optional(),
-        notes: Joi.string().max(1000).allow('').optional()
+        notes: Joi.string().max(1000).allow('', null).optional()
     }),
 
     purchaseMembership: Joi.object({

@@ -1,4 +1,5 @@
-const { Class, Member, Membership, ClassEnrollment } = require('../models');
+const { Class, Member, Membership, MembershipHistory, ClassEnrollment } = require('../models');
+const { Op } = require('sequelize');
 
 class PricingService {
     /**
@@ -25,7 +26,18 @@ class PricingService {
             }
 
             // Get active membership
-            const activeMembershipHistory = await member.getActiveMembership();
+            const activeMembershipHistory = await MembershipHistory.findOne({
+                where: {
+                    memberId: memberId,
+                    status: 'active',
+                    endDate: { [Op.gte]: new Date() }
+                },
+                include: [{
+                    model: Membership,
+                    as: 'membership'
+                }],
+                order: [['endDate', 'DESC']]
+            });
             
             const basePrice = parseFloat(classData.price);
             let discountPercent = 0;
@@ -113,7 +125,18 @@ class PricingService {
             }
 
             // Get active membership
-            const activeMembershipHistory = await member.getActiveMembership();
+            const activeMembershipHistory = await MembershipHistory.findOne({
+                where: {
+                    memberId: memberId,
+                    status: 'active',
+                    endDate: { [Op.gte]: new Date() }
+                },
+                include: [{
+                    model: Membership,
+                    as: 'membership'
+                }],
+                order: [['endDate', 'DESC']]
+            });
             
             // If no membership or unlimited classes, allow booking
             if (!activeMembershipHistory || !activeMembershipHistory.membership || !activeMembershipHistory.membership.maxClasses) {
@@ -129,7 +152,7 @@ class PricingService {
                 where: {
                     memberId: memberId,
                     enrollmentDate: {
-                        [require('sequelize').Op.between]: [startOfMonth, endOfMonth]
+                        [Op.between]: [startOfMonth, endOfMonth]
                     }
                 }
             });

@@ -1029,7 +1029,7 @@
                 const userId = currentUser.userId || currentUser.id;
                 logApiDebug(`🔍 Loading classes for trainer userId: ${userId}`, 'info');
                 
-                const response = await apiCall(`/classes?trainerId=${userId}`);
+                const response = await apiCall('/classes'); // Get all classes, trainer can create schedule for any class
                 myClasses = response.data?.classes || [];
                 
                 console.log(`📚 My classes loaded: ${myClasses.length}`);

@@ -20,7 +20,9 @@ const equipmentController = {
             specifications,
             maintenanceInterval,
             lastMaintenanceDate,
-            notes
+            notes,
+            priority,
+            equipmentSize
         } = req.body;
 
         // Validate required fields
@@ -43,7 +45,9 @@ const equipmentController = {
             specifications,
             maintenanceInterval,
             lastMaintenanceDate,
-            notes
+            notes,
+            priority: priority || 'medium',
+            equipmentSize: equipmentSize || 'large'
         };
 
         const equipment = await equipmentService.createEquipment(equipmentData);

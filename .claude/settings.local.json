@@ -35,7 +35,10 @@
       "Bash(npm test:*)",
       "Bash(npx jest:*)",
       "Bash(git push:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx sequelize-cli migration:generate:*)",
+      "Bash(npx sequelize-cli:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

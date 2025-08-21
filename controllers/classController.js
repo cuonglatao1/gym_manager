@@ -161,7 +161,7 @@ const classController = {
             description,
             trainerId,
             duration,
-            maxParticipants,
+            maxParticipants: maxParticipants || 20, // Default to 20 participants
             price,
             room,
             recurring,
@@ -300,13 +300,8 @@ const classController = {
             notes
         } = req.body;
 
-        // Check permissions
-        if (req.user.role === 'trainer') {
-            const classInfo = await classService.getClassById(classId);
-            if (classInfo.trainerId !== req.user.userId && trainerId !== req.user.userId) {
-                throw new ValidationError('Trainer chỉ có thể tạo lịch cho lớp của mình');
-            }
-        }
+        // Trainers can now create schedules for any class (like admin)
+        // No additional permission check needed - already authorized by middleware
 
         const schedule = await classService.createClassSchedule({
             classId,
@@ -334,13 +329,8 @@ const classController = {
         try {
             console.log(`🔄 Updating schedule ${id} with data:`, JSON.stringify(updateData, null, 2));
             
-            // Check permissions
-            if (req.user.role === 'trainer') {
-                const schedule = await classService.getScheduleById(id);
-                if (schedule.trainerId !== req.user.userId) {
-                    throw new ValidationError('Chỉ có thể sửa lịch của mình');
-                }
-            }
+            // Trainers can now update schedules for any class (like admin)
+            // No additional permission check needed - already authorized by middleware
 
             const schedule = await classService.updateClassSchedule(id, updateData);
 
@@ -361,13 +351,8 @@ const classController = {
     cancelClassSchedule: asyncHandler(async (req, res) => {
         const { id } = req.params;
 
-        // Check permissions
-        if (req.user.role === 'trainer') {
-            const schedule = await classService.getScheduleById(id);
-            if (schedule.trainerId !== req.user.userId) {
-                throw new ValidationError('Chỉ có thể hủy lịch của mình');
-            }
-        }
+        // Trainers can now cancel schedules for any class (like admin)
+        // No additional permission check needed - already authorized by middleware
 
         const result = await classService.cancelClassSchedule(id);
 
